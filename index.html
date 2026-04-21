@@ -602,11 +602,12 @@ async function getDriveId() {
 async function getFileId() {
   if (fileItemId) return fileItemId;
   const did = await getDriveId(); if (!did) return null;
-  // Look up file by path relative to drive root — Shared Documents is the default document library root
   const encodedPath = encodeURIComponent(`Shared Documents/${FILE_FOLDER}/${FILE_NAME}`).replace(/%2F/g,'/');
   const d = await gfetch(`/drives/${did}/root:/${encodedPath}`);
   if (d?.id) { fileItemId = d.id; return fileItemId; }
-  return await createExcelFile();
+  setSS('Excel file not found — check SharePoint folder','err');
+  console.error('Could not find file at: Shared Documents/' + FILE_FOLDER + '/' + FILE_NAME);
+  return null;
 }
 
 async function createExcelFile() {
@@ -724,12 +725,13 @@ async function initSheets() {
 
   // Get existing sheets
   const existing = await gfetch(`${base}/worksheets`);
-  const sheets = (existing?.value||[]).map(s => s.name);
+  if (!existing?.value) { console.error('Could not read worksheets'); return; }
+  const sheets = existing.value.map(s => s.name);
 
-  // Rename Sheet1 → Components if needed
+  // Ensure Components sheet exists
   if (!sheets.includes('Components')) {
-    const first = existing?.value?.[0];
-    if (first) {
+    const first = existing.value[0];
+    if (first && first.name !== 'Components') {
       await gfetch(`${base}/worksheets('${encodeURIComponent(first.name)}')`, {
         method:'PATCH', body:JSON.stringify({name:'Components'})
       });
@@ -737,12 +739,22 @@ async function initSheets() {
       await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Components'})});
     }
   }
+
+  // Ensure Experiments sheet exists
   if (!sheets.includes('Experiments')) {
     await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Experiments'})});
   }
 
-  await gfetch(`${base}/worksheets/Components/range(address='A1:M1')`, {method:'PATCH', body:JSON.stringify({values:[['id','type','name','mfgDate','channels','ledGen','ledActive','glassSynthDate','glassQC','notes','registered','flaggedForDeletion','totalHours']]})});
-  await gfetch(`${base}/worksheets/Experiments/range(address='A1:AJ1')`, {method:'PATCH', body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','chemicals','samplePoints','ledConfig','solDist','flowRate','pump','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','notes','status','actualHours','startVol','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})});
+  // Always write headers to row 1 (safe to overwrite with same values)
+  await gfetch(`${base}/worksheets/Components/range(address='A1:M1')`, {
+    method:'PATCH',
+    body:JSON.stringify({values:[['id','type','name','mfgDate','channels','ledGen','ledActive','glassSynthDate','glassQC','notes','registered','flaggedForDeletion','totalHours']]})
+  });
+  await gfetch(`${base}/worksheets/Experiments/range(address='A1:AJ1')`, {
+    method:'PATCH',
+    body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','chemicals','samplePoints','ledConfig','solDist','flowRate','pump','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','notes','status','actualHours','startVol','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})
+  });
+  console.log('initSheets complete');
 }
 async function syncToExcel() {
   if (!accessToken) return;
@@ -775,11 +787,27 @@ async function syncToExcel() {
 
 async function writeSheet(base, sheet, headers, rows) {
   const allRows = headers ? [headers,...rows] : rows;
+  // Clear by getting used range first, then clearing it
+  const used = await gfetch(`${base}/worksheets/${sheet}/usedRange`);
+  if (used?.address) {
+    await gfetch(`${base}/worksheets/${sheet}/usedRange/clear`, {method:'POST', body:JSON.stringify({applyTo:'Contents'})});
+  }
   if (!allRows.length) return;
-  await gfetch(`${base}/worksheets/${sheet}/range(address='A1:ZZ5000')`, {method:'PATCH',body:JSON.stringify({values:[['']]})});
   const cols = allRows[0].length;
-  const colLetter = cols <= 26 ? String.fromCharCode(64+cols) : 'A'+String.fromCharCode(64+cols-26);
-  await gfetch(`${base}/worksheets/${sheet}/range(address='A1:${colLetter}${allRows.length}')`, {method:'PATCH',body:JSON.stringify({values:allRows})});
+  const colLetter = colNum2Letter(cols);
+  await gfetch(`${base}/worksheets/${sheet}/range(address='A1:${colLetter}${allRows.length}')`, {
+    method:'PATCH', body:JSON.stringify({values:allRows})
+  });
+}
+
+function colNum2Letter(n) {
+  let s = '';
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
 
 async function syncFromExcel() {
@@ -788,8 +816,12 @@ async function syncFromExcel() {
   try {
     await getToken();
     const did = await getDriveId(); const fid = await getFileId();
-    if (!did || !fid) { setSS('No Excel file','err'); return; }
+    if (!did || !fid) { setSS('Excel file not found — upload lab-tracker-data.xlsx to SharePoint','err'); return; }
     const base = `/drives/${did}/items/${fid}/workbook`;
+
+    // Ensure sheets and headers exist (safe on fresh file, no-op if already set up)
+    await initSheets();
+
     const cd = await gfetch(`${base}/worksheets/Components/usedRange`);
     if (cd?.values?.length > 1) {
       db.components = {};
@@ -865,6 +897,7 @@ function addPstatStep() { pstatSteps.push({voltage:'',duration:''}); renderPstat
 function rmPstatStep(i) { pstatSteps.splice(i,1); renderPstatSteps(); }
 function renderPstatSteps() {
   const c = document.getElementById('pstat-steps-wrap');
+  if (!c) return;
   if (!pstatSteps.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">No steps — click Add step</div>'; return; }
   c.innerHTML = pstatSteps.map((s,i) => `
     <div class="pstat-row">
@@ -1025,6 +1058,7 @@ function addChemRow() { chemRows.push({name:'',amount:'',unit:'mL',conc:'',concU
 function rmChemRow(i) { chemRows.splice(i,1); renderChemRows(); }
 function renderChemRows() {
   const c = document.getElementById('chem-rows');
+  if (!c) return;
   if (!chemRows.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No chemicals added</div>'; return; }
   const units = ['mL','L','g','mg'];
   const concUnits = ['M','mM','µM','%','g/L','N/A'];
@@ -1827,6 +1861,9 @@ function dlCSV(rows,name){
 function renderAll() { renderExpDb(); renderCompStats(); renderCompList(); }
 
 /* ═══════════ INIT ═══════════ */
+// Expose for console debugging
+window._db = () => db;
+window._sync = () => ({ driveId, fileItemId, accessToken: !!accessToken });
 loadLocal();
 onRegTypeChange();
 renderPstatSteps();
