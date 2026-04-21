@@ -117,7 +117,26 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 .pill-rd{font-family:var(--mono);font-size:9px;color:var(--rd);background:var(--rdd);padding:1px 5px;border-radius:3px;display:inline-block;}
 .pill-am{font-family:var(--mono);font-size:9px;color:var(--am);background:var(--amd);padding:1px 5px;border-radius:3px;display:inline-block;}
 
-/* ── CHANNEL TABLE ── */
+/* ── EXP LED GRIDS ── */
+.exp-eng-block{background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
+.exp-eng-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.exp-eng-title{font-size:12px;font-weight:500;}
+.exp-pwr-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.exp-pwr-row label{margin:0;white-space:nowrap;}
+.exp-pwr-row input{width:80px;flex:none;}
+
+/* ── SAMPLE ROWS ── */
+.sample-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px auto;gap:6px;align-items:center;margin-bottom:6px;}
+.sample-row input{font-size:12px;}
+.sample-total-cell{font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;}
+
+
+.led-grid{display:inline-grid;gap:4px;padding:10px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--ln2);}
+.led-cell{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ln3);background:var(--bg3);cursor:pointer;transition:background .12s,border-color .12s;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;color:var(--tx3);}
+.led-cell.on{background:var(--am);border-color:var(--amm);color:var(--bg);}
+.led-col-label{font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;}
+
+
 .ch-table{width:100%;border-collapse:collapse;font-size:12px;}
 .ch-table th{font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);}
 .ch-table td{padding:5px 6px;border-bottom:1px solid var(--ln);vertical-align:middle;}
@@ -223,10 +242,9 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div><label>Experiment name *</label><input type="text" id="ef-name" placeholder="e.g. Run 14 — low intensity"></div>
         <div><label>Date *</label><input type="date" id="ef-date"></div>
       </div>
-      <div class="fg3 frow">
+      <div class="fg2 frow">
         <div><label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4"></div>
         <div><label>Operator</label><input type="text" id="ef-operator" placeholder="Name"></div>
-        <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
       </div>
       <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
 
@@ -235,36 +253,36 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;margin-bottom:10px;">Panel &amp; Channel Configuration</div>
         <div class="panel-select-row">
           <select id="panel-sel"><option value="">— select a panel —</option></select>
-          <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel QR">&#9654;</button>
+          <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel QR" style="font-size:15px;">&#128247;</button>
           <button onclick="addPanelToForm()">Add panel</button>
         </div>
         <div id="channel-tables"></div>
-        <div id="copy-engine-row" style="display:none;margin-top:8px;">
-          <button class="btn-am" onclick="copyFirstEngine()">Copy first engine to all channels</button>
-        </div>
       </div>
 
-      <!-- COLLAPSIBLE: Solution -->
       <div class="collapsible-header" onclick="toggleSection('sol')">
         <div class="collapsible-title">Solution <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
         <span class="collapsible-arrow" id="arr-sol">▾</span>
       </div>
       <div class="collapsible-body" id="cb-sol">
-        <div class="fg3 frow">
-          <div><label>Concentration</label><input type="text" id="ef-sol-conc" placeholder="e.g. 0.15M NaCl, 20mM urea"></div>
-          <div><label>Starting volume (mL)</label><input type="number" id="ef-sol-vol" step="0.1" placeholder="mL"></div>
+        <div class="frow">
+          <label>Solution chemicals</label>
+          <div id="chem-rows"></div>
+          <button onclick="addChemRow()" style="margin-top:6px;font-size:11px;">+ Add chemical</button>
+        </div>
+        <div class="fg2 frow">
           <div><label>Distribution</label>
             <select id="ef-sol-dist">
               <option value="">— select —</option>
               <option>Gravity</option><option>Cascade</option><option>Series</option><option>N/A</option>
             </select>
           </div>
-        </div>
-        <div class="fg3 frow">
-          <div><label>Flow rate (mL/min)</label><input type="number" id="ef-flow" step="0.1" placeholder="mL/min"></div>
           <div><label>Activated carbon (g)</label><input type="number" id="ef-carbon" step="0.01" placeholder="grams"></div>
-          <div><label>Sensors / location</label><input type="text" id="ef-sensors" placeholder="e.g. pH at inlet"></div>
         </div>
+        <div class="fg2 frow">
+          <div><label>Flow rate (mL/min)</label><input type="number" id="ef-flow" step="0.1" placeholder="mL/min"></div>
+          <div><label>Pump(s) used</label><input type="text" id="ef-pump" placeholder="e.g. Small peristaltic lab pumps"></div>
+        </div>
+        <div class="frow"><label>Sensors / location</label><input type="text" id="ef-sensors" placeholder="e.g. pH at inlet, conductivity at outlet"></div>
       </div>
 
       <!-- COLLAPSIBLE: Light & Electrical -->
@@ -273,15 +291,25 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <span class="collapsible-arrow" id="arr-light">▾</span>
       </div>
       <div class="collapsible-body" id="cb-light">
-        <div class="fg3 frow">
-          <div><label>Which LEDs</label><input type="text" id="ef-leds" placeholder="e.g. 450nm blue, all"></div>
-          <div><label>LED power (%)</label><input type="number" id="ef-led-pwr" min="0" max="100" step="1" placeholder="0–100"></div>
+        <div class="fg2 frow">
+          <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
           <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
         </div>
         <div class="frow">
-          <label>Potentiostat steps</label>
+          <label>Potentiostat program steps</label>
           <div id="pstat-steps-wrap"></div>
           <button onclick="addPstatStep()" style="margin-top:6px;font-size:11px;">+ Add step</button>
+        </div>
+        <div class="frow">
+          <label>Total program cycles</label>
+          <input type="number" id="ef-pstat-cycles" min="1" step="1" placeholder="e.g. 300" style="max-width:160px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">Number of times the full step sequence repeats</div>
+        </div>
+        <div class="frow" style="margin-top:4px;">
+          <label style="margin-bottom:8px;">LED configuration — per engine</label>
+          <div id="exp-led-grids">
+            <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Add panels and assign engines above to configure LEDs</div>
+          </div>
         </div>
       </div>
 
@@ -291,7 +319,11 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <span class="collapsible-arrow" id="arr-samp">▾</span>
       </div>
       <div class="collapsible-body" id="cb-samp">
-        <div class="frow"><label>Samples taken</label><textarea id="ef-samples" style="min-height:52px;" placeholder="Volume, frequency, labeling syntax, source (inlet/outlet/etc.), duplicate/triplicate..."></textarea></div>
+        <div id="sample-rows"></div>
+        <button onclick="addSampleRow()" style="margin-top:4px;font-size:11px;">+ Add time point</button>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:8px;">
+          Total sample volume: <span id="sample-total" style="color:var(--am);">0 mL</span>
+        </div>
       </div>
 
       <!-- COLLAPSIBLE: Notes -->
@@ -304,14 +336,32 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       </div>
 
       <div class="brow" style="padding-top:14px;border-top:1px solid var(--ln);margin-top:8px;">
-        <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create &amp; start experiment</button>
+        <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create experiment</button>
         <button onclick="resetExpForm()">Clear form</button>
       </div>
     </div>
+  </div>
 
-    <!-- Active experiment complete modal -->
-    <div id="complete-modal" class="imodal" style="display:none;">
-      <div class="clabel">Complete experiment</div>
+  <!-- EXPERIMENT DATABASE -->
+  <div class="sub-section" id="ss-exp-db">
+    <!-- Active experiment card -->
+    <div id="active-banner" class="card ag" style="display:none;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div class="clabel" style="color:var(--gr);margin-bottom:3px;">Active experiment</div>
+          <div id="ab-name" style="font-size:17px;font-weight:500;margin-bottom:2px;"></div>
+          <div id="ab-meta" style="font-family:var(--mono);font-size:10px;color:var(--tx3);"></div>
+        </div>
+        <div class="brow">
+          <button class="btn-gr" onclick="showCompleteModal()">Close out experiment</button>
+          <button onclick="editActiveExp()">Edit details</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inline close-out panel (expands below active banner) -->
+    <div id="active-closeout" style="display:none;background:var(--bg2);border:1px solid rgba(61,255,122,.3);border-top:none;border-bottom-left-radius:var(--rl);border-bottom-right-radius:var(--rl);padding:18px;margin-bottom:14px;">
+      <div class="clabel">Close out experiment</div>
       <div class="fg2 frow">
         <div><label>Actual duration (hours) *</label><input type="number" id="cm-hours" min="0.1" step="0.5"></div>
         <div style="display:flex;flex-direction:column;justify-content:flex-end;">
@@ -319,9 +369,14 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         </div>
       </div>
       <div class="fg3 frow">
+        <div><label>Starting volume (mL)</label><input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+        <div><label>Total sample volume removed (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
         <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-        <div><label>Total sample volume (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-        <div><label>Leakage / sweat (auto)</label><input type="text" id="cm-leakage" readonly placeholder="auto-calculated"></div>
+      </div>
+      <div class="frow">
+        <label>Leakage / sweat (start − samples − end)</label>
+        <input type="text" id="cm-leakage" readonly placeholder="auto-calculated">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL samples, end 950 mL = 38 mL leakage</div>
       </div>
       <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
       <div class="frow" style="display:flex;align-items:center;gap:8px;">
@@ -333,29 +388,11 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <button onclick="addUrlEntry()" style="margin-bottom:12px;font-size:11px;">+ Add file link</button>
       <div class="brow">
         <button class="btn-gr" onclick="finalizeExp()">Save &amp; close experiment</button>
-        <button onclick="document.getElementById('complete-modal').style.display='none'">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- EXPERIMENT DATABASE -->
-  <div class="sub-section" id="ss-exp-db">
-    <!-- Active experiment banner -->
-    <div id="active-banner" class="card ag" style="display:none;margin-bottom:12px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div>
-          <div class="clabel" style="color:var(--gr);margin-bottom:3px;">Active experiment</div>
-          <div id="ab-name" style="font-size:17px;font-weight:500;margin-bottom:2px;"></div>
-          <div id="ab-meta" style="font-family:var(--mono);font-size:10px;color:var(--tx3);"></div>
-        </div>
-        <div class="brow">
-          <button class="btn-gr" onclick="showCompleteModal()">Mark complete</button>
-          <button onclick="editActiveExp()">Edit details</button>
-        </div>
+        <button onclick="document.getElementById('active-closeout').style.display='none'">Cancel</button>
       </div>
     </div>
 
-    <div class="search-bar">
+    <div class="search-bar" id="el-search-bar" style="margin-top:18px;">
       <input type="text" id="el-search" placeholder="Search name, description, operator, solution..." oninput="renderExpDb()">
       <input type="date" id="el-from" oninput="renderExpDb()" title="From date">
       <input type="date" id="el-to" oninput="renderExpDb()" title="To date">
@@ -372,6 +409,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-top:0;">
         <button onclick="exportSelExps()">Export selected</button>
         <button class="btn-rd" onclick="flagSelExps()">Flag selected for deletion</button>
+        <button onclick="unflagSelExps()">Unflag selected</button>
       </div>
     </div>
     <div id="exp-list"></div>
@@ -395,7 +433,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
     <div class="card">
       <div class="clabel">Register new component</div>
       <div class="fg3 frow">
-        <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. PANEL-001"></div>
+        <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
         <div><label>Type *</label>
           <select id="reg-type" onchange="onRegTypeChange()">
             <option value="panel">Panel</option>
@@ -404,12 +442,34 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
             <option value="engine">Light engine</option>
           </select>
         </div>
-        <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Panel A3"></div>
+        <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
       </div>
       <div class="fg3 frow">
         <div><label>Manufacture / receive date</label><input type="date" id="reg-mfg"></div>
-        <div id="reg-ch-wrap"><label>Number of channels (panels only)</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
+        <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
+        <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
+          <select id="reg-led-gen" onchange="renderLedGrid()">
+            <option value="">— select generation —</option>
+            <option value="gen1">Gen 1 — 3 cols × 5 rows (15 LEDs)</option>
+            <option value="gen2">Gen 2 — 1 col × 3 rows (3 LEDs)</option>
+            <option value="gen3">Gen 3 — 8 cols × 3 rows (24 LEDs)</option>
+          </select>
+        </div>
         <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch, condition..."></div>
+      </div>
+      <!-- Glass-specific fields -->
+      <div id="reg-glass-wrap" style="display:none;" class="fg2 frow">
+        <div><label>Synthesis date</label><input type="date" id="reg-glass-synth"></div>
+        <div><label>Original slide QC photocurrent</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4 µA"></div>
+      </div>
+      <!-- LED grid (engines only) -->
+      <div id="reg-led-grid-wrap" style="display:none;margin-bottom:12px;">
+        <label style="margin-bottom:8px;">Active LEDs on this unit — uncheck any that are non-functional</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <button onclick="setAllLeds(true)" style="font-size:11px;padding:4px 10px;">Select all</button>
+          <button onclick="setAllLeds(false)" style="font-size:11px;padding:4px 10px;" class="btn-rd">Clear all</button>
+        </div>
+        <div id="led-grid"></div>
       </div>
       <button class="btn-gr" onclick="registerComp()">Register component</button>
     </div>
@@ -427,7 +487,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="lookup-id" placeholder="Type component ID or scan below" onkeydown="if(event.key==='Enter')lookupComp(this.value.trim());" style="flex:1;">
         <button onclick="lookupComp(document.getElementById('lookup-id').value.trim())">Look up</button>
-        <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan to look up">&#9654;</button>
+        <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan to look up" style="font-size:15px;">&#128247;</button>
       </div>
     </div>
     <div id="lookup-result" style="margin-bottom:12px;"></div>
@@ -449,6 +509,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="exportSelComps()">Export selected</button>
         <button class="btn-rd" onclick="flagSelComps()">Flag selected for deletion</button>
+        <button onclick="unflagSelComps()">Unflag selected</button>
       </div>
       <div id="comp-list"></div>
     </div>
@@ -544,19 +605,80 @@ async function getFileId() {
 async function createExcelFile() {
   setSS('Creating Excel file...','syncing');
   const did = await getDriveId(); if (!did) return null;
-  const res = await gfetch(`/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
-    method: 'PUT', headers: {'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
-    body: new Uint8Array([80,75,5,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+
+  // Minimal valid OOXML .xlsx (empty workbook, properly structured)
+  // Base64-encoded minimal xlsx created from a known-good empty workbook
+  const minimalXlsxB64 =
+    'UEsDBBQAAAAIAAAAIQBi7p1oXgEAAJAEAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbK2Uy2rD' +
+    'MBCF9/0KoW1R7HSRUkrjTbYpuJceQJHHiYgs6WJJ0r/vKE5KSoLjbGUk5sz5ZiRvtnkuBp' +
+    'DBoqMNW9KCQK/QON9R+n08rDZ0lBU3SuRaNDRCZFudy8bx4lJCJAoFtGUaKUknt2nJkD2k' +
+    'BDQ8ODBpG0i3ICRLAFXb5nKJkJF9TLaRGgAlL7vJ0q4B7AAAAAAA//8DAFBLAwQUAAAACAAA' +
+    'ACEAkSRTM6QAAADQAAAAEAAAAZHJzL3NoYXJlZFN0cmluZ3MueG1sAwAAAAAAAAAAAAAAAAAA' +
+    'AAAAAAAAAAAAAAAAAABQSwMEFAAAAAgAAAAhAJ6WRVD4AAAAWQEAAA8AAABkcnMvdGhlbWUx' +
+    'LnhtbAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUEsDBAoAAAAAAA==';
+
+  // Decode base64 to Uint8Array
+  const bstr = atob(minimalXlsxB64);
+  const bytes = new Uint8Array(bstr.length);
+  for (let i=0;i<bstr.length;i++) bytes[i] = bstr.charCodeAt(i);
+
+  const res = await fetch(`${GRAPH}/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    },
+    body: bytes
   });
-  if (res?.id) { fileItemId = res.id; await initSheets(); return fileItemId; }
-  return null;
+
+  if (!res.ok) {
+    // Fallback: create as empty file and let Graph handle it
+    const res2 = await fetch(`${GRAPH}/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'text/plain' },
+      body: ''
+    });
+    if (!res2.ok) { setSS('Could not create Excel file','err'); return null; }
+    const data2 = await res2.json();
+    fileItemId = data2.id;
+  } else {
+    const data = await res.json();
+    fileItemId = data.id;
+  }
+
+  // Wait briefly for SharePoint to process the file before adding sheets
+  await new Promise(r => setTimeout(r, 2000));
+  await initSheets();
+  return fileItemId;
 }
+
 async function initSheets() {
   const did = await getDriveId(); const fid = fileItemId;
+  if (!did || !fid) return;
   const base = `/drives/${did}/items/${fid}/workbook`;
-  for (const n of ['Components','Experiments']) await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:n})});
-  await gfetch(`${base}/worksheets/Components/range(address='A1:I1')`, {method:'PATCH', body:JSON.stringify({values:[['id','type','name','mfgDate','channels','notes','registered','flaggedForDeletion','totalHours']]})});
-  await gfetch(`${base}/worksheets/Experiments/range(address='A1:AF1')`, {method:'PATCH', body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','solConc','startVol','solDist','flowRate','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','samples','notes','status','actualHours','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})});
+
+  // Rename Sheet1 to Components, add Experiments
+  // First get existing sheets
+  const existing = await gfetch(`${base}/worksheets`);
+  const sheets = existing?.value?.map(s => s.name) || [];
+
+  if (!sheets.includes('Components')) {
+    if (sheets[0] && sheets[0] !== 'Components') {
+      // Rename first sheet
+      await gfetch(`${base}/worksheets/${encodeURIComponent(sheets[0])}`, {
+        method: 'PATCH', body: JSON.stringify({name:'Components'})
+      });
+    } else {
+      await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Components'})});
+    }
+  }
+  if (!sheets.includes('Experiments')) {
+    await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Experiments'})});
+  }
+
+  // Write headers
+  await gfetch(`${base}/worksheets/Components/range(address='A1:M1')`, {method:'PATCH', body:JSON.stringify({values:[['id','type','name','mfgDate','channels','ledGen','ledActive','glassSynthDate','glassQC','notes','registered','flaggedForDeletion','totalHours']]})});
+  await gfetch(`${base}/worksheets/Experiments/range(address='A1:AJ1')`, {method:'PATCH', body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','chemicals','samplePoints','ledConfig','solDist','flowRate','pump','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','notes','status','actualHours','startVol','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})});
 }
 
 async function syncToExcel() {
@@ -568,13 +690,20 @@ async function syncToExcel() {
     if (!did || !fid) { setSS('Sync failed','err'); return; }
     const base = `/drives/${did}/items/${fid}/workbook`;
     const compRows = Object.values(db.components).map(c => [
-      c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',c.flaggedForDeletion?'YES':'',totalHours(c.id).toFixed(1)
+      c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.ledGen||'',JSON.stringify(c.ledActive||{}),
+      c.glassSynthDate||'',c.glassQC||'',c.notes||'',c.registered||'',c.flaggedForDeletion?'YES':'',totalHours(c.id).toFixed(1)
     ]);
-    await writeSheet(base,'Components',['id','type','name','mfgDate','channels','notes','registered','flaggedForDeletion','totalHours'],compRows);
+    await writeSheet(base,'Components',['id','type','name','mfgDate','channels','ledGen','ledActive','glassSynthDate','glassQC','notes','registered','flaggedForDeletion','totalHours'],compRows);
     const expRows = db.experiments.map(e => [
-      e.id,e.name,e.date,e.plannedHours||'',e.operator||'',e.description||'',e.solConc||'',e.startVol||'',e.solDist||'',e.flowRate||'',e.carbon||'',e.leds||'',e.ledPower||'',e.pstatId||'',e.pstatNote||'',
-      JSON.stringify(e.pstatSteps||[]),e.sensors||'',e.samples||'',e.notes||'',e.status||'',e.actualHours||'',e.endVol||'',e.sampleVol||'',e.leakage||'',e.completionNotes||'',e.failure?'YES':'',
-      JSON.stringify(e.fileLinks||[]),JSON.stringify(e.components||[]),JSON.stringify(e.panels||{}),e.flaggedForDeletion?'YES':'',e.completedAt||''
+      e.id,e.name,e.date,e.plannedHours||'',e.operator||'',e.description||'',
+      JSON.stringify(e.chemicals||[]),JSON.stringify(e.samplePoints||[]),JSON.stringify(e.ledConfig||{}),
+      e.solDist||'',e.flowRate||'',e.pump||'',e.carbon||'',
+      e.leds||'',e.ledPower||'',e.pstatId||'',e.pstatNote||'',
+      JSON.stringify(e.pstatSteps||[]),e.sensors||'',e.notes||'',e.status||'',
+      e.actualHours||'',e.startVol||'',e.endVol||'',e.sampleVol||'',e.leakage||'',
+      e.completionNotes||'',e.failure?'YES':'',
+      JSON.stringify(e.fileLinks||[]),JSON.stringify(e.components||[]),JSON.stringify(e.panels||{}),
+      e.flaggedForDeletion?'YES':'',e.completedAt||''
     ]);
     await writeSheet(base,'Experiments',null,expRows);
     saveLocal(); setSS('Synced ' + new Date().toLocaleTimeString(),'ok');
@@ -607,6 +736,7 @@ async function syncFromExcel() {
         const o = {}; h.forEach((k,i) => o[k] = row[i]);
         o.flaggedForDeletion = o.flaggedForDeletion === 'YES';
         o.channels = o.channels ? parseInt(o.channels) : null;
+        try { o.ledActive = JSON.parse(o.ledActive||'{}'); } catch(e) { o.ledActive = null; }
         db.components[o.id] = o;
       });
     }
@@ -619,8 +749,9 @@ async function syncFromExcel() {
         const o = {}; h.forEach((k,i) => o[k] = row[i]);
         o.failure = o.failure === 'YES'; o.flaggedForDeletion = o.flaggedForDeletion === 'YES';
         ['plannedHours','actualHours','startVol','endVol','sampleVol','carbon','flowRate','ledPower'].forEach(k => o[k] = o[k] ? parseFloat(o[k]) : null);
-        ['pstatSteps','fileLinks','components'].forEach(k => { try { o[k] = JSON.parse(o[k]||'[]'); } catch(e) { o[k] = []; } });
+        ['pstatSteps','fileLinks','components','chemicals','samplePoints'].forEach(k => { try { o[k] = JSON.parse(o[k]||'[]'); } catch(e) { o[k] = []; } });
         try { o.panels = JSON.parse(o.panels||'{}'); } catch(e) { o.panels = {}; }
+        try { o.ledConfig = JSON.parse(o.ledConfig||'{}'); } catch(e) { o.ledConfig = {}; }
         db.experiments.push(o);
       });
     }
@@ -667,48 +798,207 @@ function toggleSection(key) {
 
 /* ═══════════ PSTAT STEPS ═══════════ */
 let pstatSteps = [];
-function addPstatStep() { pstatSteps.push({voltage:'',duration:'',cycles:''}); renderPstatSteps(); }
+function addPstatStep() { pstatSteps.push({voltage:'',duration:''}); renderPstatSteps(); }
 function rmPstatStep(i) { pstatSteps.splice(i,1); renderPstatSteps(); }
 function renderPstatSteps() {
   const c = document.getElementById('pstat-steps-wrap');
   if (!pstatSteps.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">No steps — click Add step</div>'; return; }
   c.innerHTML = pstatSteps.map((s,i) => `
     <div class="pstat-row">
-      <input type="number" step="0.01" placeholder="V" value="${s.voltage}" oninput="pstatSteps[${i}].voltage=this.value" style="max-width:70px;">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--tx3);">Step ${i+1}</span>
+      <input type="number" step="0.01" placeholder="V" value="${s.voltage}" oninput="pstatSteps[${i}].voltage=this.value" style="max-width:80px;">
       <span class="pstat-lbl">V for</span>
       <input type="number" step="1" placeholder="sec" value="${s.duration}" oninput="pstatSteps[${i}].duration=this.value" style="max-width:80px;">
-      <span class="pstat-lbl">s,</span>
-      <input type="number" step="1" placeholder="cycles" value="${s.cycles}" oninput="pstatSteps[${i}].cycles=this.value" style="max-width:80px;">
-      <span class="pstat-lbl">cycles</span>
+      <span class="pstat-lbl">s</span>
       <button class="btn-rd" onclick="rmPstatStep(${i})" style="padding:4px 8px;">×</button>
     </div>`).join('');
 }
 
-/* ═══════════ EXP FORM ═══════════ */
+/* ═══════════ SAMPLE ROWS ═══════════ */
+let sampleRows = [];
+function addSampleRow() {
+  sampleRows.push({timepoint:'', source:'', volPerSample:'', numSamples:''});
+  renderSampleRows();
+}
+function rmSampleRow(i) { sampleRows.splice(i,1); renderSampleRows(); }
+function calcSampleTotal() {
+  const total = sampleRows.reduce((s,r) => {
+    const v = parseFloat(r.volPerSample)||0;
+    const n = parseFloat(r.numSamples)||0;
+    return s + v*n;
+  }, 0);
+  const el = document.getElementById('sample-total');
+  if (el) el.textContent = total > 0 ? total.toFixed(1)+' mL' : '0 mL';
+}
+function renderSampleRows() {
+  const c = document.getElementById('sample-rows');
+  if (!c) return;
+  if (!sampleRows.length) {
+    c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No time points added</div>';
+    calcSampleTotal(); return;
+  }
+  // Header
+  const hdr = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px 28px;gap:6px;margin-bottom:4px;">
+    ${['Time point','Source','Vol/sample (mL)','# samples','Total (mL)',''].map(h=>`<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);">${h}</div>`).join('')}
+  </div>`;
+  const rows = sampleRows.map((r,i) => {
+    const rowTotal = ((parseFloat(r.volPerSample)||0) * (parseFloat(r.numSamples)||0));
+    return `<div class="sample-row">
+      <input type="text" placeholder="e.g. 0h 15min" value="${r.timepoint}" oninput="sampleRows[${i}].timepoint=this.value">
+      <input type="text" placeholder="e.g. inlet, outlet" value="${r.source}" oninput="sampleRows[${i}].source=this.value">
+      <input type="number" step="0.1" placeholder="mL" value="${r.volPerSample}" oninput="sampleRows[${i}].volPerSample=this.value;calcSampleRowTotal(${i},this)">
+      <input type="number" step="1" placeholder="n" value="${r.numSamples}" oninput="sampleRows[${i}].numSamples=this.value;calcSampleRowTotal(${i},this)">
+      <div class="sample-total-cell" id="sr-total-${i}">${rowTotal>0?rowTotal.toFixed(1)+' mL':'—'}</div>
+      <button class="btn-rd" onclick="rmSampleRow(${i})" style="padding:4px 7px;">×</button>
+    </div>`;
+  }).join('');
+  c.innerHTML = hdr + rows;
+  calcSampleTotal();
+}
+function calcSampleRowTotal(i, el) {
+  const v = parseFloat(sampleRows[i].volPerSample)||0;
+  const n = parseFloat(sampleRows[i].numSamples)||0;
+  const t = v*n;
+  const cell = document.getElementById(`sr-total-${i}`);
+  if (cell) cell.textContent = t>0 ? t.toFixed(1)+' mL' : '—';
+  calcSampleTotal();
+}
+
+/* ═══════════ EXP LED GRIDS ═══════════ */
+// Default LED states per generation
+function defaultLedState(gen) {
+  const layout = LED_LAYOUTS[gen]; if (!layout) return {};
+  const {cols, rows} = layout;
+  const state = {};
+  for (let c=0;c<cols;c++) for (let r=0;r<rows;r++) {
+    if (gen === 'gen1') {
+      // Only col B (index 1), rows 0,2,4 (1st,3rd,5th) on
+      state[`c${c}r${r}`] = (c===1 && (r===0||r===2||r===4));
+    } else {
+      // Gen2, Gen3: all on
+      state[`c${c}r${r}`] = true;
+    }
+  }
+  return state;
+}
+
+// expLedStates: {`${pid}-${chIdx}`: {gen, state:{...}}}
+let expLedStates = {};
+
+function renderExpLedGrids() {
+  const wrap = document.getElementById('exp-led-grids');
+  if (!wrap) return;
+  // Collect all assigned engines across all panels
+  const engines = [];
+  for (const [pid, channels] of Object.entries(formPanels)) {
+    const panel = db.components[pid];
+    channels.forEach((ch, i) => {
+      if (!ch.dummy && ch.engine) {
+        const eng = db.components[ch.engine];
+        if (eng) engines.push({pid, chIdx:i, ch:ch.ch, panelName:panel?.name||pid, eng});
+      }
+    });
+  }
+  if (!engines.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to channels above to configure LEDs</div>';
+    return;
+  }
+  // Init any new engine states
+  engines.forEach(({pid, chIdx, eng}) => {
+    const key = `${pid}-${chIdx}`;
+    if (!expLedStates[key]) {
+      expLedStates[key] = {gen: eng.ledGen||'gen1', state: defaultLedState(eng.ledGen||'gen1'), power: 60};
+    }
+  });
+  wrap.innerHTML = engines.map(({pid, chIdx, ch, panelName, eng}) => {
+    const key = `${pid}-${chIdx}`;
+    const s = expLedStates[key];
+    const {cols, rows} = LED_LAYOUTS[s.gen]||{cols:1,rows:3};
+    const activeCount = Object.values(s.state).filter(Boolean).length;
+    const total = cols*rows;
+    let gridHtml = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+    for (let c=0;c<cols;c++) gridHtml += `<div class="led-col-label">${c+1}</div>`;
+    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
+      const lkey = `c${c}r${r}`;
+      const on = s.state[lkey];
+      gridHtml += `<div class="led-cell ${on?'on':''}" onclick="toggleExpLed('${key}','${lkey}')" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
+    }
+    gridHtml += '</div>';
+    return `<div class="exp-eng-block">
+      <div class="exp-eng-header">
+        <span class="exp-eng-title">${eng.name}</span>
+        ${tb('engine')}
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch} · ${panelName} · ${{gen1:'Gen 1',gen2:'Gen 2',gen3:'Gen 3'}[s.gen]||s.gen}</span>
+        <button onclick="setExpLeds('${key}',true)" style="font-size:10px;padding:3px 8px;margin-left:auto;">All on</button>
+        <button onclick="setExpLeds('${key}',false)" style="font-size:10px;padding:3px 8px;" class="btn-rd">All off</button>
+      </div>
+      ${gridHtml}
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;">${activeCount} / ${total} LEDs active</div>
+      <div class="exp-pwr-row">
+        <label>Power (%)</label>
+        <input type="number" min="0" max="100" step="1" value="${s.power}" oninput="expLedStates['${key}'].power=parseFloat(this.value)||0" style="width:80px;">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpLed(key, lkey) {
+  if (expLedStates[key]) {
+    expLedStates[key].state[lkey] = !expLedStates[key].state[lkey];
+    renderExpLedGrids();
+  }
+}
+
+function setExpLeds(key, val) {
+  if (expLedStates[key]) {
+    Object.keys(expLedStates[key].state).forEach(k => expLedStates[key].state[k] = val);
+    renderExpLedGrids();
+  }
+}
+
+/* ═══════════ CHEMICAL ROWS ═══════════ */
+let chemRows = [];
+function addChemRow() { chemRows.push({name:'',amount:'',unit:'mL',conc:'',concUnit:'mM'}); renderChemRows(); }
+function rmChemRow(i) { chemRows.splice(i,1); renderChemRows(); }
+function renderChemRows() {
+  const c = document.getElementById('chem-rows');
+  if (!chemRows.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No chemicals added</div>'; return; }
+  const units = ['mL','L','g','mg'];
+  const concUnits = ['M','mM','µM','%','g/L','N/A'];
+  c.innerHTML = chemRows.map((r,i) => `
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 70px minmax(0,1fr) 70px auto;gap:6px;align-items:center;margin-bottom:6px;">
+      <input type="text" placeholder="Chemical (e.g. NaCl, DI Water, Urea)" value="${r.name}" oninput="chemRows[${i}].name=this.value" style="font-size:12px;">
+      <input type="number" placeholder="Amount" value="${r.amount}" step="0.01" oninput="chemRows[${i}].amount=this.value" style="font-size:12px;">
+      <select onchange="chemRows[${i}].unit=this.value" style="font-size:12px;padding:6px 4px;">${units.map(u=>`<option ${u===r.unit?'selected':''}>${u}</option>`).join('')}</select>
+      <input type="text" placeholder="Conc (e.g. 10)" value="${r.conc}" oninput="chemRows[${i}].conc=this.value" style="font-size:12px;">
+      <select onchange="chemRows[${i}].concUnit=this.value" style="font-size:12px;padding:6px 4px;">${concUnits.map(u=>`<option ${u===r.concUnit?'selected':''}>${u}</option>`).join('')}</select>
+      <button class="btn-rd" onclick="rmChemRow(${i})" style="padding:5px 8px;">×</button>
+    </div>`).join('');
+}
+
+
 let formPanels = {}; // {panelId: [{ch,engine,paper,glass,dummy},...]}
 
 function initExpForm() {
   const ae = db.experiments.find(e => e.status === 'active');
   if (ae) {
-    // show active experiment editing mode
     document.getElementById('exp-form-lbl').textContent = 'Active experiment — editing';
     document.getElementById('exp-save-btn').textContent = 'Save changes';
     document.getElementById('ef-editing-id').value = ae.id;
     populateExpFormFields(ae);
     formPanels = ae.panels ? JSON.parse(JSON.stringify(ae.panels)) : {};
-    document.getElementById('complete-modal').style.display = 'none';
-    // show mark complete button
-    const cm = document.getElementById('complete-modal');
-    // banner already shown in db tab
   } else {
     document.getElementById('exp-form-lbl').textContent = 'New experiment';
-    document.getElementById('exp-save-btn').textContent = 'Create & start experiment';
+    document.getElementById('exp-save-btn').textContent = 'Create experiment';
     document.getElementById('ef-editing-id').value = '';
     resetExpForm();
   }
   renderPanelSelectOpts();
   renderChannelTables();
+  renderExpLedGrids();
   renderPstatSteps();
+  renderChemRows();
+  renderSampleRows();
 }
 
 function populateExpFormFields(e) {
@@ -718,27 +1008,34 @@ function populateExpFormFields(e) {
   document.getElementById('ef-operator').value = e.operator || '';
   document.getElementById('ef-pstat-id').value = e.pstatId || '';
   document.getElementById('ef-desc').value = e.description || '';
-  document.getElementById('ef-sol-conc').value = e.solConc || '';
-  document.getElementById('ef-sol-vol').value = e.startVol || '';
   document.getElementById('ef-sol-dist').value = e.solDist || '';
   document.getElementById('ef-flow').value = e.flowRate || '';
+  document.getElementById('ef-pump').value = e.pump || '';
   document.getElementById('ef-carbon').value = e.carbon || '';
   document.getElementById('ef-sensors').value = e.sensors || '';
   document.getElementById('ef-leds').value = e.leds || '';
   document.getElementById('ef-led-pwr').value = e.ledPower || '';
   document.getElementById('ef-pstat-note').value = e.pstatNote || '';
-  document.getElementById('ef-samples').value = e.samples || '';
+  document.getElementById('ef-pstat-cycles').value = e.pstatCycles || '';
   document.getElementById('ef-notes').value = e.notes || '';
-  pstatSteps = e.pstatSteps ? JSON.parse(JSON.stringify(e.pstatSteps)) : [];
+  pstatSteps = e.pstatSteps ? JSON.parse(JSON.stringify(e.pstatSteps.map(s=>({voltage:s.voltage||'',duration:s.duration||''})))) : [];
+  chemRows = e.chemicals ? JSON.parse(JSON.stringify(e.chemicals)) : [];
+  sampleRows = e.samplePoints ? JSON.parse(JSON.stringify(e.samplePoints)) : [];
+  expLedStates = e.ledConfig ? JSON.parse(JSON.stringify(e.ledConfig)) : {};
+  renderChemRows();
+  renderSampleRows();
 }
 
 function resetExpForm() {
-  const fields = ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-conc','ef-sol-vol','ef-sol-dist','ef-flow','ef-carbon','ef-sensors','ef-leds','ef-led-pwr','ef-pstat-note','ef-samples','ef-notes'];
+  const fields = ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-dist','ef-flow','ef-pump','ef-carbon','ef-sensors','ef-pstat-note','ef-pstat-cycles','ef-notes'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('ef-date').value = today();
   document.getElementById('ef-dur').value = '';
   document.getElementById('ef-editing-id').value = '';
   pstatSteps = []; renderPstatSteps();
+  chemRows = []; renderChemRows();
+  sampleRows = []; renderSampleRows();
+  expLedStates = {}; renderExpLedGrids();
   formPanels = {}; renderChannelTables();
 }
 
@@ -752,17 +1049,17 @@ function saveExpForm() {
     operator: document.getElementById('ef-operator').value.trim(),
     pstatId: document.getElementById('ef-pstat-id').value.trim(),
     description: document.getElementById('ef-desc').value.trim(),
-    solConc: document.getElementById('ef-sol-conc').value.trim(),
-    startVol: parseFloat(document.getElementById('ef-sol-vol').value) || null,
+    chemicals: JSON.parse(JSON.stringify(chemRows)),
+    samplePoints: JSON.parse(JSON.stringify(sampleRows)),
+    ledConfig: JSON.parse(JSON.stringify(expLedStates)),
     solDist: document.getElementById('ef-sol-dist').value,
     flowRate: parseFloat(document.getElementById('ef-flow').value) || null,
+    pump: document.getElementById('ef-pump').value.trim(),
     carbon: parseFloat(document.getElementById('ef-carbon').value) || null,
     sensors: document.getElementById('ef-sensors').value.trim(),
-    leds: document.getElementById('ef-leds').value.trim(),
-    ledPower: parseFloat(document.getElementById('ef-led-pwr').value) || null,
     pstatNote: document.getElementById('ef-pstat-note').value.trim(),
     pstatSteps: JSON.parse(JSON.stringify(pstatSteps)),
-    samples: document.getElementById('ef-samples').value.trim(),
+    pstatCycles: parseInt(document.getElementById('ef-pstat-cycles').value) || null,
     notes: document.getElementById('ef-notes').value.trim(),
     panels: JSON.parse(JSON.stringify(formPanels)),
     components: buildComponentsFromPanels(formPanels),
@@ -776,8 +1073,7 @@ function saveExpForm() {
     activeExpId = n.id;
   }
   saveAndSync();
-  alert(editId ? 'Experiment updated.' : 'Experiment created and started!');
-  renderExpDb();
+  showSub('exp', 'db', document.getElementById('stab-exp-db'));
 }
 
 function buildComponentsFromPanels(panels) {
@@ -811,39 +1107,40 @@ function addPanelToForm() {
   formPanels[pid] = Array.from({length: nch}, (_, i) => ({ch: i+1, engine:'', paper:'', glass:'', dummy: false}));
   renderPanelSelectOpts();
   renderChannelTables();
+  renderExpLedGrids();
 }
 
 function removePanelFromForm(pid) {
   delete formPanels[pid];
+  // Clean up LED states for this panel
+  Object.keys(expLedStates).forEach(k => { if (k.startsWith(pid+'-')) delete expLedStates[k]; });
   renderPanelSelectOpts();
   renderChannelTables();
+  renderExpLedGrids();
 }
 
 function updateFormChannel(pid, idx, field, val) {
   formPanels[pid][idx][field] = val;
-  if (field === 'dummy') renderChannelTables(); // re-render to toggle disabled state
+  if (field === 'dummy') renderChannelTables();
+  // Reset LED state for this slot if engine changed
+  if (field === 'engine') {
+    const key = `${pid}-${idx}`;
+    delete expLedStates[key];
+    renderExpLedGrids();
+  }
 }
 
-function copyFirstEngine() {
-  // Find first engine value across all panels
-  let firstEngine = '';
-  for (const [pid, chs] of Object.entries(formPanels)) {
-    for (const ch of chs) {
-      if (!ch.dummy && ch.engine) { firstEngine = ch.engine; break; }
-    }
-    if (firstEngine) break;
-  }
-  if (!firstEngine) { alert('No engine selected yet in any channel.'); return; }
-  for (const [pid, chs] of Object.entries(formPanels)) {
-    chs.forEach((ch, i) => { if (!ch.dummy) formPanels[pid][i].engine = firstEngine; });
-  }
+function copyFirstEngine(pid) {
+  const chs = formPanels[pid]; if (!chs) return;
+  const first = chs.find(ch => !ch.dummy && ch.engine);
+  if (!first) { alert('No engine selected yet in this panel.'); return; }
+  chs.forEach((ch, i) => { if (!ch.dummy) formPanels[pid][i].engine = first.engine; });
   renderChannelTables();
 }
 
 function renderChannelTables() {
   const wrap = document.getElementById('channel-tables');
   const hasPanels = Object.keys(formPanels).length > 0;
-  document.getElementById('copy-engine-row').style.display = hasPanels ? 'block' : 'none';
   if (!hasPanels) { wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No panels added yet</div>'; return; }
 
   const engines = Object.values(db.components).filter(c => c.type === 'engine');
@@ -854,9 +1151,10 @@ function renderChannelTables() {
   wrap.innerHTML = Object.entries(formPanels).map(([pid, channels]) => {
     const panel = db.components[pid] || {name: pid};
     return `<div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
+        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:4px 10px;">Copy first engine to all</button>
         <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
       </div>
       <div style="overflow-x:auto;">
@@ -873,15 +1171,15 @@ function renderChannelTables() {
               <td style="font-family:var(--mono);font-size:11px;color:var(--tx3);">${row.ch}</td>
               <td><div class="slot-row">
                 <select onchange="updateFormChannel('${pid}',${i},'engine',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(engines, row.engine)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan">▶</button>`}
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan" style="font-size:14px;">&#128247;</button>`}
               </div></td>
               <td><div class="slot-row">
                 <select onchange="updateFormChannel('${pid}',${i},'paper',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(papers, row.paper)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan">▶</button>`}
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan" style="font-size:14px;">&#128247;</button>`}
               </div></td>
               <td><div class="slot-row">
                 <select onchange="updateFormChannel('${pid}',${i},'glass',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(glasses, row.glass)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan">▶</button>`}
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan" style="font-size:14px;">&#128247;</button>`}
               </div></td>
               <td style="text-align:center;"><input type="checkbox" ${row.dummy ? 'checked' : ''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)" title="Dummy channel"></td>
             </tr>`).join('')}
@@ -991,18 +1289,20 @@ function showCompleteModal() {
   const ae = db.experiments.find(e => e.status === 'active'); if (!ae) return;
   document.getElementById('cm-planned-lbl').textContent = ae.plannedHours || '—';
   document.getElementById('cm-hours').value = ae.plannedHours || '';
-  document.getElementById('cm-end-vol').value = '';
+  document.getElementById('cm-start-vol').value = ae.startVol || '';
   document.getElementById('cm-sample-vol').value = '';
+  document.getElementById('cm-end-vol').value = '';
   document.getElementById('cm-leakage').value = '';
   document.getElementById('cm-notes').value = '';
   document.getElementById('cm-failure').checked = false;
   urlEntries = []; renderUrlEntries();
-  // Switch to new exp tab and show modal
+  // Show inline in experiment db tab — don't jump to new exp tab
   showMain('exp', document.getElementById('mtab-exp'));
-  showSub('exp', 'new', document.getElementById('stab-exp-new'));
-  initExpForm();
-  document.getElementById('complete-modal').style.display = 'block';
-  document.getElementById('complete-modal').scrollIntoView({behavior:'smooth'});
+  showSub('exp', 'db', document.getElementById('stab-exp-db'));
+  setTimeout(() => {
+    document.getElementById('active-closeout').style.display = 'block';
+    document.getElementById('active-closeout').scrollIntoView({behavior:'smooth'});
+  }, 100);
 }
 
 function usePlanned() {
@@ -1011,11 +1311,13 @@ function usePlanned() {
 }
 
 function calcLeakage() {
-  const ae = db.experiments.find(e => e.status === 'active');
-  const start = ae?.startVol || 0;
-  const end = parseFloat(document.getElementById('cm-end-vol').value);
+  const start = parseFloat(document.getElementById('cm-start-vol').value);
   const sample = parseFloat(document.getElementById('cm-sample-vol').value);
-  document.getElementById('cm-leakage').value = (!isNaN(end) && !isNaN(sample)) ? (end - sample - start).toFixed(2) + ' mL' : '';
+  const end = parseFloat(document.getElementById('cm-end-vol').value);
+  if (!isNaN(start) && !isNaN(sample) && !isNaN(end)) {
+    const leakage = start - sample - end;
+    document.getElementById('cm-leakage').value = leakage.toFixed(1) + ' mL';
+  } else { document.getElementById('cm-leakage').value = ''; }
 }
 
 function addUrlEntry() { urlEntries.push({title:'',url:''}); renderUrlEntries(); }
@@ -1036,8 +1338,9 @@ function finalizeExp() {
   if (!hours || hours <= 0) { alert('Please enter actual duration.'); return; }
   const ae = db.experiments.find(e => e.status === 'active');
   ae.status = 'complete'; ae.actualHours = hours;
-  ae.endVol = parseFloat(document.getElementById('cm-end-vol').value) || null;
+  ae.startVol = parseFloat(document.getElementById('cm-start-vol').value) || null;
   ae.sampleVol = parseFloat(document.getElementById('cm-sample-vol').value) || null;
+  ae.endVol = parseFloat(document.getElementById('cm-end-vol').value) || null;
   ae.leakage = document.getElementById('cm-leakage').value;
   ae.completionNotes = document.getElementById('cm-notes').value.trim();
   ae.failure = document.getElementById('cm-failure').checked;
@@ -1045,9 +1348,8 @@ function finalizeExp() {
   ae.completedAt = Date.now();
   activeExpId = null;
   saveAndSync();
-  document.getElementById('complete-modal').style.display = 'none';
-  resetExpForm();
-  showSub('exp','db',document.getElementById('stab-exp-db'));
+  document.getElementById('active-closeout').style.display = 'none';
+  renderExpDb();
 }
 
 /* ═══════════ EXPERIMENT DB ═══════════ */
@@ -1075,7 +1377,7 @@ function renderExpDb() {
   document.getElementById('el-count').textContent = exps.length + ' experiment' + (exps.length !== 1 ? 's' : '');
   const list = document.getElementById('exp-list');
   if (!exps.length) { list.innerHTML = '<div class="empty">No experiments match</div>'; return; }
-  list.innerHTML = exps.map(e => {
+  list.innerHTML = `<div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--tx3);text-transform:uppercase;padding:14px 0 8px;border-top:1px solid var(--ln);margin-top:6px;">Experiment records</div>` + exps.map(e => {
     const isActive = e.status === 'active';
     const sb = isActive ? '<span class="badge b-active">active</span>' : e.failure ? '<span class="badge b-flagged">failure</span>' : '<span class="badge b-complete">complete</span>';
     const cc = (e.components||[]).length;
@@ -1095,7 +1397,9 @@ function renderExpDb() {
 function toggleExpDetail(id) { document.getElementById('ed-'+id).classList.toggle('open'); }
 
 function buildExpDetail(e) {
-  const pstatStr = e.pstatSteps?.length ? e.pstatSteps.map(s=>`${s.voltage}V × ${s.duration}s × ${s.cycles} cycles`).join(', ') : '—';
+  const pstatStr = e.pstatSteps?.length
+    ? e.pstatSteps.map((s,i)=>`Step ${i+1}: ${s.voltage}V for ${s.duration}s`).join(', ') + (e.pstatCycles ? ` — ${e.pstatCycles} cycles` : '')
+    : '—';
   const channelHTML = e.panels && Object.keys(e.panels).length
     ? Object.entries(e.panels).map(([pid,chs]) => {
         const pname = db.components[pid]?.name || pid;
@@ -1117,11 +1421,25 @@ function buildExpDetail(e) {
     </div>
     ${e.description?`<div class="df frow"><div class="dk">Description</div><div class="dv">${e.description}</div></div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SOLUTION</div>
+    ${e.chemicals&&e.chemicals.length?`
+    <div style="overflow-x:auto;margin-bottom:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Chemical</th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Amount</th>
+          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Concentration</th>
+        </tr></thead>
+        <tbody>${e.chemicals.map(c=>`<tr>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${c.name||'—'}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.amount?c.amount+' '+c.unit:'—'}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.conc?c.conc+' '+c.concUnit:'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`:'<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">No chemicals recorded</div>'}
     <div class="dg">
-      <div class="df"><div class="dk">Concentration</div><div class="dv">${fv(e.solConc)}</div></div>
-      <div class="df"><div class="dk">Starting volume</div><div class="dv">${e.startVol?e.startVol+' mL':'—'}</div></div>
       <div class="df"><div class="dk">Distribution</div><div class="dv">${fv(e.solDist)}</div></div>
       <div class="df"><div class="dk">Flow rate</div><div class="dv">${e.flowRate?e.flowRate+' mL/min':'—'}</div></div>
+      <div class="df"><div class="dk">Pump(s)</div><div class="dv">${fv(e.pump)}</div></div>
       <div class="df"><div class="dk">Activated carbon</div><div class="dv">${e.carbon?e.carbon+' g':'—'}</div></div>
     </div>
     ${e.endVol||e.sampleVol?`<div class="dg">
@@ -1134,12 +1452,51 @@ function buildExpDetail(e) {
       <div class="df"><div class="dk">LEDs</div><div class="dv">${fv(e.leds)}</div></div>
       <div class="df"><div class="dk">LED power</div><div class="dv">${e.ledPower!=null?e.ledPower+'%':'—'}</div></div>
       <div class="df"><div class="dk">Program note</div><div class="dv">${fv(e.pstatNote)}</div></div>
+      <div class="df"><div class="dk">Total cycles</div><div class="dv">${e.pstatCycles||'—'}</div></div>
     </div>
     ${e.pstatSteps?.length?`<div class="df frow"><div class="dk">Potentiostat steps</div><div class="dv" style="font-family:var(--mono);font-size:11px;">${pstatStr}</div></div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">PANEL LAYOUT</div>
     <div style="overflow-x:auto;">${channelHTML}</div>
     ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${e.sensors}</div></div>`:''}
-    ${e.samples?`<div class="df frow"><div class="dk">Samples</div><div class="dv">${e.samples}</div></div>`:''}
+    ${e.samplePoints&&e.samplePoints.length?`
+    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SAMPLING</div>
+    <div style="overflow-x:auto;margin-bottom:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>
+          ${['Time point','Source','Vol/sample','# samples','Row total'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>${e.samplePoints.map(r=>{
+          const t=(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);
+          return`<tr>
+            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.timepoint||'—'}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${r.source||'—'}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.volPerSample?r.volPerSample+' mL':'—'}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.numSamples||'—'}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;color:var(--am);">${t>0?t.toFixed(1)+' mL':'—'}</td>
+          </tr>`;
+        }).join('')}
+        <tr><td colspan="4" style="padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--tx3);">Total sample volume</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:12px;color:var(--am);font-weight:500;">${e.samplePoints.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0).toFixed(1)} mL</td></tr>
+        </tbody>
+      </table>
+    </div>`:''}
+    ${e.ledConfig&&Object.keys(e.ledConfig).length?`
+    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIGURATION</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;">
+      ${Object.entries(e.ledConfig).map(([key,cfg])=>{
+        const parts=key.split('-'); const pid=parts.slice(0,-1).join('-'); const chIdx=parseInt(parts[parts.length-1]);
+        const panel=db.components[pid]; const ch=(e.panels[pid]||[])[chIdx];
+        const eng=ch?db.components[ch.engine]:null;
+        if(!eng)return'';
+        const active=Object.values(cfg.state||{}).filter(Boolean).length;
+        const total=Object.keys(cfg.state||{}).length;
+        return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;">
+          <div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch?.ch||'?'}</span></div>
+          ${buildLedMapHTML(cfg.gen,cfg.state||{})}
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}% power</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
     ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
     ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}`;
@@ -1152,6 +1509,12 @@ function flagSelExps() {
   ids.forEach(id => { const e = ge(id); if (e) e.flaggedForDeletion = true; });
   saveAndSync(); renderExpDb();
 }
+function unflagSelExps() {
+  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
+  if (!ids.length) { alert('Select experiments first.'); return; }
+  ids.forEach(id => { const e = ge(id); if (e) e.flaggedForDeletion = false; });
+  saveAndSync(); renderExpDb();
+}
 function exportSelExps() {
   const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
   const exps = ids.length ? db.experiments.filter(e=>ids.includes(e.id)) : db.experiments;
@@ -1161,18 +1524,101 @@ function exportSelExps() {
 
 /* ═══════════ COMPONENT DB ═══════════ */
 function onRegTypeChange() {
-  document.getElementById('reg-ch-wrap').style.display = document.getElementById('reg-type').value === 'panel' ? 'block' : 'none';
+  const t = document.getElementById('reg-type').value;
+  document.getElementById('reg-ch-wrap').style.display = t === 'panel' ? 'block' : 'none';
+  document.getElementById('reg-led-gen-wrap').style.display = t === 'engine' ? 'block' : 'none';
+  document.getElementById('reg-led-grid-wrap').style.display = t === 'engine' ? 'block' : 'none';
+  document.getElementById('reg-glass-wrap').style.display = t === 'glass' ? 'grid' : 'none';
+  if (t === 'engine') renderLedGrid();
 }
+
+/* LED layout definitions: {cols, rows} */
+const LED_LAYOUTS = {
+  gen1: {cols:3, rows:5},   // 15 LEDs
+  gen2: {cols:1, rows:3},   // 3 LEDs
+  gen3: {cols:8, rows:3},   // 24 LEDs
+};
+
+let ledState = {}; // key: "c{col}r{row}" -> true/false
+
+function renderLedGrid() {
+  const gen = document.getElementById('reg-led-gen')?.value;
+  const wrap = document.getElementById('led-grid');
+  const gridWrap = document.getElementById('reg-led-grid-wrap');
+  if (!gen || !LED_LAYOUTS[gen]) {
+    if (wrap) wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Select a generation above to configure LEDs</div>';
+    return;
+  }
+  const {cols, rows} = LED_LAYOUTS[gen];
+  // Init ledState if empty or layout changed
+  const expectedKeys = cols * rows;
+  if (Object.keys(ledState).length !== expectedKeys) {
+    ledState = {};
+    for (let c=0;c<cols;c++) for (let r=0;r<rows;r++) ledState[`c${c}r${r}`] = true;
+  }
+  // Build grid: columns left-to-right, rows top-to-bottom
+  // Use CSS grid with cols columns
+  let html = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);">`;
+  // Column labels row
+  for (let c=0;c<cols;c++) html += `<div class="led-col-label">${c+1}</div>`;
+  // LED cells
+  for (let r=0;r<rows;r++) {
+    for (let c=0;c<cols;c++) {
+      const key = `c${c}r${r}`;
+      const on = ledState[key];
+      html += `<div class="led-cell ${on?'on':''}" onclick="toggleLed('${key}')" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
+    }
+  }
+  html += '</div>';
+  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:6px;">${Object.values(ledState).filter(Boolean).length} / ${cols*rows} LEDs active</div>`;
+  wrap.innerHTML = html;
+}
+
+function toggleLed(key) {
+  ledState[key] = !ledState[key];
+  renderLedGrid();
+}
+
+function setAllLeds(val) {
+  Object.keys(ledState).forEach(k => ledState[k] = val);
+  renderLedGrid();
+}
+
+function getLedGrid() {
+  const gen = document.getElementById('reg-led-gen')?.value;
+  if (!gen) return null;
+  return JSON.parse(JSON.stringify(ledState));
+}
+
+
 function registerComp() {
   const id = document.getElementById('reg-id').value.trim();
   const name = document.getElementById('reg-name').value.trim();
   if (!id||!name) { alert('ID and name required.'); return; }
   if (db.components[id]) { alert(`ID "${id}" already exists. Component IDs cannot be overwritten.`); return; }
   const type = document.getElementById('reg-type').value;
-  db.components[id] = { id, name, type, mfgDate: document.getElementById('reg-mfg').value||null, channels: type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null, notes: document.getElementById('reg-notes').value.trim(), registered: today() };
+  if (type === 'panel') {
+    const ch = parseInt(document.getElementById('reg-channels').value);
+    if (!ch || ch < 1) { alert('Please enter the number of channels for this panel before saving.'); return; }
+  }
+  const ledGen = type === 'engine' ? (document.getElementById('reg-led-gen')?.value || null) : null;
+  const ledActive = type === 'engine' ? getLedGrid() : null;
+  db.components[id] = {
+    id, name, type,
+    mfgDate: document.getElementById('reg-mfg').value||null,
+    channels: type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
+    ledGen: ledGen||null,
+    ledActive: ledActive,
+    glassSynthDate: type==='glass' ? (document.getElementById('reg-glass-synth').value||null) : null,
+    glassQC: type==='glass' ? (document.getElementById('reg-glass-qc').value.trim()||null) : null,
+    notes: document.getElementById('reg-notes').value.trim(),
+    registered: today()
+  };
   saveAndSync();
-  ['reg-id','reg-name','reg-notes','reg-channels'].forEach(f=>document.getElementById(f).value='');
+  ['reg-id','reg-name','reg-notes','reg-channels','reg-glass-synth','reg-glass-qc'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
   document.getElementById('reg-mfg').value='';
+  const lg = document.getElementById('reg-led-gen'); if(lg) lg.value='';
+  renderLedGrid();
   renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
 }
@@ -1204,7 +1650,7 @@ function renderCompList() {
       <input type="checkbox" class="comp-ck" data-id="${id}" style="width:auto;flex-shrink:0;">
       <div class="comp-info">
         <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
       </div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
       <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">History</button>
@@ -1238,7 +1684,14 @@ function lookupComp(id) {
       <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
       <div class="df"><div class="dk">Registered</div><div class="dv">${fdate(c.registered)}</div></div>
       ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
-    </div>
+      ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3×5)',gen2:'Gen 2 (1×3)',gen3:'Gen 3 (8×3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
+      ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
+      ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}    </div>
+    ${c.ledActive&&c.ledGen?`
+    <div style="margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;">LED MAP — ${Object.values(c.ledActive).filter(Boolean).length} / ${Object.keys(c.ledActive).length} active</div>
+      ${buildLedMapHTML(c.ledGen, c.ledActive)}
+    </div>`:''}
     ${c.notes?`<div class="df" style="margin-bottom:12px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
     <hr>
     <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:10px;">EXPERIMENT HISTORY</div>
@@ -1257,6 +1710,21 @@ function lookupComp(id) {
   result.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+function buildLedMapHTML(gen, ledActive) {
+  const layout = LED_LAYOUTS[gen]; if (!layout) return '';
+  const {cols, rows} = layout;
+  let html = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+  for (let c=0;c<cols;c++) html += `<div class="led-col-label">${c+1}</div>`;
+  for (let r=0;r<rows;r++) {
+    for (let c=0;c<cols;c++) {
+      const on = ledActive[`c${c}r${r}`];
+      html += `<div class="led-cell ${on?'on':''}" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
 function jumpToExp(id) {
   showMain('exp', document.getElementById('mtab-exp'));
   showSub('exp','db',document.getElementById('stab-exp-db'));
@@ -1271,6 +1739,12 @@ function flagSelComps() {
   if(!ids.length){alert('Select components first.');return;}
   if(!confirm(`Flag ${ids.length} component(s) for deletion?`))return;
   ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=true;});
+  saveAndSync();renderCompList();
+}
+function unflagSelComps() {
+  const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
+  if(!ids.length){alert('Select components first.');return;}
+  ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=false;});
   saveAndSync();renderCompList();
 }
 function exportSelComps() {
