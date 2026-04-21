@@ -569,7 +569,18 @@ function totalHours(cid) {
 
 /* ═══════════ AUTH ═══════════ */
 async function handleAuth() {
-  if (msalInstance().length > 0) { msal$.logoutPopup(); accessToken = null; setSS('Not signed in',''); document.getElementById('auth-btn').textContent = 'Sign in'; return; }
+  if (msalInstance().length > 0) {
+    msal$.logoutPopup();
+    accessToken = null;
+    driveId = null;
+    db = { components: {}, experiments: [] };
+    activeExpId = null;
+    localStorage.removeItem(LKEY);
+    setSS('Not signed in','');
+    document.getElementById('auth-btn').textContent = 'Sign in';
+    renderAll();
+    return;
+  }
   try { setSS('Signing in...','syncing'); const r = await msal$.loginPopup({scopes:SCOPES}); msal$.setActiveAccount(r.account); await getToken(); document.getElementById('auth-btn').textContent = 'Sign out'; setSS('Signed in','ok'); await syncFromCloud(); } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
 }
 function msalInstance() { return msal$.getAllAccounts(); }
