@@ -596,7 +596,7 @@ async function getDriveId() {
 }
 
 function filePath() {
-  return encodeURIComponent(`Shared Documents/${FILE_FOLDER}/${FILE_NAME}`).replace(/%2F/g,'/');
+  return `Shared Documents/${FILE_FOLDER}/${FILE_NAME}`;
 }
 
 async function syncToCloud() {
@@ -611,6 +611,7 @@ async function syncToCloud() {
       body: JSON.stringify(db, null, 2)
     });
     if (!res.ok) { console.error('save failed', res.status, await res.text()); setSS('Save failed','err'); return; }
+    console.log('syncToCloud success, status:', res.status, 'location:', res.headers.get('Location') || res.url);
     setSS('Saved ' + new Date().toLocaleTimeString(),'ok');
   } catch(e) { console.error(e); setSS('Save error','err'); }
 }
