@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAPA Lab Tracker</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0e100f;--bg1:#151815;--bg2:#1c1f1c;--bg3:#232623;
+  --ln:rgba(255,255,255,0.07);--ln2:rgba(255,255,255,0.13);--ln3:rgba(255,255,255,0.22);
+  --tx:#dfe3dd;--tx2:#7d8a7b;--tx3:#3f4a3e;
+  --gr:#3dff7a;--grd:rgba(61,255,122,0.1);--grm:rgba(61,255,122,0.22);
+  --am:#ffb83d;--amd:rgba(255,184,61,0.1);--amm:rgba(255,184,61,0.22);
+  --rd:#ff5252;--rdd:rgba(255,82,82,0.1);
+  --bl:#4db8ff;--bld:rgba(77,184,255,0.1);
+  --pu:#b87fff;--pud:rgba(184,127,255,0.1);
+  --r:5px;--rl:9px;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;min-height:100vh;}
+
+/* ── NAV ── */
+.nav-top{display:flex;align-items:stretch;border-bottom:1px solid var(--ln);background:var(--bg1);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.nav-brand{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--gr);padding:0 16px;display:flex;align-items:center;border-right:1px solid var(--ln);white-space:nowrap;flex-shrink:0;gap:8px;}
+.nav-tab-main{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--tx2);padding:13px 18px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
+.nav-tab-main:hover{color:var(--tx);}
+.nav-tab-main.active{color:var(--gr);border-bottom-color:var(--gr);}
+.nav-sync{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;border-left:1px solid var(--ln);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--tx3);flex-shrink:0;transition:background .3s;}
+.sync-dot.ok{background:var(--gr);}
+.sync-dot.err{background:var(--rd);}
+.sync-dot.syncing{background:var(--am);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sync-lbl{font-family:var(--mono);font-size:10px;color:var(--tx3);}
+
+/* ── SUB TABS ── */
+.nav-sub{display:flex;align-items:stretch;border-bottom:1px solid var(--ln);background:var(--bg2);padding:0 18px;gap:4px;}
+.nav-tab-sub{font-family:var(--mono);font-size:11px;color:var(--tx3);padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
+.nav-tab-sub:hover{color:var(--tx2);}
+.nav-tab-sub.active{color:var(--am);border-bottom-color:var(--am);}
+
+/* ── PAGES ── */
+.main-section{display:none;}.main-section.active{display:block;}
+.sub-section{display:none;padding:18px;max-width:900px;margin:0 auto;}.sub-section.active{display:block;}
+.sub-placeholder{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--tx3);font-family:var(--mono);font-size:12px;flex-direction:column;gap:12px;}
+
+/* ── CARDS ── */
+.card{background:var(--bg1);border:1px solid var(--ln);border-radius:var(--rl);padding:18px;margin-bottom:12px;}
+.card.ag{border-color:rgba(61,255,122,0.3);}
+.clabel{font-family:var(--mono);font-size:10px;letter-spacing:.13em;color:var(--tx3);text-transform:uppercase;margin-bottom:12px;}
+
+/* ── FORMS ── */
+label{font-family:var(--mono);font-size:11px;color:var(--tx2);display:block;margin-bottom:4px;}
+input,select,textarea{width:100%;padding:8px 11px;background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--tx);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--gr);}
+input[readonly]{color:var(--am);font-family:var(--mono);font-size:12px;}
+textarea{resize:vertical;min-height:64px;}
+select option{background:var(--bg2);}
+input[type=checkbox]{width:auto;accent-color:var(--gr);}
+.frow{margin-bottom:12px;}
+.fg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.fg3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.fg4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+
+/* ── COLLAPSIBLE SECTIONS ── */
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;border-top:1px solid var(--ln);margin-top:8px;user-select:none;}
+.collapsible-header:first-child{border-top:none;}
+.collapsible-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.collapsible-arrow{font-family:var(--mono);font-size:12px;color:var(--tx3);transition:transform .2s;}
+.collapsible-arrow.open{transform:rotate(180deg);}
+.collapsible-body{display:none;padding:10px 0 4px;}
+.collapsible-body.open{display:block;}
+
+/* ── BUTTONS ── */
+button{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:8px 14px;border:1px solid var(--ln3);border-radius:var(--r);background:var(--bg2);color:var(--tx2);cursor:pointer;transition:all .15s;white-space:nowrap;}
+button:hover{background:var(--bg3);color:var(--tx);}
+button:active{transform:scale(.98);}
+button:disabled{opacity:.4;cursor:not-allowed;}
+.btn-gr{background:var(--grd);color:var(--gr);border-color:rgba(61,255,122,.25);}
+.btn-gr:hover{background:var(--grm);color:var(--gr);}
+.btn-am{background:var(--amd);color:var(--am);border-color:rgba(255,184,61,.25);}
+.btn-am:hover{background:var(--amm);color:var(--am);}
+.btn-rd{background:var(--rdd);color:var(--rd);border-color:rgba(255,82,82,.25);}
+.btn-rd:hover{background:rgba(255,82,82,.2);color:var(--rd);}
+.btn-cam{background:var(--bg3);color:var(--bl);border-color:rgba(77,184,255,.3);padding:5px 9px;font-size:13px;line-height:1;}
+.btn-cam:hover{background:var(--bld);color:var(--bl);}
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+
+/* ── BADGES ── */
+.badge{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;display:inline-block;letter-spacing:.04em;}
+.b-panel{background:var(--bld);color:var(--bl);}
+.b-paper{background:var(--grd);color:var(--gr);}
+.b-glass{background:var(--pud);color:var(--pu);}
+.b-engine{background:var(--amd);color:var(--am);}
+.b-active{background:rgba(61,255,122,.18);color:var(--gr);}
+.b-complete{background:var(--grd);color:var(--gr);}
+.b-flagged{background:var(--rdd);color:var(--rd);}
+
+/* ── CAMERA MODAL ── */
+.cam-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.cam-modal{background:var(--bg1);border:1px solid var(--ln2);border-radius:var(--rl);padding:20px;width:100%;max-width:420px;}
+.cam-modal-title{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:12px;letter-spacing:.06em;}
+.cam-modal-wrap{border-radius:var(--r);overflow:hidden;background:var(--bg2);min-height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.cam-modal-wrap>div{width:100%!important;}
+.cam-ph{text-align:center;color:var(--tx3);font-family:var(--mono);font-size:11px;padding:20px;}
+.cam-flash{padding:8px 12px;border-radius:var(--r);font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;}
+.cam-flash.ok{background:var(--grd);color:var(--gr);}
+.cam-flash.err{background:var(--rdd);color:var(--rd);}
+
+/* ── MISC ── */
+hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
+.empty{text-align:center;padding:32px;color:var(--tx3);font-family:var(--mono);font-size:11px;}
+.pill-rd{font-family:var(--mono);font-size:9px;color:var(--rd);background:var(--rdd);padding:1px 5px;border-radius:3px;display:inline-block;}
+.pill-am{font-family:var(--mono);font-size:9px;color:var(--am);background:var(--amd);padding:1px 5px;border-radius:3px;display:inline-block;}
+
+/* ── CHANNEL TABLE ── */
+.ch-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ch-table th{font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);}
+.ch-table td{padding:5px 6px;border-bottom:1px solid var(--ln);vertical-align:middle;}
+.ch-table tr:last-child td{border-bottom:none;}
+.ch-table select{font-size:12px;padding:5px 7px;}
+.slot-row{display:flex;align-items:center;gap:4px;}
+.slot-row select{flex:1;}
+
+/* ── EXP ROWS ── */
+.exp-row{background:var(--bg1);border:1px solid var(--ln);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;}
+.exp-row.flagged-row{border-left:3px solid var(--rd);}
+.exp-summary{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;transition:background .15s;user-select:none;}
+.exp-summary:hover{background:var(--bg2);}
+.exp-title{font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.exp-meta{font-family:var(--mono);font-size:10px;color:var(--tx3);white-space:nowrap;}
+.exp-detail{display:none;border-top:1px solid var(--ln);padding:16px 18px;}
+.exp-detail.open{display:block;}
+
+/* ── COMP ROWS ── */
+.comp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--ln);}
+.comp-row:last-child{border-bottom:none;}
+.comp-row.flagged-row{border-left:3px solid var(--rd);padding-left:8px;}
+.comp-info{flex:1;min-width:0;}
+.comp-name{font-size:13px;font-weight:500;}
+.comp-sub{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:1px;}
+
+/* ── HIST ── */
+.hist-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln);gap:10px;}
+.hist-row:last-child{border-bottom:none;}
+.hist-link{font-family:var(--mono);font-size:10px;color:var(--bl);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.hist-link:hover{text-decoration:underline;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.search-bar input,.search-bar select{flex:1;min-width:140px;}
+.section-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+
+/* ── STAT BAND ── */
+.sband{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;}
+.stile{background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 12px;}
+.stile .sl{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:.08em;margin-bottom:3px;}
+.stile .sv{font-family:var(--mono);font-size:18px;}
+
+/* ── DETAIL GRID ── */
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-bottom:10px;}
+.df{background:var(--bg2);border-radius:var(--r);padding:10px 12px;}
+.df .dk{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:3px;}
+.df .dv{font-size:13px;color:var(--tx);line-height:1.5;}
+
+/* ── IMODAL ── */
+.imodal{background:var(--bg2);border:1px solid rgba(61,255,122,.3);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;}
+
+/* ── PSTAT ── */
+.pstat-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.pstat-row input{flex:1;}
+.pstat-lbl{font-family:var(--mono);font-size:11px;color:var(--tx3);white-space:nowrap;}
+
+/* ── URL ── */
+.url-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+
+/* ── PANEL SELECT ROW ── */
+.panel-select-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.panel-select-row select{flex:1;min-width:160px;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--ln3);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="nav-top">
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER</div>
+  <button class="nav-tab-main" id="mtab-exp" onclick="showMain('exp',this)">Experiments</button>
+  <button class="nav-tab-main" id="mtab-comp" onclick="showMain('comp',this)">Components</button>
+  <div class="nav-sync">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span class="sync-lbl" id="sync-lbl">Not signed in</span>
+    <button id="auth-btn" onclick="handleAuth()" style="font-size:10px;padding:5px 10px;">Sign in</button>
+  </div>
+</div>
+
+<!-- ═══════ EXPERIMENTS ═══════ -->
+<div class="main-section" id="ms-exp">
+  <div class="nav-sub">
+    <button class="nav-tab-sub" id="stab-exp-new" onclick="showSub('exp','new',this)">Create new experiment</button>
+    <button class="nav-tab-sub" id="stab-exp-db" onclick="showSub('exp','db',this)">Experiment database</button>
+  </div>
+
+  <!-- Placeholder -->
+  <div class="sub-placeholder" id="sp-exp">
+    <span style="font-size:24px;opacity:.3;">⬡</span>
+    <span>Select a tab above</span>
+  </div>
+
+  <!-- CREATE NEW -->
+  <div class="sub-section" id="ss-exp-new">
+    <div class="card">
+      <div class="clabel" id="exp-form-lbl">New experiment</div>
+      <input type="hidden" id="ef-editing-id">
+
+      <div class="fg2 frow">
+        <div><label>Experiment name *</label><input type="text" id="ef-name" placeholder="e.g. Run 14 — low intensity"></div>
+        <div><label>Date *</label><input type="date" id="ef-date"></div>
+      </div>
+      <div class="fg3 frow">
+        <div><label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4"></div>
+        <div><label>Operator</label><input type="text" id="ef-operator" placeholder="Name"></div>
+        <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
+      </div>
+      <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
+
+      <!-- Panel/Channel config (always visible, core) -->
+      <div style="border-top:1px solid var(--ln);margin-top:4px;padding-top:14px;">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;margin-bottom:10px;">Panel &amp; Channel Configuration</div>
+        <div class="panel-select-row">
+          <select id="panel-sel"><option value="">— select a panel —</option></select>
+          <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel QR">&#9654;</button>
+          <button onclick="addPanelToForm()">Add panel</button>
+        </div>
+        <div id="channel-tables"></div>
+        <div id="copy-engine-row" style="display:none;margin-top:8px;">
+          <button class="btn-am" onclick="copyFirstEngine()">Copy first engine to all channels</button>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE: Solution -->
+      <div class="collapsible-header" onclick="toggleSection('sol')">
+        <div class="collapsible-title">Solution <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
+        <span class="collapsible-arrow" id="arr-sol">▾</span>
+      </div>
+      <div class="collapsible-body" id="cb-sol">
+        <div class="fg3 frow">
+          <div><label>Concentration</label><input type="text" id="ef-sol-conc" placeholder="e.g. 0.15M NaCl, 20mM urea"></div>
+          <div><label>Starting volume (mL)</label><input type="number" id="ef-sol-vol" step="0.1" placeholder="mL"></div>
+          <div><label>Distribution</label>
+            <select id="ef-sol-dist">
+              <option value="">— select —</option>
+              <option>Gravity</option><option>Cascade</option><option>Series</option><option>N/A</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg3 frow">
+          <div><label>Flow rate (mL/min)</label><input type="number" id="ef-flow" step="0.1" placeholder="mL/min"></div>
+          <div><label>Activated carbon (g)</label><input type="number" id="ef-carbon" step="0.01" placeholder="grams"></div>
+          <div><label>Sensors / location</label><input type="text" id="ef-sensors" placeholder="e.g. pH at inlet"></div>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE: Light & Electrical -->
+      <div class="collapsible-header" onclick="toggleSection('light')">
+        <div class="collapsible-title">Light &amp; Electrical <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
+        <span class="collapsible-arrow" id="arr-light">▾</span>
+      </div>
+      <div class="collapsible-body" id="cb-light">
+        <div class="fg3 frow">
+          <div><label>Which LEDs</label><input type="text" id="ef-leds" placeholder="e.g. 450nm blue, all"></div>
+          <div><label>LED power (%)</label><input type="number" id="ef-led-pwr" min="0" max="100" step="1" placeholder="0–100"></div>
+          <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
+        </div>
+        <div class="frow">
+          <label>Potentiostat steps</label>
+          <div id="pstat-steps-wrap"></div>
+          <button onclick="addPstatStep()" style="margin-top:6px;font-size:11px;">+ Add step</button>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE: Sampling -->
+      <div class="collapsible-header" onclick="toggleSection('samp')">
+        <div class="collapsible-title">Sampling <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
+        <span class="collapsible-arrow" id="arr-samp">▾</span>
+      </div>
+      <div class="collapsible-body" id="cb-samp">
+        <div class="frow"><label>Samples taken</label><textarea id="ef-samples" style="min-height:52px;" placeholder="Volume, frequency, labeling syntax, source (inlet/outlet/etc.), duplicate/triplicate..."></textarea></div>
+      </div>
+
+      <!-- COLLAPSIBLE: Notes -->
+      <div class="collapsible-header" onclick="toggleSection('notes')">
+        <div class="collapsible-title">Notes <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
+        <span class="collapsible-arrow" id="arr-notes">▾</span>
+      </div>
+      <div class="collapsible-body" id="cb-notes">
+        <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes..."></textarea></div>
+      </div>
+
+      <div class="brow" style="padding-top:14px;border-top:1px solid var(--ln);margin-top:8px;">
+        <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create &amp; start experiment</button>
+        <button onclick="resetExpForm()">Clear form</button>
+      </div>
+    </div>
+
+    <!-- Active experiment complete modal -->
+    <div id="complete-modal" class="imodal" style="display:none;">
+      <div class="clabel">Complete experiment</div>
+      <div class="fg2 frow">
+        <div><label>Actual duration (hours) *</label><input type="number" id="cm-hours" min="0.1" step="0.5"></div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <button onclick="usePlanned()" style="width:100%;">Use planned: <span id="cm-planned-lbl">—</span> h</button>
+        </div>
+      </div>
+      <div class="fg3 frow">
+        <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+        <div><label>Total sample volume (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+        <div><label>Leakage / sweat (auto)</label><input type="text" id="cm-leakage" readonly placeholder="auto-calculated"></div>
+      </div>
+      <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
+      <div class="frow" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="cm-failure">
+        <label for="cm-failure" style="margin:0;cursor:pointer;">Flag as failure / concern</label>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin:12px 0 8px;padding-top:12px;border-top:1px solid var(--ln);">File links</div>
+      <div id="url-entries"></div>
+      <button onclick="addUrlEntry()" style="margin-bottom:12px;font-size:11px;">+ Add file link</button>
+      <div class="brow">
+        <button class="btn-gr" onclick="finalizeExp()">Save &amp; close experiment</button>
+        <button onclick="document.getElementById('complete-modal').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPERIMENT DATABASE -->
+  <div class="sub-section" id="ss-exp-db">
+    <!-- Active experiment banner -->
+    <div id="active-banner" class="card ag" style="display:none;margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div class="clabel" style="color:var(--gr);margin-bottom:3px;">Active experiment</div>
+          <div id="ab-name" style="font-size:17px;font-weight:500;margin-bottom:2px;"></div>
+          <div id="ab-meta" style="font-family:var(--mono);font-size:10px;color:var(--tx3);"></div>
+        </div>
+        <div class="brow">
+          <button class="btn-gr" onclick="showCompleteModal()">Mark complete</button>
+          <button onclick="editActiveExp()">Edit details</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="el-search" placeholder="Search name, description, operator, solution..." oninput="renderExpDb()">
+      <input type="date" id="el-from" oninput="renderExpDb()" title="From date">
+      <input type="date" id="el-to" oninput="renderExpDb()" title="To date">
+      <select id="el-status" onchange="renderExpDb()">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="complete">Complete</option>
+        <option value="failure">Failures only</option>
+        <option value="flagged">Flagged for deletion</option>
+      </select>
+    </div>
+    <div class="section-top">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);" id="el-count"></div>
+      <div class="brow" style="margin-top:0;">
+        <button onclick="exportSelExps()">Export selected</button>
+        <button class="btn-rd" onclick="flagSelExps()">Flag selected for deletion</button>
+      </div>
+    </div>
+    <div id="exp-list"></div>
+  </div>
+</div>
+
+<!-- ═══════ COMPONENTS ═══════ -->
+<div class="main-section" id="ms-comp">
+  <div class="nav-sub">
+    <button class="nav-tab-sub" id="stab-comp-new" onclick="showSub('comp','new',this)">Add new component</button>
+    <button class="nav-tab-sub" id="stab-comp-db" onclick="showSub('comp','db',this)">Component database</button>
+  </div>
+
+  <div class="sub-placeholder" id="sp-comp">
+    <span style="font-size:24px;opacity:.3;">⬡</span>
+    <span>Select a tab above</span>
+  </div>
+
+  <!-- ADD NEW -->
+  <div class="sub-section" id="ss-comp-new">
+    <div class="card">
+      <div class="clabel">Register new component</div>
+      <div class="fg3 frow">
+        <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. PANEL-001"></div>
+        <div><label>Type *</label>
+          <select id="reg-type" onchange="onRegTypeChange()">
+            <option value="panel">Panel</option>
+            <option value="paper">Paper frame</option>
+            <option value="glass">Glass frame</option>
+            <option value="engine">Light engine</option>
+          </select>
+        </div>
+        <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Panel A3"></div>
+      </div>
+      <div class="fg3 frow">
+        <div><label>Manufacture / receive date</label><input type="date" id="reg-mfg"></div>
+        <div id="reg-ch-wrap"><label>Number of channels (panels only)</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
+        <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch, condition..."></div>
+      </div>
+      <button class="btn-gr" onclick="registerComp()">Register component</button>
+    </div>
+    <div class="card" style="background:var(--bld);border-color:rgba(77,184,255,.15);padding:12px 16px;">
+      <div class="clabel" style="color:var(--bl);margin-bottom:5px;">QR &amp; Data Matrix codes</div>
+      <div style="font-size:12px;color:var(--tx2);">Encode just the component ID as plain text (e.g. <span style="font-family:var(--mono);background:var(--bg2);padding:1px 4px;border-radius:3px;">PANEL-001</span>). Both QR and Data Matrix supported. Free: <strong style="color:var(--tx);">qr-code-generator.com</strong></div>
+    </div>
+  </div>
+
+  <!-- COMPONENT DATABASE -->
+  <div class="sub-section" id="ss-comp-db">
+    <!-- Scan lookup -->
+    <div class="card">
+      <div class="clabel">Scan component to view record</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="lookup-id" placeholder="Type component ID or scan below" onkeydown="if(event.key==='Enter')lookupComp(this.value.trim());" style="flex:1;">
+        <button onclick="lookupComp(document.getElementById('lookup-id').value.trim())">Look up</button>
+        <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan to look up">&#9654;</button>
+      </div>
+    </div>
+    <div id="lookup-result" style="margin-bottom:12px;"></div>
+
+    <div class="sband" id="comp-stats"></div>
+    <div class="card">
+      <div class="search-bar">
+        <input type="text" id="cl-search" placeholder="Search ID, name, notes..." oninput="renderCompList()">
+        <select id="cl-type" onchange="renderCompList()">
+          <option value="">All types</option>
+          <option value="panel">Panels</option>
+          <option value="paper">Paper frames</option>
+          <option value="glass">Glass frames</option>
+          <option value="engine">Light engines</option>
+        </select>
+        <input type="date" id="cl-from" oninput="renderCompList()" title="Mfg from">
+        <input type="date" id="cl-to" oninput="renderCompList()" title="Mfg to">
+      </div>
+      <div class="brow" style="margin-bottom:12px;">
+        <button onclick="exportSelComps()">Export selected</button>
+        <button class="btn-rd" onclick="flagSelComps()">Flag selected for deletion</button>
+      </div>
+      <div id="comp-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CAMERA MODAL ═══════ -->
+<div class="cam-modal-overlay" id="cam-overlay" style="display:none;" onclick="closeCamIfOverlay(event)">
+  <div class="cam-modal">
+    <div class="cam-modal-title" id="cam-title">Scanning...</div>
+    <div class="cam-modal-wrap"><div id="cam-reader"><div class="cam-ph">Starting camera...</div></div></div>
+    <div class="cam-flash" id="cam-flash" style="display:none;"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
+      <button onclick="closeCam()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const CLIENT_ID = '19efdbb0-7365-45ae-b99b-3b512b035e84';
+const REDIRECT_URI = 'https://kuleanatechnology.sharepoint.com/sites/KuleanaTechnology/SitePages/lab-tracker.html';
+const TENANT_HOST = 'kuleanatechnology.sharepoint.com';
+const SITE_PATH = '/sites/KuleanaTechnology';
+const FILE_DRIVE_PATH = '/sites/KuleanaTechnology/Shared%20Documents/KULEANA%20DEV/SAPA%20tracking%20database/lab-tracker-data.xlsx';
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+
+const msalCfg = { auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/common', redirectUri: REDIRECT_URI }, cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true } };
+const msal$ = new msal.PublicClientApplication(msalCfg);
+const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All'];
+
+/* ═══════════ LOCAL DB ═══════════ */
+const LKEY = 'sapa_v2';
+let db = { components: {}, experiments: [] };
+let activeExpId = null;
+let accessToken = null;
+let driveId = null, fileItemId = null;
+
+function loadLocal() {
+  try { const r = localStorage.getItem(LKEY); if (r) db = JSON.parse(r); } catch(e) {}
+  activeExpId = (db.experiments.find(e => e.status === 'active') || {}).id || null;
+}
+function saveLocal() { localStorage.setItem(LKEY, JSON.stringify(db)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fdate(iso) { if (!iso) return '—'; return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
+function tn(t) { return {panel:'Panel',paper:'Paper frame',glass:'Glass frame',engine:'Light engine'}[t] || t; }
+function tb(t) { return `<span class="badge b-${t}">${tn(t)}</span>`; }
+function ge(id) { return db.experiments.find(e => e.id === id); }
+function fv(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
+function totalHours(cid) {
+  return db.experiments.filter(e => (e.components||[]).includes(cid) && e.actualHours).reduce((s,e) => s + e.actualHours, 0);
+}
+
+/* ═══════════ AUTH ═══════════ */
+async function handleAuth() {
+  if (msalInstance().length > 0) { msal$.logoutPopup(); accessToken = null; setSS('Not signed in',''); document.getElementById('auth-btn').textContent = 'Sign in'; return; }
+  try { setSS('Signing in...','syncing'); const r = await msal$.loginPopup({scopes:SCOPES}); msal$.setActiveAccount(r.account); await getToken(); document.getElementById('auth-btn').textContent = 'Sign out'; setSS('Signed in','ok'); await syncFromExcel(); } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
+}
+function msalInstance() { return msal$.getAllAccounts(); }
+async function getToken() {
+  const accs = msal$.getAllAccounts(); if (!accs.length) return;
+  try { const r = await msal$.acquireTokenSilent({scopes:SCOPES,account:accs[0]}); accessToken = r.accessToken; }
+  catch(e) { const r = await msal$.acquireTokenPopup({scopes:SCOPES}); accessToken = r.accessToken; }
+}
+function setSS(msg, state) {
+  document.getElementById('sync-lbl').textContent = msg;
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot' + (state ? ' ' + state : '');
+}
+async function gfetch(path, opts={}) {
+  if (!accessToken) return null;
+  const res = await fetch(GRAPH + path, { ...opts, headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json', ...(opts.headers||{}) } });
+  if (res.status === 401) { await getToken(); return gfetch(path, opts); }
+  if (!res.ok) { console.error('Graph', res.status, path); return null; }
+  if (res.status === 204) return true;
+  return res.json();
+}
+
+/* ═══════════ EXCEL SYNC ═══════════ */
+async function getDriveId() {
+  if (driveId) return driveId;
+  const d = await gfetch(`/sites/${TENANT_HOST}:${SITE_PATH}:/drive`);
+  driveId = d?.id; return driveId;
+}
+async function getFileId() {
+  if (fileItemId) return fileItemId;
+  const d = await gfetch(`/sites/${TENANT_HOST}:${SITE_PATH}:/drive/root:${decodeURIComponent(FILE_DRIVE_PATH)}`);
+  if (d?.id) { fileItemId = d.id; return fileItemId; }
+  return await createExcelFile();
+}
+async function createExcelFile() {
+  setSS('Creating Excel file...','syncing');
+  const did = await getDriveId(); if (!did) return null;
+  const res = await gfetch(`/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
+    method: 'PUT', headers: {'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
+    body: new Uint8Array([80,75,5,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+  });
+  if (res?.id) { fileItemId = res.id; await initSheets(); return fileItemId; }
+  return null;
+}
+async function initSheets() {
+  const did = await getDriveId(); const fid = fileItemId;
+  const base = `/drives/${did}/items/${fid}/workbook`;
+  for (const n of ['Components','Experiments']) await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:n})});
+  await gfetch(`${base}/worksheets/Components/range(address='A1:I1')`, {method:'PATCH', body:JSON.stringify({values:[['id','type','name','mfgDate','channels','notes','registered','flaggedForDeletion','totalHours']]})});
+  await gfetch(`${base}/worksheets/Experiments/range(address='A1:AF1')`, {method:'PATCH', body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','solConc','startVol','solDist','flowRate','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','samples','notes','status','actualHours','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})});
+}
+
+async function syncToExcel() {
+  if (!accessToken) return;
+  setSS('Syncing...','syncing');
+  try {
+    await getToken();
+    const did = await getDriveId(); const fid = await getFileId();
+    if (!did || !fid) { setSS('Sync failed','err'); return; }
+    const base = `/drives/${did}/items/${fid}/workbook`;
+    const compRows = Object.values(db.components).map(c => [
+      c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',c.flaggedForDeletion?'YES':'',totalHours(c.id).toFixed(1)
+    ]);
+    await writeSheet(base,'Components',['id','type','name','mfgDate','channels','notes','registered','flaggedForDeletion','totalHours'],compRows);
+    const expRows = db.experiments.map(e => [
+      e.id,e.name,e.date,e.plannedHours||'',e.operator||'',e.description||'',e.solConc||'',e.startVol||'',e.solDist||'',e.flowRate||'',e.carbon||'',e.leds||'',e.ledPower||'',e.pstatId||'',e.pstatNote||'',
+      JSON.stringify(e.pstatSteps||[]),e.sensors||'',e.samples||'',e.notes||'',e.status||'',e.actualHours||'',e.endVol||'',e.sampleVol||'',e.leakage||'',e.completionNotes||'',e.failure?'YES':'',
+      JSON.stringify(e.fileLinks||[]),JSON.stringify(e.components||[]),JSON.stringify(e.panels||{}),e.flaggedForDeletion?'YES':'',e.completedAt||''
+    ]);
+    await writeSheet(base,'Experiments',null,expRows);
+    saveLocal(); setSS('Synced ' + new Date().toLocaleTimeString(),'ok');
+  } catch(e) { console.error(e); setSS('Sync error','err'); }
+}
+
+async function writeSheet(base, sheet, headers, rows) {
+  const allRows = headers ? [headers,...rows] : rows;
+  if (!allRows.length) return;
+  await gfetch(`${base}/worksheets/${sheet}/range(address='A1:ZZ5000')`, {method:'PATCH',body:JSON.stringify({values:[['']]})});
+  const cols = allRows[0].length;
+  const colLetter = cols <= 26 ? String.fromCharCode(64+cols) : 'A'+String.fromCharCode(64+cols-26);
+  await gfetch(`${base}/worksheets/${sheet}/range(address='A1:${colLetter}${allRows.length}')`, {method:'PATCH',body:JSON.stringify({values:allRows})});
+}
+
+async function syncFromExcel() {
+  if (!accessToken) return;
+  setSS('Loading data...','syncing');
+  try {
+    await getToken();
+    const did = await getDriveId(); const fid = await getFileId();
+    if (!did || !fid) { setSS('No Excel file','err'); return; }
+    const base = `/drives/${did}/items/${fid}/workbook`;
+    const cd = await gfetch(`${base}/worksheets/Components/usedRange`);
+    if (cd?.values?.length > 1) {
+      db.components = {};
+      const h = cd.values[0];
+      cd.values.slice(1).forEach(row => {
+        if (!row[0]) return;
+        const o = {}; h.forEach((k,i) => o[k] = row[i]);
+        o.flaggedForDeletion = o.flaggedForDeletion === 'YES';
+        o.channels = o.channels ? parseInt(o.channels) : null;
+        db.components[o.id] = o;
+      });
+    }
+    const ed = await gfetch(`${base}/worksheets/Experiments/usedRange`);
+    if (ed?.values?.length > 1) {
+      db.experiments = [];
+      const h = ed.values[0];
+      ed.values.slice(1).forEach(row => {
+        if (!row[0]) return;
+        const o = {}; h.forEach((k,i) => o[k] = row[i]);
+        o.failure = o.failure === 'YES'; o.flaggedForDeletion = o.flaggedForDeletion === 'YES';
+        ['plannedHours','actualHours','startVol','endVol','sampleVol','carbon','flowRate','ledPower'].forEach(k => o[k] = o[k] ? parseFloat(o[k]) : null);
+        ['pstatSteps','fileLinks','components'].forEach(k => { try { o[k] = JSON.parse(o[k]||'[]'); } catch(e) { o[k] = []; } });
+        try { o.panels = JSON.parse(o.panels||'{}'); } catch(e) { o.panels = {}; }
+        db.experiments.push(o);
+      });
+    }
+    activeExpId = (db.experiments.find(e => e.status === 'active')||{}).id || null;
+    saveLocal(); setSS('Synced ' + new Date().toLocaleTimeString(),'ok');
+    renderAll();
+  } catch(e) { console.error(e); setSS('Load error','err'); }
+}
+
+async function saveAndSync() { saveLocal(); await syncToExcel(); }
+
+/* ═══════════ NAV ═══════════ */
+let currentMain = null;
+function showMain(section, btn) {
+  document.querySelectorAll('.main-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab-main').forEach(t => t.classList.remove('active'));
+  document.getElementById('ms-' + section).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentMain = section;
+  if (section === 'exp') renderExpDb();
+  if (section === 'comp') { renderCompStats(); renderCompList(); }
+  closeCam();
+}
+
+function showSub(main, sub, btn) {
+  document.querySelectorAll(`#ms-${main} .sub-section`).forEach(s => s.classList.remove('active'));
+  document.querySelectorAll(`#ms-${main} .nav-tab-sub`).forEach(t => t.classList.remove('active'));
+  document.getElementById(`sp-${main}`).style.display = 'none';
+  document.getElementById(`ss-${main}-${sub}`).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (main === 'exp' && sub === 'new') initExpForm();
+  if (main === 'exp' && sub === 'db') renderExpDb();
+  if (main === 'comp' && sub === 'db') { renderCompStats(); renderCompList(); }
+  closeCam();
+}
+
+/* ═══════════ COLLAPSIBLES ═══════════ */
+function toggleSection(key) {
+  const body = document.getElementById('cb-' + key);
+  const arr = document.getElementById('arr-' + key);
+  const open = body.classList.toggle('open');
+  arr.classList.toggle('open', open);
+}
+
+/* ═══════════ PSTAT STEPS ═══════════ */
+let pstatSteps = [];
+function addPstatStep() { pstatSteps.push({voltage:'',duration:'',cycles:''}); renderPstatSteps(); }
+function rmPstatStep(i) { pstatSteps.splice(i,1); renderPstatSteps(); }
+function renderPstatSteps() {
+  const c = document.getElementById('pstat-steps-wrap');
+  if (!pstatSteps.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">No steps — click Add step</div>'; return; }
+  c.innerHTML = pstatSteps.map((s,i) => `
+    <div class="pstat-row">
+      <input type="number" step="0.01" placeholder="V" value="${s.voltage}" oninput="pstatSteps[${i}].voltage=this.value" style="max-width:70px;">
+      <span class="pstat-lbl">V for</span>
+      <input type="number" step="1" placeholder="sec" value="${s.duration}" oninput="pstatSteps[${i}].duration=this.value" style="max-width:80px;">
+      <span class="pstat-lbl">s,</span>
+      <input type="number" step="1" placeholder="cycles" value="${s.cycles}" oninput="pstatSteps[${i}].cycles=this.value" style="max-width:80px;">
+      <span class="pstat-lbl">cycles</span>
+      <button class="btn-rd" onclick="rmPstatStep(${i})" style="padding:4px 8px;">×</button>
+    </div>`).join('');
+}
+
+/* ═══════════ EXP FORM ═══════════ */
+let formPanels = {}; // {panelId: [{ch,engine,paper,glass,dummy},...]}
+
+function initExpForm() {
+  const ae = db.experiments.find(e => e.status === 'active');
+  if (ae) {
+    // show active experiment editing mode
+    document.getElementById('exp-form-lbl').textContent = 'Active experiment — editing';
+    document.getElementById('exp-save-btn').textContent = 'Save changes';
+    document.getElementById('ef-editing-id').value = ae.id;
+    populateExpFormFields(ae);
+    formPanels = ae.panels ? JSON.parse(JSON.stringify(ae.panels)) : {};
+    document.getElementById('complete-modal').style.display = 'none';
+    // show mark complete button
+    const cm = document.getElementById('complete-modal');
+    // banner already shown in db tab
+  } else {
+    document.getElementById('exp-form-lbl').textContent = 'New experiment';
+    document.getElementById('exp-save-btn').textContent = 'Create & start experiment';
+    document.getElementById('ef-editing-id').value = '';
+    resetExpForm();
+  }
+  renderPanelSelectOpts();
+  renderChannelTables();
+  renderPstatSteps();
+}
+
+function populateExpFormFields(e) {
+  document.getElementById('ef-name').value = e.name || '';
+  document.getElementById('ef-date').value = e.date || today();
+  document.getElementById('ef-dur').value = e.plannedHours || '';
+  document.getElementById('ef-operator').value = e.operator || '';
+  document.getElementById('ef-pstat-id').value = e.pstatId || '';
+  document.getElementById('ef-desc').value = e.description || '';
+  document.getElementById('ef-sol-conc').value = e.solConc || '';
+  document.getElementById('ef-sol-vol').value = e.startVol || '';
+  document.getElementById('ef-sol-dist').value = e.solDist || '';
+  document.getElementById('ef-flow').value = e.flowRate || '';
+  document.getElementById('ef-carbon').value = e.carbon || '';
+  document.getElementById('ef-sensors').value = e.sensors || '';
+  document.getElementById('ef-leds').value = e.leds || '';
+  document.getElementById('ef-led-pwr').value = e.ledPower || '';
+  document.getElementById('ef-pstat-note').value = e.pstatNote || '';
+  document.getElementById('ef-samples').value = e.samples || '';
+  document.getElementById('ef-notes').value = e.notes || '';
+  pstatSteps = e.pstatSteps ? JSON.parse(JSON.stringify(e.pstatSteps)) : [];
+}
+
+function resetExpForm() {
+  const fields = ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-conc','ef-sol-vol','ef-sol-dist','ef-flow','ef-carbon','ef-sensors','ef-leds','ef-led-pwr','ef-pstat-note','ef-samples','ef-notes'];
+  fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('ef-date').value = today();
+  document.getElementById('ef-dur').value = '';
+  document.getElementById('ef-editing-id').value = '';
+  pstatSteps = []; renderPstatSteps();
+  formPanels = {}; renderChannelTables();
+}
+
+function saveExpForm() {
+  const name = document.getElementById('ef-name').value.trim();
+  if (!name) { alert('Experiment name required.'); return; }
+  const editId = document.getElementById('ef-editing-id').value;
+  const data = {
+    name, date: document.getElementById('ef-date').value || today(),
+    plannedHours: parseFloat(document.getElementById('ef-dur').value) || null,
+    operator: document.getElementById('ef-operator').value.trim(),
+    pstatId: document.getElementById('ef-pstat-id').value.trim(),
+    description: document.getElementById('ef-desc').value.trim(),
+    solConc: document.getElementById('ef-sol-conc').value.trim(),
+    startVol: parseFloat(document.getElementById('ef-sol-vol').value) || null,
+    solDist: document.getElementById('ef-sol-dist').value,
+    flowRate: parseFloat(document.getElementById('ef-flow').value) || null,
+    carbon: parseFloat(document.getElementById('ef-carbon').value) || null,
+    sensors: document.getElementById('ef-sensors').value.trim(),
+    leds: document.getElementById('ef-leds').value.trim(),
+    ledPower: parseFloat(document.getElementById('ef-led-pwr').value) || null,
+    pstatNote: document.getElementById('ef-pstat-note').value.trim(),
+    pstatSteps: JSON.parse(JSON.stringify(pstatSteps)),
+    samples: document.getElementById('ef-samples').value.trim(),
+    notes: document.getElementById('ef-notes').value.trim(),
+    panels: JSON.parse(JSON.stringify(formPanels)),
+    components: buildComponentsFromPanels(formPanels),
+  };
+  if (editId) {
+    Object.assign(ge(editId), data);
+  } else {
+    if (activeExpId) { if (!confirm('There is already an active experiment. Make this one active?')) return; ge(activeExpId).status = 'paused'; }
+    const n = { id: uid(), status: 'active', fileLinks: [], created: Date.now(), ...data };
+    db.experiments.unshift(n);
+    activeExpId = n.id;
+  }
+  saveAndSync();
+  alert(editId ? 'Experiment updated.' : 'Experiment created and started!');
+  renderExpDb();
+}
+
+function buildComponentsFromPanels(panels) {
+  const comps = new Set(Object.keys(panels));
+  Object.values(panels).forEach(chs => chs.forEach(ch => {
+    if (!ch.dummy) { if (ch.engine) comps.add(ch.engine); if (ch.paper) comps.add(ch.paper); if (ch.glass) comps.add(ch.glass); }
+  }));
+  return [...comps];
+}
+
+function editActiveExp() {
+  showMain('exp', document.getElementById('mtab-exp'));
+  showSub('exp', 'new', document.getElementById('stab-exp-new'));
+}
+
+/* ═══════════ PANEL / CHANNEL ═══════════ */
+function renderPanelSelectOpts() {
+  const sel = document.getElementById('panel-sel');
+  const used = Object.keys(formPanels);
+  const panels = Object.values(db.components).filter(c => c.type === 'panel' && !used.includes(c.id));
+  sel.innerHTML = '<option value="">— select a panel —</option>' +
+    panels.map(p => `<option value="${p.id}">${p.name} (${p.id}) — ${p.channels || '?'} ch</option>`).join('');
+}
+
+function addPanelToForm() {
+  const pid = document.getElementById('panel-sel').value;
+  if (!pid) return;
+  const panel = db.components[pid];
+  if (!panel) return;
+  const nch = parseInt(panel.channels) || 1;
+  formPanels[pid] = Array.from({length: nch}, (_, i) => ({ch: i+1, engine:'', paper:'', glass:'', dummy: false}));
+  renderPanelSelectOpts();
+  renderChannelTables();
+}
+
+function removePanelFromForm(pid) {
+  delete formPanels[pid];
+  renderPanelSelectOpts();
+  renderChannelTables();
+}
+
+function updateFormChannel(pid, idx, field, val) {
+  formPanels[pid][idx][field] = val;
+  if (field === 'dummy') renderChannelTables(); // re-render to toggle disabled state
+}
+
+function copyFirstEngine() {
+  // Find first engine value across all panels
+  let firstEngine = '';
+  for (const [pid, chs] of Object.entries(formPanels)) {
+    for (const ch of chs) {
+      if (!ch.dummy && ch.engine) { firstEngine = ch.engine; break; }
+    }
+    if (firstEngine) break;
+  }
+  if (!firstEngine) { alert('No engine selected yet in any channel.'); return; }
+  for (const [pid, chs] of Object.entries(formPanels)) {
+    chs.forEach((ch, i) => { if (!ch.dummy) formPanels[pid][i].engine = firstEngine; });
+  }
+  renderChannelTables();
+}
+
+function renderChannelTables() {
+  const wrap = document.getElementById('channel-tables');
+  const hasPanels = Object.keys(formPanels).length > 0;
+  document.getElementById('copy-engine-row').style.display = hasPanels ? 'block' : 'none';
+  if (!hasPanels) { wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No panels added yet</div>'; return; }
+
+  const engines = Object.values(db.components).filter(c => c.type === 'engine');
+  const papers = Object.values(db.components).filter(c => c.type === 'paper');
+  const glasses = Object.values(db.components).filter(c => c.type === 'glass');
+  const mkOpt = (arr, val) => '<option value="">—</option>' + arr.map(c => `<option value="${c.id}" ${c.id === val ? 'selected' : ''}>${c.name}</option>`).join('');
+
+  wrap.innerHTML = Object.entries(formPanels).map(([pid, channels]) => {
+    const panel = db.components[pid] || {name: pid};
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
+        <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="ch-table" style="min-width:520px;">
+          <thead><tr>
+            <th style="width:36px;">Ch</th>
+            <th>Light engine</th>
+            <th>Paper frame</th>
+            <th>Glass frame</th>
+            <th style="width:55px;text-align:center;">Dummy</th>
+          </tr></thead>
+          <tbody>${channels.map((row, i) => `
+            <tr style="${row.dummy ? 'opacity:.4;' : ''}">
+              <td style="font-family:var(--mono);font-size:11px;color:var(--tx3);">${row.ch}</td>
+              <td><div class="slot-row">
+                <select onchange="updateFormChannel('${pid}',${i},'engine',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(engines, row.engine)}</select>
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan">▶</button>`}
+              </div></td>
+              <td><div class="slot-row">
+                <select onchange="updateFormChannel('${pid}',${i},'paper',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(papers, row.paper)}</select>
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan">▶</button>`}
+              </div></td>
+              <td><div class="slot-row">
+                <select onchange="updateFormChannel('${pid}',${i},'glass',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(glasses, row.glass)}</select>
+                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan">▶</button>`}
+              </div></td>
+              <td style="text-align:center;"><input type="checkbox" ${row.dummy ? 'checked' : ''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)" title="Dummy channel"></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════ CAMERA MODAL ═══════════ */
+let camScanner = null, camScanOn = false;
+let camTarget = null; // {type, pid, idx, field} or 'panel-sel-cam' or 'lookup-cam'
+let camDebounce = null;
+
+const CAM_TITLES = {
+  'panel-sel-cam': 'Scan panel QR / Data Matrix',
+  'lookup-cam': 'Scan component to look up',
+  'slot': 'Scan component for slot',
+};
+
+function openCam(type, pid, idx, field) {
+  camTarget = { type, pid, idx, field };
+  document.getElementById('cam-overlay').style.display = 'flex';
+  const titleKey = type === 'slot' ? 'slot' : type;
+  document.getElementById('cam-title').textContent = CAM_TITLES[titleKey] || 'Scanning...';
+  document.getElementById('cam-flash').style.display = 'none';
+  document.getElementById('cam-manual').value = '';
+  startCam();
+}
+
+function startCam() {
+  if (camScanOn) return;
+  camScanner = new Html5Qrcode('cam-reader');
+  camScanner.start(
+    { facingMode: 'environment' },
+    { fps: 12, qrbox: { width: 240, height: 240 } },
+    text => {
+      // Debounce: ignore repeat scans within 1.5s
+      if (camDebounce) return;
+      camDebounce = setTimeout(() => { camDebounce = null; }, 1500);
+      handleCamResult(text.trim());
+    },
+    () => {}
+  ).then(() => { camScanOn = true; })
+  .catch(err => {
+    document.getElementById('cam-reader').innerHTML = `<div class="cam-ph">Camera error: ${err}</div>`;
+  });
+}
+
+function closeCam() {
+  if (camScanner && camScanOn) { camScanner.stop().catch(() => {}); camScanOn = false; }
+  camScanner = null; camTarget = null;
+  document.getElementById('cam-overlay').style.display = 'none';
+}
+
+function closeCamIfOverlay(e) { if (e.target === document.getElementById('cam-overlay')) closeCam(); }
+
+function handleCamResult(id) {
+  if (!id) return;
+  const target = camTarget;
+  if (!target) return;
+
+  if (target.type === 'panel-sel-cam') {
+    // Scan into panel select
+    const sel = document.getElementById('panel-sel');
+    if (db.components[id] && db.components[id].type === 'panel') {
+      sel.value = id;
+      showCamFlash('Panel: ' + db.components[id].name, true);
+      setTimeout(closeCam, 800);
+    } else {
+      showCamFlash(db.components[id] ? 'Not a panel: ' + db.components[id].name : 'Unknown ID: ' + id, false);
+    }
+    return;
+  }
+
+  if (target.type === 'lookup-cam') {
+    showCamFlash('Found: ' + id, true);
+    setTimeout(() => { closeCam(); lookupComp(id); }, 600);
+    return;
+  }
+
+  if (target.type === 'slot') {
+    const { pid, idx, field } = target;
+    const c = db.components[id];
+    if (!c) { showCamFlash('Unknown ID: ' + id, false); return; }
+    const expectedType = field === 'engine' ? 'engine' : field === 'paper' ? 'paper' : 'glass';
+    if (c.type !== expectedType) { showCamFlash(`Expected ${tn(expectedType)}, got ${tn(c.type)}`, false); return; }
+    formPanels[pid][idx][field] = id;
+    showCamFlash(c.name + ' assigned', true);
+    setTimeout(() => { closeCam(); renderChannelTables(); }, 700);
+    return;
+  }
+}
+
+function showCamFlash(msg, ok) {
+  const el = document.getElementById('cam-flash');
+  el.style.display = 'block';
+  el.className = 'cam-flash ' + (ok ? 'ok' : 'err');
+  el.textContent = msg;
+}
+
+/* ═══════════ COMPLETE MODAL ═══════════ */
+let urlEntries = [];
+
+function showCompleteModal() {
+  const ae = db.experiments.find(e => e.status === 'active'); if (!ae) return;
+  document.getElementById('cm-planned-lbl').textContent = ae.plannedHours || '—';
+  document.getElementById('cm-hours').value = ae.plannedHours || '';
+  document.getElementById('cm-end-vol').value = '';
+  document.getElementById('cm-sample-vol').value = '';
+  document.getElementById('cm-leakage').value = '';
+  document.getElementById('cm-notes').value = '';
+  document.getElementById('cm-failure').checked = false;
+  urlEntries = []; renderUrlEntries();
+  // Switch to new exp tab and show modal
+  showMain('exp', document.getElementById('mtab-exp'));
+  showSub('exp', 'new', document.getElementById('stab-exp-new'));
+  initExpForm();
+  document.getElementById('complete-modal').style.display = 'block';
+  document.getElementById('complete-modal').scrollIntoView({behavior:'smooth'});
+}
+
+function usePlanned() {
+  const ae = db.experiments.find(e => e.status === 'active');
+  if (ae?.plannedHours) document.getElementById('cm-hours').value = ae.plannedHours;
+}
+
+function calcLeakage() {
+  const ae = db.experiments.find(e => e.status === 'active');
+  const start = ae?.startVol || 0;
+  const end = parseFloat(document.getElementById('cm-end-vol').value);
+  const sample = parseFloat(document.getElementById('cm-sample-vol').value);
+  document.getElementById('cm-leakage').value = (!isNaN(end) && !isNaN(sample)) ? (end - sample - start).toFixed(2) + ' mL' : '';
+}
+
+function addUrlEntry() { urlEntries.push({title:'',url:''}); renderUrlEntries(); }
+function rmUrl(i) { urlEntries.splice(i,1); renderUrlEntries(); }
+function renderUrlEntries() {
+  const c = document.getElementById('url-entries');
+  if (!urlEntries.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:8px;">No links — click Add file link</div>'; return; }
+  c.innerHTML = urlEntries.map((u,i) => `
+    <div class="url-row">
+      <input type="text" placeholder="Title" value="${u.title}" oninput="urlEntries[${i}].title=this.value" style="flex:1;">
+      <input type="url" placeholder="https://..." value="${u.url}" oninput="urlEntries[${i}].url=this.value" style="flex:2;">
+      <button class="btn-rd" onclick="rmUrl(${i})" style="padding:5px 8px;">×</button>
+    </div>`).join('');
+}
+
+function finalizeExp() {
+  const hours = parseFloat(document.getElementById('cm-hours').value);
+  if (!hours || hours <= 0) { alert('Please enter actual duration.'); return; }
+  const ae = db.experiments.find(e => e.status === 'active');
+  ae.status = 'complete'; ae.actualHours = hours;
+  ae.endVol = parseFloat(document.getElementById('cm-end-vol').value) || null;
+  ae.sampleVol = parseFloat(document.getElementById('cm-sample-vol').value) || null;
+  ae.leakage = document.getElementById('cm-leakage').value;
+  ae.completionNotes = document.getElementById('cm-notes').value.trim();
+  ae.failure = document.getElementById('cm-failure').checked;
+  ae.fileLinks = JSON.parse(JSON.stringify(urlEntries));
+  ae.completedAt = Date.now();
+  activeExpId = null;
+  saveAndSync();
+  document.getElementById('complete-modal').style.display = 'none';
+  resetExpForm();
+  showSub('exp','db',document.getElementById('stab-exp-db'));
+}
+
+/* ═══════════ EXPERIMENT DB ═══════════ */
+function renderExpDb() {
+  // Active banner
+  const ae = db.experiments.find(e => e.status === 'active');
+  const banner = document.getElementById('active-banner');
+  if (ae) {
+    banner.style.display = 'block';
+    document.getElementById('ab-name').textContent = ae.name;
+    document.getElementById('ab-meta').textContent = fdate(ae.date) + (ae.plannedHours ? ' · ' + ae.plannedHours + ' h planned' : '') + (ae.operator ? ' · ' + ae.operator : '');
+  } else { banner.style.display = 'none'; }
+
+  const q = (document.getElementById('el-search').value||'').toLowerCase();
+  const df = document.getElementById('el-from').value;
+  const dt = document.getElementById('el-to').value;
+  const sf = document.getElementById('el-status').value;
+  let exps = [...db.experiments];
+  if (q) exps = exps.filter(e => (e.name+' '+(e.description||'')+' '+(e.operator||'')+' '+(e.solConc||'')+' '+(e.notes||'')).toLowerCase().includes(q));
+  if (df) exps = exps.filter(e => e.date >= df);
+  if (dt) exps = exps.filter(e => e.date <= dt);
+  if (sf === 'failure') exps = exps.filter(e => e.failure);
+  else if (sf === 'flagged') exps = exps.filter(e => e.flaggedForDeletion);
+  else if (sf) exps = exps.filter(e => e.status === sf);
+  document.getElementById('el-count').textContent = exps.length + ' experiment' + (exps.length !== 1 ? 's' : '');
+  const list = document.getElementById('exp-list');
+  if (!exps.length) { list.innerHTML = '<div class="empty">No experiments match</div>'; return; }
+  list.innerHTML = exps.map(e => {
+    const isActive = e.status === 'active';
+    const sb = isActive ? '<span class="badge b-active">active</span>' : e.failure ? '<span class="badge b-flagged">failure</span>' : '<span class="badge b-complete">complete</span>';
+    const cc = (e.components||[]).length;
+    return `<div class="exp-row ${e.flaggedForDeletion?'flagged-row':''}">
+      <div class="exp-summary" onclick="toggleExpDetail('${e.id}')">
+        <input type="checkbox" class="exp-ck" data-id="${e.id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
+        <div class="exp-title">${e.name}${e.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
+        <div class="exp-meta">${fdate(e.date)} · ${e.actualHours ? e.actualHours.toFixed(1)+' h' : e.plannedHours ? e.plannedHours+' h planned':'—'} · ${cc} comp</div>
+        ${sb}
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
+      </div>
+      <div class="exp-detail" id="ed-${e.id}">${buildExpDetail(e)}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpDetail(id) { document.getElementById('ed-'+id).classList.toggle('open'); }
+
+function buildExpDetail(e) {
+  const pstatStr = e.pstatSteps?.length ? e.pstatSteps.map(s=>`${s.voltage}V × ${s.duration}s × ${s.cycles} cycles`).join(', ') : '—';
+  const channelHTML = e.panels && Object.keys(e.panels).length
+    ? Object.entries(e.panels).map(([pid,chs]) => {
+        const pname = db.components[pid]?.name || pid;
+        return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;">${pname} ${tb('panel')}</div>
+          <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;">
+          <thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
+          <tbody>${chs.map(ch => ch.dummy
+            ? `<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`
+            : `<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine ? (db.components[ch.engine]?.name||ch.engine) : '—'}</td><td style="font-size:12px;">${ch.paper ? (db.components[ch.paper]?.name||ch.paper) : '—'}</td><td style="font-size:12px;">${ch.glass ? (db.components[ch.glass]?.name||ch.glass) : '—'}</td></tr>`
+          ).join('')}</tbody></table></div></div>`;
+      }).join('') : '<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
+  const links = e.fileLinks?.length ? e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:12px;display:block;margin-bottom:3px;">${l.title||l.url}</a>`).join('') : '—';
+  return `
+    <div class="dg">
+      <div class="df"><div class="dk">Date</div><div class="dv">${fdate(e.date)}</div></div>
+      <div class="df"><div class="dk">Operator</div><div class="dv">${fv(e.operator)}</div></div>
+      <div class="df"><div class="dk">Planned / actual</div><div class="dv">${e.plannedHours||'—'} h / ${e.actualHours||'—'} h</div></div>
+      <div class="df"><div class="dk">Potentiostat</div><div class="dv">${fv(e.pstatId)}</div></div>
+    </div>
+    ${e.description?`<div class="df frow"><div class="dk">Description</div><div class="dv">${e.description}</div></div>`:''}
+    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SOLUTION</div>
+    <div class="dg">
+      <div class="df"><div class="dk">Concentration</div><div class="dv">${fv(e.solConc)}</div></div>
+      <div class="df"><div class="dk">Starting volume</div><div class="dv">${e.startVol?e.startVol+' mL':'—'}</div></div>
+      <div class="df"><div class="dk">Distribution</div><div class="dv">${fv(e.solDist)}</div></div>
+      <div class="df"><div class="dk">Flow rate</div><div class="dv">${e.flowRate?e.flowRate+' mL/min':'—'}</div></div>
+      <div class="df"><div class="dk">Activated carbon</div><div class="dv">${e.carbon?e.carbon+' g':'—'}</div></div>
+    </div>
+    ${e.endVol||e.sampleVol?`<div class="dg">
+      <div class="df"><div class="dk">End measured vol</div><div class="dv">${e.endVol?e.endVol+' mL':'—'}</div></div>
+      <div class="df"><div class="dk">Sample vol</div><div class="dv">${e.sampleVol?e.sampleVol+' mL':'—'}</div></div>
+      <div class="df"><div class="dk">Leakage / sweat</div><div class="dv" style="color:var(--am);">${fv(e.leakage)}</div></div>
+    </div>`:''}
+    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LIGHT &amp; ELECTRICAL</div>
+    <div class="dg">
+      <div class="df"><div class="dk">LEDs</div><div class="dv">${fv(e.leds)}</div></div>
+      <div class="df"><div class="dk">LED power</div><div class="dv">${e.ledPower!=null?e.ledPower+'%':'—'}</div></div>
+      <div class="df"><div class="dk">Program note</div><div class="dv">${fv(e.pstatNote)}</div></div>
+    </div>
+    ${e.pstatSteps?.length?`<div class="df frow"><div class="dk">Potentiostat steps</div><div class="dv" style="font-family:var(--mono);font-size:11px;">${pstatStr}</div></div>`:''}
+    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">PANEL LAYOUT</div>
+    <div style="overflow-x:auto;">${channelHTML}</div>
+    ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${e.sensors}</div></div>`:''}
+    ${e.samples?`<div class="df frow"><div class="dk">Samples</div><div class="dv">${e.samples}</div></div>`:''}
+    ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
+    ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
+    ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}`;
+}
+
+function flagSelExps() {
+  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
+  if (!ids.length) { alert('Select experiments first.'); return; }
+  if (!confirm(`Flag ${ids.length} experiment(s) for deletion? Admin must delete from Excel.`)) return;
+  ids.forEach(id => { const e = ge(id); if (e) e.flaggedForDeletion = true; });
+  saveAndSync(); renderExpDb();
+}
+function exportSelExps() {
+  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
+  const exps = ids.length ? db.experiments.filter(e=>ids.includes(e.id)) : db.experiments;
+  const h = ['id','name','date','plannedHours','actualHours','operator','description','solConc','startVol','solDist','flowRate','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','samples','notes','status','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components'];
+  dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], 'experiments.csv');
+}
+
+/* ═══════════ COMPONENT DB ═══════════ */
+function onRegTypeChange() {
+  document.getElementById('reg-ch-wrap').style.display = document.getElementById('reg-type').value === 'panel' ? 'block' : 'none';
+}
+function registerComp() {
+  const id = document.getElementById('reg-id').value.trim();
+  const name = document.getElementById('reg-name').value.trim();
+  if (!id||!name) { alert('ID and name required.'); return; }
+  if (db.components[id]) { alert(`ID "${id}" already exists. Component IDs cannot be overwritten.`); return; }
+  const type = document.getElementById('reg-type').value;
+  db.components[id] = { id, name, type, mfgDate: document.getElementById('reg-mfg').value||null, channels: type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null, notes: document.getElementById('reg-notes').value.trim(), registered: today() };
+  saveAndSync();
+  ['reg-id','reg-name','reg-notes','reg-channels'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('reg-mfg').value='';
+  renderCompStats(); renderCompList();
+  alert(`Registered: ${name} (${id})`);
+}
+
+function renderCompStats() {
+  document.getElementById('comp-stats').innerHTML = ['panel','paper','glass','engine'].map(t => {
+    const ids = Object.keys(db.components).filter(id=>db.components[id].type===t);
+    const h = ids.reduce((s,id)=>s+totalHours(id),0);
+    return `<div class="stile"><div class="sl">${tn(t)}s</div><div class="sv" style="color:var(--am);">${h.toFixed(1)} h</div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;">${ids.length} registered</div></div>`;
+  }).join('');
+}
+
+function renderCompList() {
+  const q = (document.getElementById('cl-search').value||'').toLowerCase();
+  const tf = document.getElementById('cl-type').value;
+  const df = document.getElementById('cl-from').value;
+  const dt = document.getElementById('cl-to').value;
+  let ids = Object.keys(db.components);
+  if (q) ids = ids.filter(id=>(id+' '+db.components[id].name+' '+(db.components[id].notes||'')).toLowerCase().includes(q));
+  if (tf) ids = ids.filter(id=>db.components[id].type===tf);
+  if (df) ids = ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate>=df);
+  if (dt) ids = ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate<=dt);
+  const list = document.getElementById('comp-list');
+  if (!ids.length){list.innerHTML='<div class="empty">No components match</div>';return;}
+  list.innerHTML = ids.map(id=>{
+    const c=db.components[id];const h=totalHours(id);
+    const ne=db.experiments.filter(e=>(e.components||[]).includes(id)&&e.actualHours).length;
+    return `<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}">
+      <input type="checkbox" class="comp-ck" data-id="${id}" style="width:auto;flex-shrink:0;">
+      <div class="comp-info">
+        <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
+        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
+      <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">History</button>
+    </div>`;
+  }).join('');
+}
+
+function lookupComp(id) {
+  if (!id) return;
+  const result = document.getElementById('lookup-result');
+  const c = db.components[id];
+  if (!c) { result.innerHTML=`<div class="card"><div style="color:var(--rd);font-family:var(--mono);font-size:12px;">Unknown: ${id}</div></div>`; return; }
+  const h = totalHours(id);
+  const allExps = db.experiments.filter(e=>(e.components||[]).includes(id));
+  const activeIn = allExps.find(e=>e.status==='active');
+  result.innerHTML=`<div class="card">
+    <div class="clabel">Component record</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:20px;font-weight:500;margin-bottom:6px;">${c.name}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">${tb(c.type)}${activeIn?'<span class="badge b-active">in active experiment</span>':''}${c.flaggedForDeletion?'<span class="badge b-flagged">flagged</span>':''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--mono);font-size:28px;color:var(--am);">${h.toFixed(1)}<span style="font-size:13px;color:var(--tx3);"> h</span></div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">cumulative hours</div>
+      </div>
+    </div>
+    <div class="dg">
+      <div class="df"><div class="dk">Component ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
+      <div class="df"><div class="dk">Manufacture date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
+      <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
+      <div class="df"><div class="dk">Registered</div><div class="dv">${fdate(c.registered)}</div></div>
+      ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
+    </div>
+    ${c.notes?`<div class="df" style="margin-bottom:12px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
+    <hr>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:10px;">EXPERIMENT HISTORY</div>
+    ${allExps.length?allExps.map(e=>`
+      <div class="hist-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.status==='active'?'in progress':'—'}</div>
+          ${e.failure?'<span class="pill-rd" style="font-size:9px;margin-top:3px;display:inline-block;">FAILURE</span>':''}
+          ${e.fileLinks?.length?'<div style="margin-top:4px;">'+e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:11px;display:block;">${l.title||l.url}</a>`).join('')+'</div>':''}
+        </div>
+        <span class="hist-link" onclick="jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
+      </div>`).join(''):'<div class="empty" style="padding:16px;">Not used in any experiments yet</div>'}
+  </div>`;
+  // Scroll to result
+  result.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function jumpToExp(id) {
+  showMain('exp', document.getElementById('mtab-exp'));
+  showSub('exp','db',document.getElementById('stab-exp-db'));
+  setTimeout(() => {
+    const el = document.getElementById('ed-'+id);
+    if (el) { el.classList.add('open'); el.closest('.exp-row').scrollIntoView({behavior:'smooth',block:'center'}); }
+  }, 200);
+}
+
+function flagSelComps() {
+  const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
+  if(!ids.length){alert('Select components first.');return;}
+  if(!confirm(`Flag ${ids.length} component(s) for deletion?`))return;
+  ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=true;});
+  saveAndSync();renderCompList();
+}
+function exportSelComps() {
+  const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
+  const comps=ids.length?ids.filter(id=>db.components[id]).map(id=>db.components[id]):Object.values(db.components);
+  const h=['id','type','name','mfgDate','channels','notes','registered','totalHours','experiments'];
+  dlCSV([h,...comps.map(c=>[c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',totalHours(c.id).toFixed(1),db.experiments.filter(e=>(e.components||[]).includes(c.id)).length])],'components.csv');
+}
+
+/* ═══════════ EXPORT ═══════════ */
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c===null||c===undefined?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();
+}
+
+/* ═══════════ RENDER ALL ═══════════ */
+function renderAll() { renderExpDb(); renderCompStats(); renderCompList(); }
+
+/* ═══════════ INIT ═══════════ */
+loadLocal();
+onRegTypeChange();
+renderPstatSteps();
+
+// MSAL redirect handle
+msal$.handleRedirectPromise().then(r=>{
+  if(r){msal$.setActiveAccount(r.account);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in','ok');syncFromExcel();});}
+}).catch(e=>console.error(e));
+
+// Auto sign-in if cached
+const cached = msal$.getAllAccounts();
+if(cached.length>0){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');syncFromExcel();}).catch(()=>setSS('Session expired','err'));}
+</script>
+</body>
+</html>
