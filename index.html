@@ -535,7 +535,9 @@ const CLIENT_ID = '19efdbb0-7365-45ae-b99b-3b512b035e84';
 const REDIRECT_URI = 'https://kuleanatech.github.io/sapa-tracker/';
 const TENANT_HOST = 'kuleanatechnology.sharepoint.com';
 const SITE_PATH = '/sites/KuleanaTechnology';
-const FILE_DRIVE_PATH = '/sites/KuleanaTechnology/Shared%20Documents/KULEANA%20DEV/SAPA%20tracking%20database/lab-tracker-data.xlsx';
+// Path relative to the SharePoint drive root
+const FILE_FOLDER = 'KULEANA DEV/SAPA tracking database';
+const FILE_NAME = 'lab-tracker-data.xlsx';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 const msalCfg = { auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/common', redirectUri: REDIRECT_URI }, cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true } };
@@ -596,60 +598,123 @@ async function getDriveId() {
   const d = await gfetch(`/sites/${TENANT_HOST}:${SITE_PATH}:/drive`);
   driveId = d?.id; return driveId;
 }
+
 async function getFileId() {
   if (fileItemId) return fileItemId;
-  const d = await gfetch(`/sites/${TENANT_HOST}:${SITE_PATH}:/drive/root:${decodeURIComponent(FILE_DRIVE_PATH)}`);
+  const did = await getDriveId(); if (!did) return null;
+  // Look up file by path relative to drive root — Shared Documents is the default document library root
+  const encodedPath = encodeURIComponent(`Shared Documents/${FILE_FOLDER}/${FILE_NAME}`).replace(/%2F/g,'/');
+  const d = await gfetch(`/drives/${did}/root:/${encodedPath}`);
   if (d?.id) { fileItemId = d.id; return fileItemId; }
   return await createExcelFile();
 }
+
 async function createExcelFile() {
   setSS('Creating Excel file...','syncing');
   const did = await getDriveId(); if (!did) return null;
+  const encodedPath = encodeURIComponent(`Shared Documents/${FILE_FOLDER}/${FILE_NAME}`).replace(/%2F/g,'/');
 
-  // Minimal valid OOXML .xlsx (empty workbook, properly structured)
-  // Base64-encoded minimal xlsx created from a known-good empty workbook
-  const minimalXlsxB64 =
-    'UEsDBBQAAAAIAAAAIQBi7p1oXgEAAJAEAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbK2Uy2rD' +
-    'MBCF9/0KoW1R7HSRUkrjTbYpuJceQJHHiYgs6WJJ0r/vKE5KSoLjbGUk5sz5ZiRvtnkuBp' +
-    'DBoqMNW9KCQK/QON9R+n08rDZ0lBU3SuRaNDRCZFudy8bx4lJCJAoFtGUaKUknt2nJkD2k' +
-    'BDQ8ODBpG0i3ICRLAFXb5nKJkJF9TLaRGgAlL7vJ0q4B7AAAAAAA//8DAFBLAwQUAAAACAAA' +
-    'ACEAkSRTM6QAAADQAAAAEAAAAZHJzL3NoYXJlZFN0cmluZ3MueG1sAwAAAAAAAAAAAAAAAAAA' +
-    'AAAAAAAAAAAAAAAAAABQSwMEFAAAAAgAAAAhAJ6WRVD4AAAAWQEAAA8AAABkcnMvdGhlbWUx' +
-    'LnhtbAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUEsDBAoAAAAAAA==';
+  // Upload a minimal but valid xlsx file
+  // This is the smallest valid xlsx (has workbook.xml, [Content_Types].xml, _rels/.rels)
+  const xlsx = buildMinimalXlsx();
 
-  // Decode base64 to Uint8Array
-  const bstr = atob(minimalXlsxB64);
-  const bytes = new Uint8Array(bstr.length);
-  for (let i=0;i<bstr.length;i++) bytes[i] = bstr.charCodeAt(i);
-
-  const res = await fetch(`${GRAPH}/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
+  const res = await fetch(`${GRAPH}/drives/${did}/root:/${encodedPath}:/content`, {
     method: 'PUT',
     headers: {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     },
-    body: bytes
+    body: xlsx
   });
 
   if (!res.ok) {
-    // Fallback: create as empty file and let Graph handle it
-    const res2 = await fetch(`${GRAPH}/drives/${did}/root:${decodeURIComponent(FILE_DRIVE_PATH)}:/content`, {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'text/plain' },
-      body: ''
-    });
-    if (!res2.ok) { setSS('Could not create Excel file','err'); return null; }
-    const data2 = await res2.json();
-    fileItemId = data2.id;
-  } else {
-    const data = await res.json();
-    fileItemId = data.id;
+    const txt = await res.text();
+    console.error('File create failed:', res.status, txt);
+    setSS('Could not create Excel file','err');
+    return null;
   }
-
-  // Wait briefly for SharePoint to process the file before adding sheets
-  await new Promise(r => setTimeout(r, 2000));
+  const data = await res.json();
+  fileItemId = data.id;
+  await new Promise(r => setTimeout(r, 3000)); // wait for SharePoint to process
   await initSheets();
   return fileItemId;
+}
+
+function buildMinimalXlsx() {
+  // Build a minimal valid xlsx using JSZip-style manual zip construction
+  // We'll create a proper ZIP file with the required OOXML structure
+  const files = {
+    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>',
+    'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
+    'xl/worksheets/sheet1.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>'
+  };
+  return createZip(files);
+}
+
+function createZip(files) {
+  // Build a ZIP file from scratch (no external library needed for this simple case)
+  const enc = new TextEncoder();
+  const parts = [];
+  const centralDir = [];
+  let offset = 0;
+
+  function crc32(data) {
+    let crc = 0xFFFFFFFF;
+    const table = crc32.table || (crc32.table = (() => {
+      const t = new Uint32Array(256);
+      for (let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c;}
+      return t;
+    })());
+    for (const b of data) crc = table[(crc^b)&0xFF]^(crc>>>8);
+    return (crc^0xFFFFFFFF)>>>0;
+  }
+
+  function u16(n){const b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,n,true);return b;}
+  function u32(n){const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n,true);return b;}
+  function concat(...arrays){const total=arrays.reduce((s,a)=>s+a.length,0);const out=new Uint8Array(total);let i=0;for(const a of arrays){out.set(a,i);i+=a.length;}return out;}
+
+  for (const [name, content] of Object.entries(files)) {
+    const nameBytes = enc.encode(name);
+    const dataBytes = enc.encode(content);
+    const crc = crc32(dataBytes);
+    const localHeader = concat(
+      new Uint8Array([0x50,0x4B,0x03,0x04]), // local file header sig
+      u16(20), u16(0), u16(0),               // version, flags, compression (stored)
+      u16(0), u16(0),                         // mod time, mod date
+      u32(crc),                               // crc32
+      u32(dataBytes.length),                  // compressed size
+      u32(dataBytes.length),                  // uncompressed size
+      u16(nameBytes.length), u16(0),          // filename len, extra len
+      nameBytes
+    );
+    parts.push(localHeader, dataBytes);
+    centralDir.push({name:nameBytes, crc, size:dataBytes.length, offset});
+    offset += localHeader.length + dataBytes.length;
+  }
+
+  const centralDirEntries = centralDir.map(({name,crc,size,offset}) => concat(
+    new Uint8Array([0x50,0x4B,0x01,0x02]), // central dir sig
+    u16(20), u16(20), u16(0), u16(0),      // versions, flags
+    u16(0),                                  // compression
+    u16(0), u16(0),                          // mod time, date
+    u32(crc), u32(size), u32(size),          // crc, comp size, uncomp size
+    u16(name.length), u16(0), u16(0),        // name len, extra len, comment len
+    u16(0), u16(0), u32(0),                  // disk start, int attr, ext attr
+    u32(offset),                              // local header offset
+    name
+  ));
+
+  const cdBytes = concat(...centralDirEntries);
+  const eocd = concat(
+    new Uint8Array([0x50,0x4B,0x05,0x06,0,0,0,0]),
+    u16(centralDir.length), u16(centralDir.length),
+    u32(cdBytes.length), u32(offset),
+    u16(0)
+  );
+
+  return concat(...parts, cdBytes, eocd);
 }
 
 async function initSheets() {
@@ -657,16 +722,16 @@ async function initSheets() {
   if (!did || !fid) return;
   const base = `/drives/${did}/items/${fid}/workbook`;
 
-  // Rename Sheet1 to Components, add Experiments
-  // First get existing sheets
+  // Get existing sheets
   const existing = await gfetch(`${base}/worksheets`);
-  const sheets = existing?.value?.map(s => s.name) || [];
+  const sheets = (existing?.value||[]).map(s => s.name);
 
+  // Rename Sheet1 → Components if needed
   if (!sheets.includes('Components')) {
-    if (sheets[0] && sheets[0] !== 'Components') {
-      // Rename first sheet
-      await gfetch(`${base}/worksheets/${encodeURIComponent(sheets[0])}`, {
-        method: 'PATCH', body: JSON.stringify({name:'Components'})
+    const first = existing?.value?.[0];
+    if (first) {
+      await gfetch(`${base}/worksheets('${encodeURIComponent(first.name)}')`, {
+        method:'PATCH', body:JSON.stringify({name:'Components'})
       });
     } else {
       await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Components'})});
@@ -676,11 +741,9 @@ async function initSheets() {
     await gfetch(`${base}/worksheets`, {method:'POST', body:JSON.stringify({name:'Experiments'})});
   }
 
-  // Write headers
   await gfetch(`${base}/worksheets/Components/range(address='A1:M1')`, {method:'PATCH', body:JSON.stringify({values:[['id','type','name','mfgDate','channels','ledGen','ledActive','glassSynthDate','glassQC','notes','registered','flaggedForDeletion','totalHours']]})});
   await gfetch(`${base}/worksheets/Experiments/range(address='A1:AJ1')`, {method:'PATCH', body:JSON.stringify({values:[['id','name','date','plannedHours','operator','description','chemicals','samplePoints','ledConfig','solDist','flowRate','pump','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','notes','status','actualHours','startVol','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components','panels','flaggedForDeletion','completedAt']]})});
 }
-
 async function syncToExcel() {
   if (!accessToken) return;
   setSS('Syncing...','syncing');
