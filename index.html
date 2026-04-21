@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-001</title>
+<title>SAPA Lab Tracker — v2026-04-21-002</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -209,9 +209,9 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- TOP NAV -->
 <div class="nav-top">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-001</span></div>
-  <button class="nav-tab-main" id="mtab-exp" onclick="showMain('exp',this)">Experiments</button>
-  <button class="nav-tab-main" id="mtab-comp" onclick="showMain('comp',this)">Components</button>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-002</span></div>
+  <button class="nav-tab-main" id="mtab-exp" onclick="showMain('exp',this)" style="display:none;">Experiments</button>
+  <button class="nav-tab-main" id="mtab-comp" onclick="showMain('comp',this)" style="display:none;">Components</button>
   <div class="nav-sync">
     <div class="sync-dot" id="sync-dot"></div>
     <span class="sync-lbl" id="sync-lbl">Not signed in</span>
@@ -219,7 +219,17 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   </div>
 </div>
 
-<!-- ═══════ EXPERIMENTS ═══════ -->
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:20px;text-align:center;padding:20px;">
+  <div style="font-family:var(--mono);font-size:24px;color:var(--gr);letter-spacing:.1em;">⬡</div>
+  <div style="font-family:var(--mono);font-size:14px;letter-spacing:.1em;color:var(--tx);">SAPA TRACKER</div>
+  <div style="font-size:13px;color:var(--tx2);max-width:320px;line-height:1.7;">Sign in with your Kuleana Microsoft account to access the lab tracker.</div>
+  <button class="btn-gr" onclick="handleAuth()" style="font-size:13px;padding:12px 28px;letter-spacing:.06em;">Sign in with Microsoft</button>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);" id="login-status"></div>
+</div>
+
+<!-- MAIN APP (hidden until signed in) -->
+<div id="app-content" style="display:none;">
 <div class="main-section" id="ms-exp">
   <div class="nav-sub">
     <button class="nav-tab-sub" id="stab-exp-new" onclick="showSub('exp','new',this)">Create new experiment</button>
@@ -516,6 +526,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   </div>
 </div>
 
+</div><!-- end app-content -->
+
 <!-- ═══════ CAMERA MODAL ═══════ -->
 <div class="cam-modal-overlay" id="cam-overlay" style="display:none;" onclick="closeCamIfOverlay(event)">
   <div class="cam-modal">
@@ -578,6 +590,7 @@ async function handleAuth() {
     localStorage.setItem('sapa_signed_out', '1');
     setSS('Not signed in','');
     document.getElementById('auth-btn').textContent = 'Sign in';
+    showLogin();
     renderAll();
     msal$.logoutPopup();
     return;
@@ -590,6 +603,7 @@ async function handleAuth() {
     localStorage.removeItem('sapa_signed_out');
     document.getElementById('auth-btn').textContent = 'Sign out';
     setSS('Signed in','ok');
+    showApp();
     await syncFromCloud();
   } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
 }
@@ -603,6 +617,19 @@ function setSS(msg, state) {
   document.getElementById('sync-lbl').textContent = msg;
   const d = document.getElementById('sync-dot');
   d.className = 'sync-dot' + (state ? ' ' + state : '');
+}
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
+  document.getElementById('mtab-exp').style.display = 'inline-block';
+  document.getElementById('mtab-comp').style.display = 'inline-block';
+}
+function showLogin(msg) {
+  document.getElementById('app-content').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('mtab-exp').style.display = 'none';
+  document.getElementById('mtab-comp').style.display = 'none';
+  if (msg) document.getElementById('login-status').textContent = msg;
 }
 
 /* ═══════════ JSON SYNC ═══════════ */
@@ -1682,13 +1709,14 @@ renderPstatSteps();
 
 // MSAL redirect handle
 msal$.handleRedirectPromise().then(r=>{
-  if(r){msal$.setActiveAccount(r.account);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in','ok');syncFromCloud();});}
+  if(r){msal$.setActiveAccount(r.account);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in','ok');showApp();syncFromCloud();});}
 }).catch(e=>console.error(e));
 
 // Auto sign-in only if user hasn't explicitly signed out
 const userSignedOut = localStorage.getItem('sapa_signed_out');
 const cached = msal$.getAllAccounts();
-if(cached.length>0 && !userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');syncFromCloud();}).catch(()=>setSS('Session expired','err'));}
+if(cached.length>0 && !userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');showApp();syncFromCloud();}).catch(()=>{setSS('Session expired','err');showLogin('Session expired — please sign in again.');});}
+else{showLogin();}
 </script>
 </body>
 </html>
