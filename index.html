@@ -540,6 +540,50 @@ const FILE_FOLDER = 'KULEANA DEV/SAPA tracking database';
 const FILE_NAME = 'lab-tracker-data.json';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
+const msalCfg = { auth: { clientId: CLIENT_ID, authority: 'https://login.microsoftonline.com/common', redirectUri: REDIRECT_URI }, cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true } };
+const msal$ = new msal.PublicClientApplication(msalCfg);
+const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All'];
+
+/* ═══════════ LOCAL DB ═══════════ */
+const LKEY = 'sapa_v2';
+let db = { components: {}, experiments: [] };
+let activeExpId = null;
+let accessToken = null;
+let driveId = null;
+
+function loadLocal() {
+  try { const r = localStorage.getItem(LKEY); if (r) db = JSON.parse(r); } catch(e) {}
+  activeExpId = (db.experiments.find(e => e.status === 'active') || {}).id || null;
+}
+function saveLocal() { localStorage.setItem(LKEY, JSON.stringify(db)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fdate(iso) { if (!iso) return '—'; return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
+function tn(t) { return {panel:'Panel',paper:'Paper frame',glass:'Glass frame',engine:'Light engine'}[t] || t; }
+function tb(t) { return `<span class="badge b-${t}">${tn(t)}</span>`; }
+function ge(id) { return db.experiments.find(e => e.id === id); }
+function fv(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
+function totalHours(cid) {
+  return db.experiments.filter(e => (e.components||[]).includes(cid) && e.actualHours).reduce((s,e) => s + e.actualHours, 0);
+}
+
+/* ═══════════ AUTH ═══════════ */
+async function handleAuth() {
+  if (msalInstance().length > 0) { msal$.logoutPopup(); accessToken = null; setSS('Not signed in',''); document.getElementById('auth-btn').textContent = 'Sign in'; return; }
+  try { setSS('Signing in...','syncing'); const r = await msal$.loginPopup({scopes:SCOPES}); msal$.setActiveAccount(r.account); await getToken(); document.getElementById('auth-btn').textContent = 'Sign out'; setSS('Signed in','ok'); await syncFromCloud(); } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
+}
+function msalInstance() { return msal$.getAllAccounts(); }
+async function getToken() {
+  const accs = msal$.getAllAccounts(); if (!accs.length) return;
+  try { const r = await msal$.acquireTokenSilent({scopes:SCOPES,account:accs[0]}); accessToken = r.accessToken; }
+  catch(e) { const r = await msal$.acquireTokenPopup({scopes:SCOPES}); accessToken = r.accessToken; }
+}
+function setSS(msg, state) {
+  document.getElementById('sync-lbl').textContent = msg;
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot' + (state ? ' ' + state : '');
+}
+
 /* ═══════════ JSON SYNC ═══════════ */
 async function getDriveId() {
   if (driveId) return driveId;
