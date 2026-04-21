@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker</title>
+<title>SAPA Lab Tracker — v2026-04-21-001</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -209,7 +209,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- TOP NAV -->
 <div class="nav-top">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER</div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-001</span></div>
   <button class="nav-tab-main" id="mtab-exp" onclick="showMain('exp',this)">Experiments</button>
   <button class="nav-tab-main" id="mtab-comp" onclick="showMain('comp',this)">Components</button>
   <div class="nav-sync">
@@ -570,18 +570,28 @@ function totalHours(cid) {
 /* ═══════════ AUTH ═══════════ */
 async function handleAuth() {
   if (msalInstance().length > 0) {
-    msal$.logoutPopup();
     accessToken = null;
     driveId = null;
     db = { components: {}, experiments: [] };
     activeExpId = null;
     localStorage.removeItem(LKEY);
+    localStorage.setItem('sapa_signed_out', '1');
     setSS('Not signed in','');
     document.getElementById('auth-btn').textContent = 'Sign in';
     renderAll();
+    msal$.logoutPopup();
     return;
   }
-  try { setSS('Signing in...','syncing'); const r = await msal$.loginPopup({scopes:SCOPES}); msal$.setActiveAccount(r.account); await getToken(); document.getElementById('auth-btn').textContent = 'Sign out'; setSS('Signed in','ok'); await syncFromCloud(); } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
+  try {
+    setSS('Signing in...','syncing');
+    const r = await msal$.loginPopup({scopes:SCOPES});
+    msal$.setActiveAccount(r.account);
+    await getToken();
+    localStorage.removeItem('sapa_signed_out');
+    document.getElementById('auth-btn').textContent = 'Sign out';
+    setSS('Signed in','ok');
+    await syncFromCloud();
+  } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
 }
 function msalInstance() { return msal$.getAllAccounts(); }
 async function getToken() {
@@ -1675,9 +1685,10 @@ msal$.handleRedirectPromise().then(r=>{
   if(r){msal$.setActiveAccount(r.account);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in','ok');syncFromCloud();});}
 }).catch(e=>console.error(e));
 
-// Auto sign-in if cached
+// Auto sign-in only if user hasn't explicitly signed out
+const userSignedOut = localStorage.getItem('sapa_signed_out');
 const cached = msal$.getAllAccounts();
-if(cached.length>0){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');syncFromCloud();}).catch(()=>setSS('Session expired','err'));}
+if(cached.length>0 && !userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');syncFromCloud();}).catch(()=>setSS('Session expired','err'));}
 </script>
 </body>
 </html>
