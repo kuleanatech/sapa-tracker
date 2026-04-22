@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-012</title>
+<title>SAPA Lab Tracker — v2026-04-21-014</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -195,7 +195,7 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .url-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
 
 /* ── CAMERA MODAL ── */
-.cam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.cam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;}
 .cam-overlay.open{display:flex;}
 .cam-modal{background:var(--bg1);border:1px solid var(--ln2);border-radius:var(--rl);padding:20px;width:100%;max-width:400px;}
 .cam-title{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:12px;letter-spacing:.06em;}
@@ -220,7 +220,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-012</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-014</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -594,22 +594,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   <div class="panel-footer">
     <button class="btn-gr" onclick="saveEditComp()">Save changes</button>
     <button onclick="closeEditCompPanel()">Cancel</button>
-  </div>
-</div>
-
-<!-- ═══════ CAMERA MODAL ═══════ -->
-<div class="cam-overlay" id="cam-overlay" onclick="closeCamIfOverlay(event)">
-  <div class="cam-modal">
-    <div class="cam-title" id="cam-title">Scanning...</div>
-    <div class="cam-wrap">
-      <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:var(--r);display:block;"></video>
-      <canvas id="cam-canvas" style="display:none;"></canvas>
-    </div>
-    <div class="cam-flash" id="cam-flash"></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
-      <button onclick="closeCam()">Cancel</button>
-    </div>
   </div>
 </div>
 
@@ -1178,7 +1162,7 @@ function openCam(type,pid,idx,field) {
   document.getElementById('cam-title').textContent=titles[type==='slot'?'slot':type]||'Scanning...';
   document.getElementById('cam-flash').style.display='none';
   document.getElementById('cam-manual').value='';
-  document.getElementById('cam-overlay').classList.add('open');
+  document.getElementById('cam-overlay').style.display = 'flex';
   startCam();
 }
 
@@ -1221,7 +1205,7 @@ function closeCam() {
   const video = document.getElementById('cam-video');
   if (video) { video.srcObject=null; }
   camTarget=null;
-  document.getElementById('cam-overlay').classList.remove('open');
+  document.getElementById('cam-overlay').style.display = 'none';
 }
 function closeCamIfOverlay(e){if(e.target===document.getElementById('cam-overlay'))closeCam();}
 function handleCamResult(id) {
@@ -1666,5 +1650,20 @@ const cached=msal$.getAllAccounts();
 if(cached.length>0&&!userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');showApp();syncFromCloud();}).catch(()=>{setSS('Session expired','err');showLogin('Session expired — please sign in again.');});}
 else{showLogin();}
 </script>
+<!-- ═══════ CAMERA MODAL ═══════ -->
+<div class="cam-overlay" id="cam-overlay" onclick="closeCamIfOverlay(event)">
+  <div class="cam-modal">
+    <div class="cam-title" id="cam-title">Scanning...</div>
+    <div class="cam-wrap">
+      <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:var(--r);display:block;"></video>
+      <canvas id="cam-canvas" style="display:none;"></canvas>
+    </div>
+    <div class="cam-flash" id="cam-flash"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
+      <button onclick="closeCam()">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
