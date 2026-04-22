@@ -3,33 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-002</title>
+<title>SAPA Lab Tracker — v2026-04-21-004</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#0e100f;--bg1:#151815;--bg2:#1c1f1c;--bg3:#232623;
-  --ln:rgba(255,255,255,0.07);--ln2:rgba(255,255,255,0.13);--ln3:rgba(255,255,255,0.22);
-  --tx:#dfe3dd;--tx2:#7d8a7b;--tx3:#3f4a3e;
-  --gr:#3dff7a;--grd:rgba(61,255,122,0.1);--grm:rgba(61,255,122,0.22);
-  --am:#ffb83d;--amd:rgba(255,184,61,0.1);--amm:rgba(255,184,61,0.22);
-  --rd:#ff5252;--rdd:rgba(255,82,82,0.1);
-  --bl:#4db8ff;--bld:rgba(77,184,255,0.1);
-  --pu:#b87fff;--pud:rgba(184,127,255,0.1);
+  --bg:#f4f5f7;--bg1:#ffffff;--bg2:#f0f1f3;--bg3:#e4e6ea;
+  --ln:rgba(0,0,0,0.08);--ln2:rgba(0,0,0,0.14);--ln3:rgba(0,0,0,0.22);
+  --tx:#1a1c1e;--tx2:#505666;--tx3:#8b90a0;
+  --gr:#1a7f45;--grd:rgba(26,127,69,0.1);--grm:rgba(26,127,69,0.2);
+  --am:#b05c00;--amd:rgba(176,92,0,0.1);--amm:rgba(176,92,0,0.2);
+  --rd:#c0392b;--rdd:rgba(192,57,43,0.1);
+  --bl:#1565c0;--bld:rgba(21,101,192,0.1);
+  --pu:#6a1b9a;--pud:rgba(106,27,154,0.1);
   --r:5px;--rl:9px;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --panel-w:480px;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;min-height:100vh;}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
 
 /* ── NAV ── */
-.nav-top{display:flex;align-items:stretch;border-bottom:1px solid var(--ln);background:var(--bg1);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.nav{display:flex;align-items:stretch;border-bottom:1px solid var(--ln);background:var(--bg1);position:sticky;top:0;z-index:300;}
 .nav-brand{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--gr);padding:0 16px;display:flex;align-items:center;border-right:1px solid var(--ln);white-space:nowrap;flex-shrink:0;gap:8px;}
-.nav-tab-main{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--tx2);padding:13px 18px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
-.nav-tab-main:hover{color:var(--tx);}
-.nav-tab-main.active{color:var(--gr);border-bottom-color:var(--gr);}
-.nav-sync{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;border-left:1px solid var(--ln);}
+.nav-tab{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--tx2);padding:13px 18px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
+.nav-tab:hover{color:var(--tx);}
+.nav-tab.active{color:var(--gr);border-bottom-color:var(--gr);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;border-left:1px solid var(--ln);}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--tx3);flex-shrink:0;transition:background .3s;}
 .sync-dot.ok{background:var(--gr);}
 .sync-dot.err{background:var(--rd);}
@@ -37,16 +38,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 .sync-lbl{font-family:var(--mono);font-size:10px;color:var(--tx3);}
 
-/* ── SUB TABS ── */
-.nav-sub{display:flex;align-items:stretch;border-bottom:1px solid var(--ln);background:var(--bg2);padding:0 18px;gap:4px;}
-.nav-tab-sub{font-family:var(--mono);font-size:11px;color:var(--tx3);padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
-.nav-tab-sub:hover{color:var(--tx2);}
-.nav-tab-sub.active{color:var(--am);border-bottom-color:var(--am);}
-
 /* ── PAGES ── */
-.main-section{display:none;}.main-section.active{display:block;}
-.sub-section{display:none;padding:18px;max-width:900px;margin:0 auto;}.sub-section.active{display:block;}
-.sub-placeholder{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--tx3);font-family:var(--mono);font-size:12px;flex-direction:column;gap:12px;}
+.page{display:none;min-height:calc(100vh - 45px);}
+.page.active{display:block;}
+.page-inner{max-width:900px;margin:0 auto;padding:20px 18px;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;}
+.page-title{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--tx3);text-transform:uppercase;}
 
 /* ── CARDS ── */
 .card{background:var(--bg1);border:1px solid var(--ln);border-radius:var(--rl);padding:18px;margin-bottom:12px;}
@@ -64,16 +63,14 @@ input[type=checkbox]{width:auto;accent-color:var(--gr);}
 .frow{margin-bottom:12px;}
 .fg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
 .fg3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;}
-.fg4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
 
-/* ── COLLAPSIBLE SECTIONS ── */
-.collapsible-header{display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;border-top:1px solid var(--ln);margin-top:8px;user-select:none;}
-.collapsible-header:first-child{border-top:none;}
-.collapsible-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-.collapsible-arrow{font-family:var(--mono);font-size:12px;color:var(--tx3);transition:transform .2s;}
-.collapsible-arrow.open{transform:rotate(180deg);}
-.collapsible-body{display:none;padding:10px 0 4px;}
-.collapsible-body.open{display:block;}
+/* ── COLLAPSIBLES ── */
+.coll-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;border-top:1px solid var(--ln);margin-top:6px;user-select:none;}
+.coll-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.coll-arrow{font-family:var(--mono);font-size:12px;color:var(--tx3);transition:transform .2s;}
+.coll-arrow.open{transform:rotate(180deg);}
+.coll-body{display:none;padding:10px 0 4px;}
+.coll-body.open{display:block;}
 
 /* ── BUTTONS ── */
 button{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:8px 14px;border:1px solid var(--ln3);border-radius:var(--r);background:var(--bg2);color:var(--tx2);cursor:pointer;transition:all .15s;white-space:nowrap;}
@@ -86,7 +83,7 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .btn-am:hover{background:var(--amm);color:var(--am);}
 .btn-rd{background:var(--rdd);color:var(--rd);border-color:rgba(255,82,82,.25);}
 .btn-rd:hover{background:rgba(255,82,82,.2);color:var(--rd);}
-.btn-cam{background:var(--bg3);color:var(--bl);border-color:rgba(77,184,255,.3);padding:5px 9px;font-size:13px;line-height:1;}
+.btn-cam{background:var(--bg3);color:var(--bl);border-color:rgba(77,184,255,.3);padding:5px 9px;font-size:15px;line-height:1;}
 .btn-cam:hover{background:var(--bld);color:var(--bl);}
 .brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
 
@@ -100,52 +97,19 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .b-complete{background:var(--grd);color:var(--gr);}
 .b-flagged{background:var(--rdd);color:var(--rd);}
 
-/* ── CAMERA MODAL ── */
-.cam-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
-.cam-modal{background:var(--bg1);border:1px solid var(--ln2);border-radius:var(--rl);padding:20px;width:100%;max-width:420px;}
-.cam-modal-title{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:12px;letter-spacing:.06em;}
-.cam-modal-wrap{border-radius:var(--r);overflow:hidden;background:var(--bg2);min-height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
-.cam-modal-wrap>div{width:100%!important;}
-.cam-ph{text-align:center;color:var(--tx3);font-family:var(--mono);font-size:11px;padding:20px;}
-.cam-flash{padding:8px 12px;border-radius:var(--r);font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;}
-.cam-flash.ok{background:var(--grd);color:var(--gr);}
-.cam-flash.err{background:var(--rdd);color:var(--rd);}
+/* ── SLIDE-IN PANEL ── */
+.panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s;}
+.panel-overlay.open{opacity:1;pointer-events:all;}
+.slide-panel{position:fixed;top:0;right:0;bottom:0;width:var(--panel-w);max-width:100vw;background:var(--bg1);border-left:1px solid var(--ln2);z-index:401;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.slide-panel.open{transform:translateX(0);}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--ln);flex-shrink:0;}
+.panel-title{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--tx);text-transform:uppercase;}
+.panel-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:var(--r);}
+.panel-close:hover{color:var(--tx);background:var(--bg2);}
+.panel-body{flex:1;overflow-y:auto;padding:20px;}
+.panel-footer{padding:14px 20px;border-top:1px solid var(--ln);display:flex;gap:8px;flex-shrink:0;}
 
-/* ── MISC ── */
-hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
-.empty{text-align:center;padding:32px;color:var(--tx3);font-family:var(--mono);font-size:11px;}
-.pill-rd{font-family:var(--mono);font-size:9px;color:var(--rd);background:var(--rdd);padding:1px 5px;border-radius:3px;display:inline-block;}
-.pill-am{font-family:var(--mono);font-size:9px;color:var(--am);background:var(--amd);padding:1px 5px;border-radius:3px;display:inline-block;}
-
-/* ── EXP LED GRIDS ── */
-.exp-eng-block{background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
-.exp-eng-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
-.exp-eng-title{font-size:12px;font-weight:500;}
-.exp-pwr-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
-.exp-pwr-row label{margin:0;white-space:nowrap;}
-.exp-pwr-row input{width:80px;flex:none;}
-
-/* ── SAMPLE ROWS ── */
-.sample-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px auto;gap:6px;align-items:center;margin-bottom:6px;}
-.sample-row input{font-size:12px;}
-.sample-total-cell{font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;}
-
-
-.led-grid{display:inline-grid;gap:4px;padding:10px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--ln2);}
-.led-cell{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ln3);background:var(--bg3);cursor:pointer;transition:background .12s,border-color .12s;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;color:var(--tx3);}
-.led-cell.on{background:var(--am);border-color:var(--amm);color:var(--bg);}
-.led-col-label{font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;}
-
-
-.ch-table{width:100%;border-collapse:collapse;font-size:12px;}
-.ch-table th{font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);}
-.ch-table td{padding:5px 6px;border-bottom:1px solid var(--ln);vertical-align:middle;}
-.ch-table tr:last-child td{border-bottom:none;}
-.ch-table select{font-size:12px;padding:5px 7px;}
-.slot-row{display:flex;align-items:center;gap:4px;}
-.slot-row select{flex:1;}
-
-/* ── EXP ROWS ── */
+/* ── EXPERIMENT LIST ── */
 .exp-row{background:var(--bg1);border:1px solid var(--ln);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;}
 .exp-row.flagged-row{border-left:3px solid var(--rd);}
 .exp-summary{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;transition:background .15s;user-select:none;}
@@ -155,7 +119,14 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 .exp-detail{display:none;border-top:1px solid var(--ln);padding:16px 18px;}
 .exp-detail.open{display:block;}
 
-/* ── COMP ROWS ── */
+/* ── ACTIVE EXP BANNER ── */
+.active-banner{background:var(--bg1);border:1px solid rgba(61,255,122,.3);border-radius:var(--rl);padding:14px 18px;margin-bottom:14px;}
+.active-banner-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+/* ── CLOSEOUT PANEL ── */
+.closeout{background:var(--bg2);border:1px solid rgba(61,255,122,.3);border-bottom-left-radius:var(--rl);border-bottom-right-radius:var(--rl);padding:18px;margin-top:-12px;margin-bottom:14px;border-top:none;}
+
+/* ── COMPONENT LIST ── */
 .comp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--ln);}
 .comp-row:last-child{border-bottom:none;}
 .comp-row.flagged-row{border-left:3px solid var(--rd);padding-left:8px;}
@@ -163,19 +134,18 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 .comp-name{font-size:13px;font-weight:500;}
 .comp-sub{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:1px;}
 
-/* ── HIST ── */
+/* ── HISTORY ── */
 .hist-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln);gap:10px;}
 .hist-row:last-child{border-bottom:none;}
 .hist-link{font-family:var(--mono);font-size:10px;color:var(--bl);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .hist-link:hover{text-decoration:underline;}
 
-/* ── SEARCH ── */
+/* ── SEARCH BAR ── */
 .search-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
-.search-bar input,.search-bar select{flex:1;min-width:140px;}
-.section-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.search-bar input,.search-bar select{flex:1;min-width:130px;}
 
 /* ── STAT BAND ── */
-.sband{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;}
+.sband{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px;}
 .stile{background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 12px;}
 .stile .sl{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:.08em;margin-bottom:3px;}
 .stile .sv{font-family:var(--mono);font-size:18px;}
@@ -186,20 +156,60 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 .df .dk{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:3px;}
 .df .dv{font-size:13px;color:var(--tx);line-height:1.5;}
 
-/* ── IMODAL ── */
-.imodal{background:var(--bg2);border:1px solid rgba(61,255,122,.3);border-radius:var(--rl);padding:16px 18px;margin-bottom:12px;}
+/* ── CHANNEL TABLE ── */
+.ch-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ch-table th{font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);}
+.ch-table td{padding:5px 6px;border-bottom:1px solid var(--ln);vertical-align:middle;}
+.ch-table tr:last-child td{border-bottom:none;}
+.ch-table select{font-size:12px;padding:5px 7px;}
+.slot-row{display:flex;align-items:center;gap:4px;}
+.slot-row select{flex:1;}
+
+/* ── PANEL SELECT ROW ── */
+.panel-sel-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.panel-sel-row select{flex:1;min-width:160px;}
+
+/* ── LED ── */
+.led-grid{display:inline-grid;gap:4px;padding:10px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--ln2);}
+.led-cell{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ln3);background:var(--bg3);cursor:pointer;transition:background .12s;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);}
+.led-cell.on{background:#b05c00;border-color:#d4760a;color:#fff;}
+.led-col-label{font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;}
+.exp-eng-block{background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
+.exp-eng-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.exp-pwr-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.exp-pwr-row label{margin:0;white-space:nowrap;}
+.exp-pwr-row input{width:80px;flex:none;}
+
+/* ── SAMPLE ROWS ── */
+.sample-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px auto;gap:6px;align-items:center;margin-bottom:6px;}
+.sample-row input{font-size:12px;}
+.sample-total-cell{font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;}
 
 /* ── PSTAT ── */
 .pstat-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
 .pstat-row input{flex:1;}
 .pstat-lbl{font-family:var(--mono);font-size:11px;color:var(--tx3);white-space:nowrap;}
 
-/* ── URL ── */
+/* ── URL ROWS ── */
 .url-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
 
-/* ── PANEL SELECT ROW ── */
-.panel-select-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
-.panel-select-row select{flex:1;min-width:160px;}
+/* ── CAMERA MODAL ── */
+.cam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.cam-overlay.open{display:flex;}
+.cam-modal{background:var(--bg1);border:1px solid var(--ln2);border-radius:var(--rl);padding:20px;width:100%;max-width:400px;}
+.cam-title{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:12px;letter-spacing:.06em;}
+.cam-wrap{border-radius:var(--r);overflow:hidden;background:var(--bg2);min-height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.cam-wrap>div{width:100%!important;}
+.cam-ph{text-align:center;color:var(--tx3);font-family:var(--mono);font-size:11px;padding:20px;}
+.cam-flash{padding:8px 12px;border-radius:var(--r);font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;display:none;}
+.cam-flash.ok{display:block;background:var(--grd);color:var(--gr);}
+.cam-flash.err{display:block;background:var(--rdd);color:var(--rd);}
+
+/* ── MISC ── */
+hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
+.empty{text-align:center;padding:32px;color:var(--tx3);font-family:var(--mono);font-size:11px;}
+.pill-rd{font-family:var(--mono);font-size:9px;color:var(--rd);background:var(--rdd);padding:1px 5px;border-radius:3px;display:inline-block;}
+.section-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
 
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-thumb{background:var(--ln3);border-radius:2px;}
@@ -207,12 +217,12 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 </head>
 <body>
 
-<!-- TOP NAV -->
-<div class="nav-top">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-002</span></div>
-  <button class="nav-tab-main" id="mtab-exp" onclick="showMain('exp',this)" style="display:none;">Experiments</button>
-  <button class="nav-tab-main" id="mtab-comp" onclick="showMain('comp',this)" style="display:none;">Components</button>
-  <div class="nav-sync">
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-004</span></div>
+  <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
+  <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
+  <div class="nav-right">
     <div class="sync-dot" id="sync-dot"></div>
     <span class="sync-lbl" id="sync-lbl">Not signed in</span>
     <button id="auth-btn" onclick="handleAuth()" style="font-size:10px;padding:5px 10px;">Sign in</button>
@@ -221,289 +231,128 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:20px;text-align:center;padding:20px;">
-  <div style="font-family:var(--mono);font-size:24px;color:var(--gr);letter-spacing:.1em;">⬡</div>
-  <div style="font-family:var(--mono);font-size:14px;letter-spacing:.1em;color:var(--tx);">SAPA TRACKER</div>
+  <div style="font-family:var(--mono);font-size:32px;color:var(--gr);">⬡</div>
+  <div style="font-family:var(--mono);font-size:14px;letter-spacing:.12em;color:var(--tx);">SAPA TRACKER</div>
   <div style="font-size:13px;color:var(--tx2);max-width:320px;line-height:1.7;">Sign in with your Kuleana Microsoft account to access the lab tracker.</div>
-  <button class="btn-gr" onclick="handleAuth()" style="font-size:13px;padding:12px 28px;letter-spacing:.06em;">Sign in with Microsoft</button>
+  <button class="btn-gr" onclick="handleAuth()" style="font-size:13px;padding:12px 28px;">Sign in with Microsoft</button>
   <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);" id="login-status"></div>
 </div>
 
-<!-- MAIN APP (hidden until signed in) -->
+<!-- APP CONTENT -->
 <div id="app-content" style="display:none;">
-<div class="main-section" id="ms-exp">
-  <div class="nav-sub">
-    <button class="nav-tab-sub" id="stab-exp-new" onclick="showSub('exp','new',this)">Create new experiment</button>
-    <button class="nav-tab-sub" id="stab-exp-db" onclick="showSub('exp','db',this)">Experiment database</button>
-  </div>
 
-  <!-- Placeholder -->
-  <div class="sub-placeholder" id="sp-exp">
-    <span style="font-size:24px;opacity:.3;">⬡</span>
-    <span>Select a tab above</span>
-  </div>
+  <!-- ═══════ EXPERIMENTS PAGE ═══════ -->
+  <div class="page" id="page-exp">
+    <div class="page-inner">
 
-  <!-- CREATE NEW -->
-  <div class="sub-section" id="ss-exp-new">
-    <div class="card">
-      <div class="clabel" id="exp-form-lbl">New experiment</div>
-      <input type="hidden" id="ef-editing-id">
-
-      <div class="fg2 frow">
-        <div><label>Experiment name *</label><input type="text" id="ef-name" placeholder="e.g. Run 14 — low intensity"></div>
-        <div><label>Date *</label><input type="date" id="ef-date"></div>
-      </div>
-      <div class="fg2 frow">
-        <div><label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4"></div>
-        <div><label>Operator</label><input type="text" id="ef-operator" placeholder="Name"></div>
-      </div>
-      <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
-
-      <!-- Panel/Channel config (always visible, core) -->
-      <div style="border-top:1px solid var(--ln);margin-top:4px;padding-top:14px;">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;margin-bottom:10px;">Panel &amp; Channel Configuration</div>
-        <div class="panel-select-row">
-          <select id="panel-sel"><option value="">— select a panel —</option></select>
-          <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel QR" style="font-size:15px;">&#128247;</button>
-          <button onclick="addPanelToForm()">Add panel</button>
-        </div>
-        <div id="channel-tables"></div>
-      </div>
-
-      <div class="collapsible-header" onclick="toggleSection('sol')">
-        <div class="collapsible-title">Solution <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
-        <span class="collapsible-arrow" id="arr-sol">▾</span>
-      </div>
-      <div class="collapsible-body" id="cb-sol">
-        <div class="frow">
-          <label>Solution chemicals</label>
-          <div id="chem-rows"></div>
-          <button onclick="addChemRow()" style="margin-top:6px;font-size:11px;">+ Add chemical</button>
-        </div>
-        <div class="fg2 frow">
-          <div><label>Distribution</label>
-            <select id="ef-sol-dist">
-              <option value="">— select —</option>
-              <option>Gravity</option><option>Cascade</option><option>Series</option><option>N/A</option>
-            </select>
+      <!-- Active experiment banner -->
+      <div id="active-banner" class="active-banner" style="display:none;">
+        <div class="active-banner-top">
+          <div>
+            <div class="clabel" style="color:var(--gr);margin-bottom:3px;">Active experiment</div>
+            <div id="ab-name" style="font-size:17px;font-weight:500;margin-bottom:2px;"></div>
+            <div id="ab-meta" style="font-family:var(--mono);font-size:10px;color:var(--tx3);"></div>
           </div>
-          <div><label>Activated carbon (g)</label><input type="number" id="ef-carbon" step="0.01" placeholder="grams"></div>
-        </div>
-        <div class="fg2 frow">
-          <div><label>Flow rate (mL/min)</label><input type="number" id="ef-flow" step="0.1" placeholder="mL/min"></div>
-          <div><label>Pump(s) used</label><input type="text" id="ef-pump" placeholder="e.g. Small peristaltic lab pumps"></div>
-        </div>
-        <div class="frow"><label>Sensors / location</label><input type="text" id="ef-sensors" placeholder="e.g. pH at inlet, conductivity at outlet"></div>
-      </div>
-
-      <!-- COLLAPSIBLE: Light & Electrical -->
-      <div class="collapsible-header" onclick="toggleSection('light')">
-        <div class="collapsible-title">Light &amp; Electrical <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
-        <span class="collapsible-arrow" id="arr-light">▾</span>
-      </div>
-      <div class="collapsible-body" id="cb-light">
-        <div class="fg2 frow">
-          <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
-          <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
-        </div>
-        <div class="frow">
-          <label>Potentiostat program steps</label>
-          <div id="pstat-steps-wrap"></div>
-          <button onclick="addPstatStep()" style="margin-top:6px;font-size:11px;">+ Add step</button>
-        </div>
-        <div class="frow">
-          <label>Total program cycles</label>
-          <input type="number" id="ef-pstat-cycles" min="1" step="1" placeholder="e.g. 300" style="max-width:160px;">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">Number of times the full step sequence repeats</div>
-        </div>
-        <div class="frow" style="margin-top:4px;">
-          <label style="margin-bottom:8px;">LED configuration — per engine</label>
-          <div id="exp-led-grids">
-            <div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Add panels and assign engines above to configure LEDs</div>
+          <div class="brow">
+            <button class="btn-gr" onclick="showCloseout()">Close out</button>
+            <button onclick="openExpPanel(true)">Edit</button>
           </div>
         </div>
       </div>
 
-      <!-- COLLAPSIBLE: Sampling -->
-      <div class="collapsible-header" onclick="toggleSection('samp')">
-        <div class="collapsible-title">Sampling <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
-        <span class="collapsible-arrow" id="arr-samp">▾</span>
-      </div>
-      <div class="collapsible-body" id="cb-samp">
-        <div id="sample-rows"></div>
-        <button onclick="addSampleRow()" style="margin-top:4px;font-size:11px;">+ Add time point</button>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:8px;">
-          Total sample volume: <span id="sample-total" style="color:var(--am);">0 mL</span>
+      <!-- Close-out panel -->
+      <div id="closeout-panel" class="closeout" style="display:none;">
+        <div class="clabel">Close out experiment</div>
+        <div class="fg2 frow">
+          <div><label>Actual duration (hours) *</label><input type="number" id="cm-hours" min="0.1" step="0.5"></div>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+            <button onclick="usePlanned()" style="width:100%;">Use planned: <span id="cm-planned-lbl">—</span> h</button>
+          </div>
         </div>
-      </div>
-
-      <!-- COLLAPSIBLE: Notes -->
-      <div class="collapsible-header" onclick="toggleSection('notes')">
-        <div class="collapsible-title">Notes <span style="color:var(--tx3);font-size:9px;letter-spacing:.04em;text-transform:none;">(optional)</span></div>
-        <span class="collapsible-arrow" id="arr-notes">▾</span>
-      </div>
-      <div class="collapsible-body" id="cb-notes">
-        <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes..."></textarea></div>
-      </div>
-
-      <div class="brow" style="padding-top:14px;border-top:1px solid var(--ln);margin-top:8px;">
-        <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create experiment</button>
-        <button onclick="resetExpForm()">Clear form</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- EXPERIMENT DATABASE -->
-  <div class="sub-section" id="ss-exp-db">
-    <!-- Active experiment card -->
-    <div id="active-banner" class="card ag" style="display:none;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div>
-          <div class="clabel" style="color:var(--gr);margin-bottom:3px;">Active experiment</div>
-          <div id="ab-name" style="font-size:17px;font-weight:500;margin-bottom:2px;"></div>
-          <div id="ab-meta" style="font-family:var(--mono);font-size:10px;color:var(--tx3);"></div>
+        <div class="fg3 frow">
+          <div><label>Starting volume (mL)</label><input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+          <div><label>Total sample volume removed (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+          <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
         </div>
+        <div class="frow">
+          <label>Leakage / sweat (start − samples − end)</label>
+          <input type="text" id="cm-leakage" readonly placeholder="auto-calculated">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL, end 950 mL = 38 mL leakage</div>
+        </div>
+        <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
+        <div class="frow" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="cm-failure">
+          <label for="cm-failure" style="margin:0;cursor:pointer;">Flag as failure / concern</label>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin:10px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">File links</div>
+        <div id="url-entries"></div>
+        <button onclick="addUrlEntry()" style="margin-bottom:12px;font-size:11px;">+ Add file link</button>
         <div class="brow">
-          <button class="btn-gr" onclick="showCompleteModal()">Close out experiment</button>
-          <button onclick="editActiveExp()">Edit details</button>
+          <button class="btn-gr" onclick="finalizeExp()">Save &amp; close experiment</button>
+          <button onclick="document.getElementById('closeout-panel').style.display='none'">Cancel</button>
         </div>
       </div>
-    </div>
 
-    <!-- Inline close-out panel (expands below active banner) -->
-    <div id="active-closeout" style="display:none;background:var(--bg2);border:1px solid rgba(61,255,122,.3);border-top:none;border-bottom-left-radius:var(--rl);border-bottom-right-radius:var(--rl);padding:18px;margin-bottom:14px;">
-      <div class="clabel">Close out experiment</div>
-      <div class="fg2 frow">
-        <div><label>Actual duration (hours) *</label><input type="number" id="cm-hours" min="0.1" step="0.5"></div>
-        <div style="display:flex;flex-direction:column;justify-content:flex-end;">
-          <button onclick="usePlanned()" style="width:100%;">Use planned: <span id="cm-planned-lbl">—</span> h</button>
+      <!-- List header -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">Experiments</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="el-count"></div>
         </div>
+        <button class="btn-gr" onclick="openExpPanel(false)">+ New experiment</button>
       </div>
-      <div class="fg3 frow">
-        <div><label>Starting volume (mL)</label><input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-        <div><label>Total sample volume removed (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-        <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-      </div>
-      <div class="frow">
-        <label>Leakage / sweat (start − samples − end)</label>
-        <input type="text" id="cm-leakage" readonly placeholder="auto-calculated">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL samples, end 950 mL = 38 mL leakage</div>
-      </div>
-      <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
-      <div class="frow" style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="cm-failure">
-        <label for="cm-failure" style="margin:0;cursor:pointer;">Flag as failure / concern</label>
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin:12px 0 8px;padding-top:12px;border-top:1px solid var(--ln);">File links</div>
-      <div id="url-entries"></div>
-      <button onclick="addUrlEntry()" style="margin-bottom:12px;font-size:11px;">+ Add file link</button>
-      <div class="brow">
-        <button class="btn-gr" onclick="finalizeExp()">Save &amp; close experiment</button>
-        <button onclick="document.getElementById('active-closeout').style.display='none'">Cancel</button>
-      </div>
-    </div>
 
-    <div class="search-bar" id="el-search-bar" style="margin-top:18px;">
-      <input type="text" id="el-search" placeholder="Search name, description, operator, solution..." oninput="renderExpDb()">
-      <input type="date" id="el-from" oninput="renderExpDb()" title="From date">
-      <input type="date" id="el-to" oninput="renderExpDb()" title="To date">
-      <select id="el-status" onchange="renderExpDb()">
-        <option value="">All statuses</option>
-        <option value="active">Active</option>
-        <option value="complete">Complete</option>
-        <option value="failure">Failures only</option>
-        <option value="flagged">Flagged for deletion</option>
-      </select>
-    </div>
-    <div class="section-top">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);" id="el-count"></div>
-      <div class="brow" style="margin-top:0;">
+      <div class="search-bar">
+        <input type="text" id="el-search" placeholder="Search name, description, operator, tags..." oninput="renderExpDb()">
+        <input type="date" id="el-from" oninput="renderExpDb()" title="From date">
+        <input type="date" id="el-to" oninput="renderExpDb()" title="To date">
+        <select id="el-status" onchange="renderExpDb()">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="complete">Complete</option>
+          <option value="failure">Failures</option>
+          <option value="flagged">Flagged</option>
+        </select>
+        <select id="el-tag" onchange="renderExpDb()"><option value="">All tags</option></select>
+      </div>
+      <div class="brow" style="margin-bottom:12px;">
+        <button onclick="clearExpFilters()">Clear filters</button>
         <button onclick="exportSelExps()">Export selected</button>
-        <button class="btn-rd" onclick="flagSelExps()">Flag selected for deletion</button>
-        <button onclick="unflagSelExps()">Unflag selected</button>
+        <button class="btn-gr" onclick="unflagSelExps()">Unflag selected</button>
+        <button class="btn-rd" onclick="flagSelExps()">Flag for deletion</button>
       </div>
+
+      <div id="exp-list"></div>
     </div>
-    <div id="exp-list"></div>
-  </div>
-</div>
-
-<!-- ═══════ COMPONENTS ═══════ -->
-<div class="main-section" id="ms-comp">
-  <div class="nav-sub">
-    <button class="nav-tab-sub" id="stab-comp-new" onclick="showSub('comp','new',this)">Add new component</button>
-    <button class="nav-tab-sub" id="stab-comp-db" onclick="showSub('comp','db',this)">Component database</button>
   </div>
 
-  <div class="sub-placeholder" id="sp-comp">
-    <span style="font-size:24px;opacity:.3;">⬡</span>
-    <span>Select a tab above</span>
-  </div>
+  <!-- ═══════ COMPONENTS PAGE ═══════ -->
+  <div class="page" id="page-comp">
+    <div class="page-inner">
 
-  <!-- ADD NEW -->
-  <div class="sub-section" id="ss-comp-new">
-    <div class="card">
-      <div class="clabel">Register new component</div>
-      <div class="fg3 frow">
-        <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
-        <div><label>Type *</label>
-          <select id="reg-type" onchange="onRegTypeChange()">
-            <option value="panel">Panel</option>
-            <option value="paper">Paper frame</option>
-            <option value="glass">Glass frame</option>
-            <option value="engine">Light engine</option>
-          </select>
+      <!-- List header -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">Components</div>
         </div>
-        <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
+        <button class="btn-gr" onclick="openCompPanel()">+ Add component</button>
       </div>
-      <div class="fg3 frow">
-        <div><label>Manufacture / receive date</label><input type="date" id="reg-mfg"></div>
-        <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
-        <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
-          <select id="reg-led-gen" onchange="renderLedGrid()">
-            <option value="">— select generation —</option>
-            <option value="gen1">Gen 1 — 3 cols × 5 rows (15 LEDs)</option>
-            <option value="gen2">Gen 2 — 1 col × 3 rows (3 LEDs)</option>
-            <option value="gen3">Gen 3 — 8 cols × 3 rows (24 LEDs)</option>
-          </select>
-        </div>
-        <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch, condition..."></div>
-      </div>
-      <!-- Glass-specific fields -->
-      <div id="reg-glass-wrap" style="display:none;" class="fg2 frow">
-        <div><label>Synthesis date</label><input type="date" id="reg-glass-synth"></div>
-        <div><label>Original slide QC photocurrent</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4 µA"></div>
-      </div>
-      <!-- LED grid (engines only) -->
-      <div id="reg-led-grid-wrap" style="display:none;margin-bottom:12px;">
-        <label style="margin-bottom:8px;">Active LEDs on this unit — uncheck any that are non-functional</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <button onclick="setAllLeds(true)" style="font-size:11px;padding:4px 10px;">Select all</button>
-          <button onclick="setAllLeds(false)" style="font-size:11px;padding:4px 10px;" class="btn-rd">Clear all</button>
-        </div>
-        <div id="led-grid"></div>
-      </div>
-      <button class="btn-gr" onclick="registerComp()">Register component</button>
-    </div>
-    <div class="card" style="background:var(--bld);border-color:rgba(77,184,255,.15);padding:12px 16px;">
-      <div class="clabel" style="color:var(--bl);margin-bottom:5px;">QR &amp; Data Matrix codes</div>
-      <div style="font-size:12px;color:var(--tx2);">Encode just the component ID as plain text (e.g. <span style="font-family:var(--mono);background:var(--bg2);padding:1px 4px;border-radius:3px;">PANEL-001</span>). Both QR and Data Matrix supported. Free: <strong style="color:var(--tx);">qr-code-generator.com</strong></div>
-    </div>
-  </div>
 
-  <!-- COMPONENT DATABASE -->
-  <div class="sub-section" id="ss-comp-db">
-    <!-- Scan lookup -->
-    <div class="card">
-      <div class="clabel">Scan component to view record</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="lookup-id" placeholder="Type component ID or scan below" onkeydown="if(event.key==='Enter')lookupComp(this.value.trim());" style="flex:1;">
-        <button onclick="lookupComp(document.getElementById('lookup-id').value.trim())">Look up</button>
-        <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan to look up" style="font-size:15px;">&#128247;</button>
+      <!-- Scan lookup -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="clabel">Scan component to view record</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="lookup-id" placeholder="Type component ID or scan" onkeydown="if(event.key==='Enter')lookupComp(this.value.trim());" style="flex:1;">
+          <button onclick="lookupComp(document.getElementById('lookup-id').value.trim())">Look up</button>
+          <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan">&#128247;</button>
+        </div>
       </div>
-    </div>
-    <div id="lookup-result" style="margin-bottom:12px;"></div>
+      <div id="lookup-result" style="margin-bottom:12px;"></div>
 
-    <div class="sband" id="comp-stats"></div>
-    <div class="card">
+      <!-- Stats -->
+      <div class="sband" id="comp-stats"></div>
+
+      <!-- Search -->
       <div class="search-bar">
         <input type="text" id="cl-search" placeholder="Search ID, name, notes..." oninput="renderCompList()">
         <select id="cl-type" onchange="renderCompList()">
@@ -517,23 +366,250 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <input type="date" id="cl-to" oninput="renderCompList()" title="Mfg to">
       </div>
       <div class="brow" style="margin-bottom:12px;">
+        <button onclick="clearCompFilters()">Clear filters</button>
         <button onclick="exportSelComps()">Export selected</button>
-        <button class="btn-rd" onclick="flagSelComps()">Flag selected for deletion</button>
-        <button onclick="unflagSelComps()">Unflag selected</button>
+        <button class="btn-gr" onclick="unflagSelComps()">Unflag selected</button>
+        <button class="btn-rd" onclick="flagSelComps()">Flag for deletion</button>
       </div>
-      <div id="comp-list"></div>
+
+      <div class="card">
+        <div id="comp-list"></div>
+      </div>
     </div>
   </div>
-</div>
 
 </div><!-- end app-content -->
 
+<!-- ═══════ EXPERIMENT SLIDE PANEL ═══════ -->
+<div class="panel-overlay" id="exp-overlay" onclick="closeExpPanel()"></div>
+<div class="slide-panel" id="exp-panel">
+  <div class="panel-header">
+    <div class="panel-title" id="exp-panel-title">New experiment</div>
+    <button class="panel-close" onclick="closeExpPanel()">×</button>
+  </div>
+  <div class="panel-body">
+    <input type="hidden" id="ef-editing-id">
+
+    <div class="fg2 frow">
+      <div><label>Experiment name *</label><input type="text" id="ef-name" placeholder="e.g. Low intensity test" oninput="autoFillRunNumber()"></div>
+      <div><label>Date *</label><input type="date" id="ef-date"></div>
+    </div>
+    <div class="fg3 frow">
+      <div><label>Run number * <span style="color:var(--tx3);font-weight:300;">(required)</span></label><input type="number" id="ef-run" min="1" step="1" placeholder="auto-filled" oninput="this.dataset.userEdited='1'"></div>
+      <div><label>Reference number</label><input type="text" id="ef-ref" placeholder="e.g. LAB-2024-001"></div>
+      <div><label>Operator</label><input type="text" id="ef-operator" placeholder="Name"></div>
+    </div>
+    <div class="fg2 frow">
+      <div><label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4"></div>
+      <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
+    </div>
+    <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
+    <div class="frow">
+      <label>Tags</label>
+      <div id="tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="tag-select" style="flex:1;"><option value="">— select existing tag —</option></select>
+        <button onclick="addTagFromSelect()" style="padding:6px 10px;font-size:11px;">Add</button>
+        <input type="text" id="tag-new" placeholder="New tag..." style="flex:1;" onkeydown="if(event.key==='Enter'){addNewTag();event.preventDefault();}">
+        <button onclick="addNewTag()" style="padding:6px 10px;font-size:11px;">+ Create</button>
+      </div>
+    </div>
+
+    <!-- Panel & Channel Config -->
+    <div style="border-top:1px solid var(--ln);margin-top:8px;padding-top:14px;">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;margin-bottom:10px;">Panel &amp; Channel Configuration</div>
+      <div class="panel-sel-row">
+        <select id="panel-sel"><option value="">— select a panel —</option></select>
+        <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel" style="font-size:15px;">&#128247;</button>
+        <button onclick="addPanelToForm()">Add panel</button>
+      </div>
+      <div id="channel-tables"></div>
+    </div>
+
+    <!-- COLLAPSIBLE: Light & Electrical -->
+    <div class="coll-hdr" onclick="toggleSection('light')">
+      <div class="coll-title">Light &amp; Electrical <span style="color:var(--tx3);font-size:9px;text-transform:none;letter-spacing:0;">(optional)</span></div>
+      <span class="coll-arrow" id="arr-light">▾</span>
+    </div>
+    <div class="coll-body" id="cb-light">
+      <div class="fg2 frow">
+        <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
+        <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
+      </div>
+      <div class="fg2 frow">
+        <div><label>Which LEDs</label><input type="text" id="ef-leds" placeholder="e.g. 450nm blue"></div>
+        <div><label>Total program cycles</label><input type="number" id="ef-pstat-cycles" min="1" step="1" placeholder="e.g. 300"></div>
+      </div>
+      <div class="frow">
+        <label>Potentiostat steps</label>
+        <div id="pstat-steps-wrap"></div>
+        <button onclick="addPstatStep()" style="margin-top:6px;font-size:11px;">+ Add step</button>
+      </div>
+      <div class="frow" style="margin-top:4px;">
+        <label style="margin-bottom:8px;">LED configuration — per engine</label>
+        <div id="exp-led-grids"><div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to channels above first</div></div>
+      </div>
+    </div>
+
+    <!-- COLLAPSIBLE: Solution -->
+    <div class="coll-hdr" onclick="toggleSection('sol')">
+      <div class="coll-title">Solution <span style="color:var(--tx3);font-size:9px;text-transform:none;letter-spacing:0;">(optional)</span></div>
+      <span class="coll-arrow" id="arr-sol">▾</span>
+    </div>
+    <div class="coll-body" id="cb-sol">
+      <div class="frow">
+        <label>Solution chemicals</label>
+        <div id="chem-rows"></div>
+        <button onclick="addChemRow()" style="margin-top:6px;font-size:11px;">+ Add chemical</button>
+      </div>
+      <div class="fg2 frow">
+        <div><label>Distribution</label>
+          <select id="ef-sol-dist">
+            <option value="">— select —</option>
+            <option>Gravity</option><option>Cascade</option><option>Series</option><option>N/A</option>
+          </select>
+        </div>
+        <div><label>Activated carbon (g)</label><input type="number" id="ef-carbon" step="0.01" placeholder="grams"></div>
+      </div>
+      <div class="fg2 frow">
+        <div><label>Flow rate (mL/min)</label><input type="number" id="ef-flow" step="0.1" placeholder="mL/min"></div>
+        <div><label>Pump(s) used</label><input type="text" id="ef-pump" placeholder="e.g. Small peristaltic"></div>
+      </div>
+      <div class="frow"><label>Sensors / location</label><input type="text" id="ef-sensors" placeholder="e.g. pH at inlet"></div>
+    </div>
+
+    <!-- COLLAPSIBLE: Sampling -->
+    <div class="coll-hdr" onclick="toggleSection('samp')">
+      <div class="coll-title">Sampling <span style="color:var(--tx3);font-size:9px;text-transform:none;letter-spacing:0;">(optional)</span></div>
+      <span class="coll-arrow" id="arr-samp">▾</span>
+    </div>
+    <div class="coll-body" id="cb-samp">
+      <div id="sample-rows"></div>
+      <button onclick="addSampleRow()" style="margin-top:4px;font-size:11px;">+ Add time point</button>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:8px;">
+        Total sample volume: <span id="sample-total" style="color:var(--am);">0 mL</span>
+      </div>
+    </div>
+
+    <!-- COLLAPSIBLE: Notes -->
+    <div class="coll-hdr" onclick="toggleSection('notes')">
+      <div class="coll-title">Notes <span style="color:var(--tx3);font-size:9px;text-transform:none;letter-spacing:0;">(optional)</span></div>
+      <span class="coll-arrow" id="arr-notes">▾</span>
+    </div>
+    <div class="coll-body" id="cb-notes">
+      <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes..."></textarea></div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create experiment</button>
+    <button onclick="closeExpPanel()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════ COMPONENT SLIDE PANEL ═══════ -->
+<div class="panel-overlay" id="comp-overlay" onclick="closeCompPanel()"></div>
+<div class="slide-panel" id="comp-panel">
+  <div class="panel-header">
+    <div class="panel-title">Add component</div>
+    <button class="panel-close" onclick="closeCompPanel()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="fg3 frow">
+      <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
+      <div><label>Type *</label>
+        <select id="reg-type" onchange="onRegTypeChange()">
+          <option value="panel">Panel</option>
+          <option value="paper">Paper frame</option>
+          <option value="glass">Glass frame</option>
+          <option value="engine">Light engine</option>
+        </select>
+      </div>
+      <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
+    </div>
+    <div class="fg3 frow">
+      <div><label>Manufacture / receive date</label><input type="date" id="reg-mfg"></div>
+      <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
+      <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
+        <select id="reg-led-gen" onchange="renderLedGrid()">
+          <option value="">— select —</option>
+          <option value="gen1">Gen 1 — 3×5 (15 LEDs)</option>
+          <option value="gen2">Gen 2 — 1×3 (3 LEDs)</option>
+          <option value="gen3">Gen 3 — 8×3 (24 LEDs)</option>
+        </select>
+      </div>
+      <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch..."></div>
+    </div>
+    <!-- Glass fields -->
+    <div id="reg-glass-wrap" style="display:none;" class="fg2 frow">
+      <div><label>Synthesis date</label><input type="date" id="reg-glass-synth"></div>
+      <div><label>QC photocurrent</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4 µA"></div>
+      <div><label>UV absorption (%)</label><input type="number" id="reg-glass-uv" min="0" max="100" step="0.1" placeholder="e.g. 85.2"></div>
+      <div><label>Serial number</label><input type="text" id="reg-glass-serial" placeholder="e.g. SN-2024-001"></div>
+    </div>
+    <!-- LED grid -->
+    <div id="reg-led-grid-wrap" style="display:none;margin-bottom:12px;">
+      <label style="margin-bottom:8px;">Active LEDs on this unit</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button onclick="setAllLeds(true)" style="font-size:11px;padding:4px 10px;">Select all</button>
+        <button onclick="setAllLeds(false)" class="btn-rd" style="font-size:11px;padding:4px 10px;">Clear all</button>
+      </div>
+      <div id="led-grid"></div>
+    </div>
+    <div class="card" style="background:var(--bld);border-color:rgba(77,184,255,.15);padding:12px 14px;">
+      <div class="clabel" style="color:var(--bl);margin-bottom:5px;">QR &amp; Data Matrix codes</div>
+      <div style="font-size:12px;color:var(--tx2);">Encode just the component ID as plain text. Free: <strong style="color:var(--tx);">qr-code-generator.com</strong></div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-gr" onclick="registerComp()">Register component</button>
+    <button onclick="closeCompPanel()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════ EDIT COMPONENT SLIDE PANEL ═══════ -->
+<div class="panel-overlay" id="edit-comp-overlay" onclick="closeEditCompPanel()"></div>
+<div class="slide-panel" id="edit-comp-panel">
+  <div class="panel-header">
+    <div class="panel-title" id="edit-comp-title">Edit component</div>
+    <button class="panel-close" onclick="closeEditCompPanel()">×</button>
+  </div>
+  <div class="panel-body">
+    <input type="hidden" id="edit-comp-id">
+    <div class="frow"><label>Name / label</label><input type="text" id="ec-name" placeholder="e.g. Engine 04"></div>
+    <div class="frow"><label>Manufacture / receive date</label><input type="date" id="ec-mfg"></div>
+    <div id="ec-channels-wrap" style="display:none;" class="frow"><label>Number of channels</label><input type="number" id="ec-channels" min="1" step="1"></div>
+    <div id="ec-glass-wrap" style="display:none;">
+      <div class="fg2 frow">
+        <div><label>Synthesis date</label><input type="date" id="ec-glass-synth"></div>
+        <div><label>QC photocurrent</label><input type="text" id="ec-glass-qc" placeholder="e.g. 12.4 µA"></div>
+        <div><label>UV absorption (%)</label><input type="number" id="ec-glass-uv" min="0" max="100" step="0.1"></div>
+        <div><label>Serial number</label><input type="text" id="ec-glass-serial"></div>
+      </div>
+    </div>
+    <div id="ec-led-wrap" style="display:none;">
+      <div class="frow">
+        <label>Active LEDs</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button onclick="setAllLeds(true)" style="font-size:11px;padding:4px 10px;">All on</button>
+          <button onclick="setAllLeds(false)" class="btn-rd" style="font-size:11px;padding:4px 10px;">All off</button>
+        </div>
+        <div id="ec-led-grid"></div>
+      </div>
+    </div>
+    <div class="frow"><label>Notes</label><textarea id="ec-notes" placeholder="Any notes..."></textarea></div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-gr" onclick="saveEditComp()">Save changes</button>
+    <button onclick="closeEditCompPanel()">Cancel</button>
+  </div>
+</div>
+
 <!-- ═══════ CAMERA MODAL ═══════ -->
-<div class="cam-modal-overlay" id="cam-overlay" style="display:none;" onclick="closeCamIfOverlay(event)">
+<div class="cam-overlay" id="cam-overlay" onclick="closeCamIfOverlay(event)">
   <div class="cam-modal">
-    <div class="cam-modal-title" id="cam-title">Scanning...</div>
-    <div class="cam-modal-wrap"><div id="cam-reader"><div class="cam-ph">Starting camera...</div></div></div>
-    <div class="cam-flash" id="cam-flash" style="display:none;"></div>
+    <div class="cam-title" id="cam-title">Scanning...</div>
+    <div class="cam-wrap"><div id="cam-reader"><div class="cam-ph">Starting camera...</div></div></div>
+    <div class="cam-flash" id="cam-flash"></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
       <button onclick="closeCam()">Cancel</button>
@@ -547,7 +623,6 @@ const CLIENT_ID = '19efdbb0-7365-45ae-b99b-3b512b035e84';
 const REDIRECT_URI = 'https://kuleanatech.github.io/sapa-tracker/';
 const TENANT_HOST = 'kuleanatechnology.sharepoint.com';
 const SITE_PATH = '/sites/KuleanaTechnology';
-// Path relative to the SharePoint drive root
 const FILE_FOLDER = 'KULEANA DEV/SAPA tracking database';
 const FILE_NAME = 'lab-tracker-data.json';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
@@ -557,7 +632,7 @@ const msal$ = new msal.PublicClientApplication(msalCfg);
 const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All'];
 
 /* ═══════════ LOCAL DB ═══════════ */
-const LKEY = 'sapa_v2';
+const LKEY = 'sapa_v3';
 let db = { components: {}, experiments: [] };
 let activeExpId = null;
 let accessToken = null;
@@ -565,6 +640,7 @@ let driveId = null;
 
 function loadLocal() {
   try { const r = localStorage.getItem(LKEY); if (r) db = JSON.parse(r); } catch(e) {}
+  if (!db.tags) db.tags = [];
   activeExpId = (db.experiments.find(e => e.status === 'active') || {}).id || null;
 }
 function saveLocal() { localStorage.setItem(LKEY, JSON.stringify(db)); }
@@ -581,17 +657,14 @@ function totalHours(cid) {
 
 /* ═══════════ AUTH ═══════════ */
 async function handleAuth() {
-  if (msalInstance().length > 0) {
-    accessToken = null;
-    driveId = null;
-    db = { components: {}, experiments: [] };
-    activeExpId = null;
+  if (msal$.getAllAccounts().length > 0) {
+    accessToken = null; driveId = null;
+    db = { components: {}, experiments: [] }; activeExpId = null;
     localStorage.removeItem(LKEY);
-    localStorage.setItem('sapa_signed_out', '1');
+    localStorage.setItem('sapa_signed_out','1');
     setSS('Not signed in','');
     document.getElementById('auth-btn').textContent = 'Sign in';
-    showLogin();
-    renderAll();
+    showLogin(); renderAll();
     msal$.logoutPopup();
     return;
   }
@@ -607,7 +680,6 @@ async function handleAuth() {
     await syncFromCloud();
   } catch(e) { setSS('Sign-in failed','err'); console.error(e); }
 }
-function msalInstance() { return msal$.getAllAccounts(); }
 async function getToken() {
   const accs = msal$.getAllAccounts(); if (!accs.length) return;
   try { const r = await msal$.acquireTokenSilent({scopes:SCOPES,account:accs[0]}); accessToken = r.accessToken; }
@@ -615,38 +687,31 @@ async function getToken() {
 }
 function setSS(msg, state) {
   document.getElementById('sync-lbl').textContent = msg;
-  const d = document.getElementById('sync-dot');
-  d.className = 'sync-dot' + (state ? ' ' + state : '');
+  document.getElementById('sync-dot').className = 'sync-dot' + (state ? ' '+state : '');
 }
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-content').style.display = 'block';
-  document.getElementById('mtab-exp').style.display = 'inline-block';
-  document.getElementById('mtab-comp').style.display = 'inline-block';
+  document.getElementById('tab-exp').style.display = 'inline-block';
+  document.getElementById('tab-comp').style.display = 'inline-block';
+  if (!document.querySelector('.nav-tab.active')) showPage('exp', document.getElementById('tab-exp'));
 }
 function showLogin(msg) {
   document.getElementById('app-content').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('mtab-exp').style.display = 'none';
-  document.getElementById('mtab-comp').style.display = 'none';
+  document.getElementById('tab-exp').style.display = 'none';
+  document.getElementById('tab-comp').style.display = 'none';
   if (msg) document.getElementById('login-status').textContent = msg;
 }
 
 /* ═══════════ JSON SYNC ═══════════ */
 async function getDriveId() {
   if (driveId) return driveId;
-  const res = await fetch(`${GRAPH}/sites/${TENANT_HOST}:${SITE_PATH}:/drive`, {
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-  if (!res.ok) { console.error('getDriveId failed', res.status); return null; }
-  driveId = (await res.json()).id;
-  return driveId;
+  const res = await fetch(`${GRAPH}/sites/${TENANT_HOST}:${SITE_PATH}:/drive`, { headers: {'Authorization':'Bearer '+accessToken} });
+  if (!res.ok) return null;
+  driveId = (await res.json()).id; return driveId;
 }
-
-function filePath() {
-  return `${FILE_FOLDER}/${FILE_NAME}`;
-}
-
+function filePath() { return `${FILE_FOLDER}/${FILE_NAME}`; }
 async function syncToCloud() {
   if (!accessToken) return;
   setSS('Saving...','syncing');
@@ -654,78 +719,84 @@ async function syncToCloud() {
     await getToken();
     const did = await getDriveId(); if (!did) { setSS('Drive not found','err'); return; }
     const res = await fetch(`${GRAPH}/drives/${did}/root:/${filePath()}:/content`, {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      method:'PUT', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
       body: JSON.stringify(db, null, 2)
     });
-    if (!res.ok) { console.error('save failed', res.status, await res.text()); setSS('Save failed','err'); return; }
-    console.log('syncToCloud success, status:', res.status, 'location:', res.headers.get('Location') || res.url);
-    setSS('Saved ' + new Date().toLocaleTimeString(),'ok');
+    if (!res.ok) { setSS('Save failed','err'); return; }
+    setSS('Saved '+new Date().toLocaleTimeString(),'ok');
   } catch(e) { console.error(e); setSS('Save error','err'); }
 }
-
 async function syncFromCloud() {
   if (!accessToken) return;
   setSS('Loading...','syncing');
   try {
     await getToken();
     const did = await getDriveId(); if (!did) { setSS('Drive not found','err'); return; }
-    const meta = await fetch(`${GRAPH}/drives/${did}/root:/${filePath()}`, {
-      headers: { 'Authorization': 'Bearer ' + accessToken }
-    });
-    if (meta.status === 404) {
-      setSS('Creating data file...','syncing');
-      await syncToCloud();
-      setSS('Ready','ok');
-      return;
-    }
+    const meta = await fetch(`${GRAPH}/drives/${did}/root:/${filePath()}`, { headers:{'Authorization':'Bearer '+accessToken} });
+    if (meta.status === 404) { setSS('Creating data file...','syncing'); await syncToCloud(); setSS('Ready','ok'); return; }
     if (!meta.ok) { setSS('Load failed','err'); return; }
-    const downloadUrl = (await meta.json())['@microsoft.graph.downloadUrl'];
-    const fileRes = await fetch(downloadUrl);
-    if (!fileRes.ok) { setSS('Download failed','err'); return; }
-    const text = await fileRes.text();
+    const dl = (await meta.json())['@microsoft.graph.downloadUrl'];
+    const fr = await fetch(dl);
+    if (!fr.ok) { setSS('Download failed','err'); return; }
+    const text = await fr.text();
     if (text && text.trim().startsWith('{')) {
-      const remote = JSON.parse(text);
-      db = remote;
-      activeExpId = (db.experiments.find(e => e.status === 'active')||{}).id || null;
+      db = JSON.parse(text);
+      activeExpId = (db.experiments.find(e => e.status==='active')||{}).id || null;
       saveLocal();
     }
-    setSS('Synced ' + new Date().toLocaleTimeString(),'ok');
+    setSS('Synced '+new Date().toLocaleTimeString(),'ok');
     renderAll();
   } catch(e) { console.error(e); setSS('Load error','err'); }
 }
-
 async function saveAndSync() { saveLocal(); await syncToCloud(); }
 
 /* ═══════════ NAV ═══════════ */
-let currentMain = null;
-function showMain(section, btn) {
-  document.querySelectorAll('.main-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab-main').forEach(t => t.classList.remove('active'));
-  document.getElementById('ms-' + section).classList.add('active');
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
   if (btn) btn.classList.add('active');
-  currentMain = section;
-  if (section === 'exp') renderExpDb();
-  if (section === 'comp') { renderCompStats(); renderCompList(); }
   closeCam();
+  if (name === 'exp') renderExpDb();
+  if (name === 'comp') { renderCompStats(); renderCompList(); }
 }
 
-function showSub(main, sub, btn) {
-  document.querySelectorAll(`#ms-${main} .sub-section`).forEach(s => s.classList.remove('active'));
-  document.querySelectorAll(`#ms-${main} .nav-tab-sub`).forEach(t => t.classList.remove('active'));
-  document.getElementById(`sp-${main}`).style.display = 'none';
-  document.getElementById(`ss-${main}-${sub}`).classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (main === 'exp' && sub === 'new') initExpForm();
-  if (main === 'exp' && sub === 'db') renderExpDb();
-  if (main === 'comp' && sub === 'db') { renderCompStats(); renderCompList(); }
-  closeCam();
+/* ═══════════ SLIDE PANELS ═══════════ */
+function openExpPanel(editing) {
+  const ae = editing ? db.experiments.find(e => e.status === 'active') : null;
+  document.getElementById('exp-panel-title').textContent = editing ? 'Edit experiment' : 'New experiment';
+  document.getElementById('exp-save-btn').textContent = editing ? 'Save changes' : 'Create experiment';
+  document.getElementById('ef-editing-id').value = ae ? ae.id : '';
+  if (ae) { populateExpFormFields(ae); formPanels = ae.panels ? JSON.parse(JSON.stringify(ae.panels)) : {}; }
+  else resetExpForm();
+  renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+  document.getElementById('exp-overlay').classList.add('open');
+  document.getElementById('exp-panel').classList.add('open');
+}
+function closeExpPanel() {
+  document.getElementById('exp-overlay').classList.remove('open');
+  document.getElementById('exp-panel').classList.remove('open');
+}
+function openCompPanel() {
+  document.getElementById('reg-id').value=''; document.getElementById('reg-name').value='';
+  document.getElementById('reg-notes').value=''; document.getElementById('reg-mfg').value='';
+  document.getElementById('reg-channels').value=''; document.getElementById('reg-glass-synth').value='';
+  document.getElementById('reg-glass-qc').value='';
+  document.getElementById('reg-type').value = 'panel';
+  onRegTypeChange(); renderLedGrid();
+  document.getElementById('comp-overlay').classList.add('open');
+  document.getElementById('comp-panel').classList.add('open');
+}
+function closeCompPanel() {
+  document.getElementById('comp-overlay').classList.remove('open');
+  document.getElementById('comp-panel').classList.remove('open');
 }
 
 /* ═══════════ COLLAPSIBLES ═══════════ */
 function toggleSection(key) {
-  const body = document.getElementById('cb-' + key);
-  const arr = document.getElementById('arr-' + key);
+  const body = document.getElementById('cb-'+key);
+  const arr = document.getElementById('arr-'+key);
+  if (!body) return;
   const open = body.classList.toggle('open');
   arr.classList.toggle('open', open);
 }
@@ -735,12 +806,11 @@ let pstatSteps = [];
 function addPstatStep() { pstatSteps.push({voltage:'',duration:''}); renderPstatSteps(); }
 function rmPstatStep(i) { pstatSteps.splice(i,1); renderPstatSteps(); }
 function renderPstatSteps() {
-  const c = document.getElementById('pstat-steps-wrap');
-  if (!c) return;
-  if (!pstatSteps.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">No steps — click Add step</div>'; return; }
+  const c = document.getElementById('pstat-steps-wrap'); if (!c) return;
+  if (!pstatSteps.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">No steps</div>'; return; }
   c.innerHTML = pstatSteps.map((s,i) => `
     <div class="pstat-row">
-      <span style="font-family:var(--mono);font-size:11px;color:var(--tx3);">Step ${i+1}</span>
+      <span class="pstat-lbl">Step ${i+1}</span>
       <input type="number" step="0.01" placeholder="V" value="${s.voltage}" oninput="pstatSteps[${i}].voltage=this.value" style="max-width:80px;">
       <span class="pstat-lbl">V for</span>
       <input type="number" step="1" placeholder="sec" value="${s.duration}" oninput="pstatSteps[${i}].duration=this.value" style="max-width:80px;">
@@ -751,373 +821,282 @@ function renderPstatSteps() {
 
 /* ═══════════ SAMPLE ROWS ═══════════ */
 let sampleRows = [];
-function addSampleRow() {
-  sampleRows.push({timepoint:'', source:'', volPerSample:'', numSamples:''});
-  renderSampleRows();
-}
+function addSampleRow() { sampleRows.push({timepoint:'',source:'',volPerSample:'',numSamples:''}); renderSampleRows(); }
 function rmSampleRow(i) { sampleRows.splice(i,1); renderSampleRows(); }
 function calcSampleTotal() {
-  const total = sampleRows.reduce((s,r) => {
-    const v = parseFloat(r.volPerSample)||0;
-    const n = parseFloat(r.numSamples)||0;
-    return s + v*n;
-  }, 0);
-  const el = document.getElementById('sample-total');
-  if (el) el.textContent = total > 0 ? total.toFixed(1)+' mL' : '0 mL';
+  const total = sampleRows.reduce((s,r) => s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0), 0);
+  const el = document.getElementById('sample-total'); if (el) el.textContent = total>0?total.toFixed(1)+' mL':'0 mL';
 }
 function renderSampleRows() {
-  const c = document.getElementById('sample-rows');
-  if (!c) return;
-  if (!sampleRows.length) {
-    c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No time points added</div>';
-    calcSampleTotal(); return;
-  }
-  // Header
-  const hdr = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px 28px;gap:6px;margin-bottom:4px;">
-    ${['Time point','Source','Vol/sample (mL)','# samples','Total (mL)',''].map(h=>`<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);">${h}</div>`).join('')}
-  </div>`;
-  const rows = sampleRows.map((r,i) => {
-    const rowTotal = ((parseFloat(r.volPerSample)||0) * (parseFloat(r.numSamples)||0));
+  const c = document.getElementById('sample-rows'); if (!c) return;
+  if (!sampleRows.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No time points added</div>'; calcSampleTotal(); return; }
+  const hdr = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 90px 70px 90px 28px;gap:6px;margin-bottom:4px;">${['Time point','Source','Vol/sample','# samples','Total',''].map(h=>`<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);">${h}</div>`).join('')}</div>`;
+  c.innerHTML = hdr + sampleRows.map((r,i) => {
+    const rt = (parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);
     return `<div class="sample-row">
-      <input type="text" placeholder="e.g. 0h 15min" value="${r.timepoint}" oninput="sampleRows[${i}].timepoint=this.value">
-      <input type="text" placeholder="e.g. inlet, outlet" value="${r.source}" oninput="sampleRows[${i}].source=this.value">
-      <input type="number" step="0.1" placeholder="mL" value="${r.volPerSample}" oninput="sampleRows[${i}].volPerSample=this.value;calcSampleRowTotal(${i},this)">
-      <input type="number" step="1" placeholder="n" value="${r.numSamples}" oninput="sampleRows[${i}].numSamples=this.value;calcSampleRowTotal(${i},this)">
-      <div class="sample-total-cell" id="sr-total-${i}">${rowTotal>0?rowTotal.toFixed(1)+' mL':'—'}</div>
+      <input type="text" placeholder="0h 15min" value="${r.timepoint}" oninput="sampleRows[${i}].timepoint=this.value">
+      <input type="text" placeholder="inlet, outlet" value="${r.source}" oninput="sampleRows[${i}].source=this.value">
+      <input type="number" step="0.1" placeholder="mL" value="${r.volPerSample}" oninput="sampleRows[${i}].volPerSample=this.value;calcSampleRowTotal(${i})">
+      <input type="number" step="1" placeholder="n" value="${r.numSamples}" oninput="sampleRows[${i}].numSamples=this.value;calcSampleRowTotal(${i})">
+      <div class="sample-total-cell" id="sr-total-${i}">${rt>0?rt.toFixed(1)+' mL':'—'}</div>
       <button class="btn-rd" onclick="rmSampleRow(${i})" style="padding:4px 7px;">×</button>
     </div>`;
   }).join('');
-  c.innerHTML = hdr + rows;
   calcSampleTotal();
 }
-function calcSampleRowTotal(i, el) {
-  const v = parseFloat(sampleRows[i].volPerSample)||0;
-  const n = parseFloat(sampleRows[i].numSamples)||0;
-  const t = v*n;
-  const cell = document.getElementById(`sr-total-${i}`);
-  if (cell) cell.textContent = t>0 ? t.toFixed(1)+' mL' : '—';
+function calcSampleRowTotal(i) {
+  const v=parseFloat(sampleRows[i].volPerSample)||0, n=parseFloat(sampleRows[i].numSamples)||0, t=v*n;
+  const el=document.getElementById(`sr-total-${i}`); if(el) el.textContent=t>0?t.toFixed(1)+' mL':'—';
   calcSampleTotal();
 }
 
 /* ═══════════ EXP LED GRIDS ═══════════ */
-// Default LED states per generation
+const LED_LAYOUTS = { gen1:{cols:3,rows:5}, gen2:{cols:1,rows:3}, gen3:{cols:8,rows:3} };
 function defaultLedState(gen) {
   const layout = LED_LAYOUTS[gen]; if (!layout) return {};
-  const {cols, rows} = layout;
-  const state = {};
+  const {cols,rows} = layout; const state = {};
   for (let c=0;c<cols;c++) for (let r=0;r<rows;r++) {
-    if (gen === 'gen1') {
-      // Only col B (index 1), rows 0,2,4 (1st,3rd,5th) on
-      state[`c${c}r${r}`] = (c===1 && (r===0||r===2||r===4));
-    } else {
-      // Gen2, Gen3: all on
-      state[`c${c}r${r}`] = true;
-    }
+    state[`c${c}r${r}`] = gen==='gen1' ? (c===1&&(r===0||r===2||r===4)) : true;
   }
   return state;
 }
-
-// expLedStates: {`${pid}-${chIdx}`: {gen, state:{...}}}
 let expLedStates = {};
-
 function renderExpLedGrids() {
-  const wrap = document.getElementById('exp-led-grids');
-  if (!wrap) return;
-  // Collect all assigned engines across all panels
+  const wrap = document.getElementById('exp-led-grids'); if (!wrap) return;
   const engines = [];
-  for (const [pid, channels] of Object.entries(formPanels)) {
-    const panel = db.components[pid];
-    channels.forEach((ch, i) => {
-      if (!ch.dummy && ch.engine) {
-        const eng = db.components[ch.engine];
-        if (eng) engines.push({pid, chIdx:i, ch:ch.ch, panelName:panel?.name||pid, eng});
-      }
-    });
+  for (const [pid,channels] of Object.entries(formPanels)) {
+    channels.forEach((ch,i) => { if (!ch.dummy&&ch.engine) { const eng=db.components[ch.engine]; if(eng) engines.push({pid,chIdx:i,ch:ch.ch,panelName:db.components[pid]?.name||pid,eng}); } });
   }
-  if (!engines.length) {
-    wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to channels above to configure LEDs</div>';
-    return;
-  }
-  // Init any new engine states
-  engines.forEach(({pid, chIdx, eng}) => {
-    const key = `${pid}-${chIdx}`;
-    if (!expLedStates[key]) {
-      expLedStates[key] = {gen: eng.ledGen||'gen1', state: defaultLedState(eng.ledGen||'gen1'), power: 60};
-    }
-  });
-  wrap.innerHTML = engines.map(({pid, chIdx, ch, panelName, eng}) => {
-    const key = `${pid}-${chIdx}`;
-    const s = expLedStates[key];
-    const {cols, rows} = LED_LAYOUTS[s.gen]||{cols:1,rows:3};
-    const activeCount = Object.values(s.state).filter(Boolean).length;
-    const total = cols*rows;
-    let gridHtml = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
-    for (let c=0;c<cols;c++) gridHtml += `<div class="led-col-label">${c+1}</div>`;
-    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
-      const lkey = `c${c}r${r}`;
-      const on = s.state[lkey];
-      gridHtml += `<div class="led-cell ${on?'on':''}" onclick="toggleExpLed('${key}','${lkey}')" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
-    }
-    gridHtml += '</div>';
+  if (!engines.length) { wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to channels above first</div>'; return; }
+  engines.forEach(({pid,chIdx,eng}) => { const key=`${pid}-${chIdx}`; if (!expLedStates[key]) expLedStates[key]={gen:eng.ledGen||'gen1',state:defaultLedState(eng.ledGen||'gen1'),power:60}; });
+  wrap.innerHTML = engines.map(({pid,chIdx,ch,panelName,eng}) => {
+    const key=`${pid}-${chIdx}`, s=expLedStates[key];
+    const {cols,rows}=LED_LAYOUTS[s.gen]||{cols:1,rows:3};
+    const activeCount=Object.values(s.state).filter(Boolean).length, total=cols*rows;
+    let g=`<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+    for(let c=0;c<cols;c++) g+=`<div class="led-col-label">${c+1}</div>`;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) { const lk=`c${c}r${r}`,on=s.state[lk]; g+=`<div class="led-cell ${on?'on':''}" onclick="toggleExpLed('${key}','${lk}')">${on?'●':'○'}</div>`; }
+    g+='</div>';
     return `<div class="exp-eng-block">
-      <div class="exp-eng-header">
-        <span class="exp-eng-title">${eng.name}</span>
-        ${tb('engine')}
-        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch} · ${panelName} · ${{gen1:'Gen 1',gen2:'Gen 2',gen3:'Gen 3'}[s.gen]||s.gen}</span>
+      <div class="exp-eng-header"><span style="font-size:12px;font-weight:500;">${eng.name}</span>${tb('engine')}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch} · ${panelName}</span>
         <button onclick="setExpLeds('${key}',true)" style="font-size:10px;padding:3px 8px;margin-left:auto;">All on</button>
-        <button onclick="setExpLeds('${key}',false)" style="font-size:10px;padding:3px 8px;" class="btn-rd">All off</button>
+        <button onclick="setExpLeds('${key}',false)" class="btn-rd" style="font-size:10px;padding:3px 8px;">All off</button>
       </div>
-      ${gridHtml}
-      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;">${activeCount} / ${total} LEDs active</div>
-      <div class="exp-pwr-row">
-        <label>Power (%)</label>
-        <input type="number" min="0" max="100" step="1" value="${s.power}" oninput="expLedStates['${key}'].power=parseFloat(this.value)||0" style="width:80px;">
-      </div>
+      ${g}
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;">${activeCount}/${total} LEDs active</div>
+      <div class="exp-pwr-row"><label>Power (%)</label><input type="number" min="0" max="100" step="1" value="${s.power}" oninput="expLedStates['${key}'].power=parseFloat(this.value)||0"></div>
     </div>`;
   }).join('');
 }
-
-function toggleExpLed(key, lkey) {
-  if (expLedStates[key]) {
-    expLedStates[key].state[lkey] = !expLedStates[key].state[lkey];
-    renderExpLedGrids();
-  }
-}
-
-function setExpLeds(key, val) {
-  if (expLedStates[key]) {
-    Object.keys(expLedStates[key].state).forEach(k => expLedStates[key].state[k] = val);
-    renderExpLedGrids();
-  }
-}
+function toggleExpLed(key,lkey) { if(expLedStates[key]){expLedStates[key].state[lkey]=!expLedStates[key].state[lkey];renderExpLedGrids();} }
+function setExpLeds(key,val) { if(expLedStates[key]){Object.keys(expLedStates[key].state).forEach(k=>expLedStates[key].state[k]=val);renderExpLedGrids();} }
 
 /* ═══════════ CHEMICAL ROWS ═══════════ */
 let chemRows = [];
 function addChemRow() { chemRows.push({name:'',amount:'',unit:'mL',conc:'',concUnit:'mM'}); renderChemRows(); }
 function rmChemRow(i) { chemRows.splice(i,1); renderChemRows(); }
 function renderChemRows() {
-  const c = document.getElementById('chem-rows');
-  if (!c) return;
-  if (!chemRows.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No chemicals added</div>'; return; }
-  const units = ['mL','L','g','mg'];
-  const concUnits = ['M','mM','µM','%','g/L','N/A'];
+  const c = document.getElementById('chem-rows'); if (!c) return;
+  if (!chemRows.length) { c.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:4px;">No chemicals added</div>'; return; }
+  const units=['mL','L','g','mg'], cu=['M','mM','µM','%','g/L','N/A'];
   c.innerHTML = chemRows.map((r,i) => `
-    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 70px minmax(0,1fr) 70px auto;gap:6px;align-items:center;margin-bottom:6px;">
-      <input type="text" placeholder="Chemical (e.g. NaCl, DI Water, Urea)" value="${r.name}" oninput="chemRows[${i}].name=this.value" style="font-size:12px;">
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 60px minmax(0,1fr) 60px auto;gap:5px;align-items:center;margin-bottom:6px;">
+      <input type="text" placeholder="Chemical" value="${r.name}" oninput="chemRows[${i}].name=this.value" style="font-size:12px;">
       <input type="number" placeholder="Amount" value="${r.amount}" step="0.01" oninput="chemRows[${i}].amount=this.value" style="font-size:12px;">
       <select onchange="chemRows[${i}].unit=this.value" style="font-size:12px;padding:6px 4px;">${units.map(u=>`<option ${u===r.unit?'selected':''}>${u}</option>`).join('')}</select>
-      <input type="text" placeholder="Conc (e.g. 10)" value="${r.conc}" oninput="chemRows[${i}].conc=this.value" style="font-size:12px;">
-      <select onchange="chemRows[${i}].concUnit=this.value" style="font-size:12px;padding:6px 4px;">${concUnits.map(u=>`<option ${u===r.concUnit?'selected':''}>${u}</option>`).join('')}</select>
-      <button class="btn-rd" onclick="rmChemRow(${i})" style="padding:5px 8px;">×</button>
+      <input type="text" placeholder="Conc" value="${r.conc}" oninput="chemRows[${i}].conc=this.value" style="font-size:12px;">
+      <select onchange="chemRows[${i}].concUnit=this.value" style="font-size:12px;padding:6px 4px;">${cu.map(u=>`<option ${u===r.concUnit?'selected':''}>${u}</option>`).join('')}</select>
+      <button class="btn-rd" onclick="rmChemRow(${i})" style="padding:5px 7px;">×</button>
     </div>`).join('');
 }
 
-
-let formPanels = {}; // {panelId: [{ch,engine,paper,glass,dummy},...]}
-
-function initExpForm() {
-  const ae = db.experiments.find(e => e.status === 'active');
-  if (ae) {
-    document.getElementById('exp-form-lbl').textContent = 'Active experiment — editing';
-    document.getElementById('exp-save-btn').textContent = 'Save changes';
-    document.getElementById('ef-editing-id').value = ae.id;
-    populateExpFormFields(ae);
-    formPanels = ae.panels ? JSON.parse(JSON.stringify(ae.panels)) : {};
-  } else {
-    document.getElementById('exp-form-lbl').textContent = 'New experiment';
-    document.getElementById('exp-save-btn').textContent = 'Create experiment';
-    document.getElementById('ef-editing-id').value = '';
-    resetExpForm();
-  }
-  renderPanelSelectOpts();
-  renderChannelTables();
-  renderExpLedGrids();
-  renderPstatSteps();
-  renderChemRows();
-  renderSampleRows();
+/* ═══════════ TAGS ═══════════ */
+let formTags = []; // tags on current form
+function renderTagSelect() {
+  const sel = document.getElementById('tag-select'); if (!sel) return;
+  const existing = db.tags || [];
+  sel.innerHTML = '<option value="">— select existing tag —</option>' +
+    existing.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+function renderTagChips() {
+  const wrap = document.getElementById('tag-chips'); if (!wrap) return;
+  wrap.innerHTML = formTags.map((t,i) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:12px;padding:3px 10px;font-size:12px;font-family:var(--mono);">${t}<span onclick="removeTag(${i})" style="cursor:pointer;font-size:14px;line-height:1;margin-left:2px;">×</span></span>`
+  ).join('');
+}
+function addTagFromSelect() {
+  const sel = document.getElementById('tag-select'); if (!sel||!sel.value) return;
+  if (!formTags.includes(sel.value)) { formTags.push(sel.value); renderTagChips(); }
+  sel.value = '';
+}
+function addNewTag() {
+  const inp = document.getElementById('tag-new'); if (!inp||!inp.value.trim()) return;
+  const tag = inp.value.trim();
+  if (!db.tags) db.tags = [];
+  if (!db.tags.includes(tag)) db.tags.push(tag);
+  if (!formTags.includes(tag)) { formTags.push(tag); renderTagChips(); }
+  renderTagSelect(); renderExpTagFilter();
+  inp.value = '';
+}
+function removeTag(i) { formTags.splice(i,1); renderTagChips(); }
+function renderExpTagFilter() {
+  const sel = document.getElementById('el-tag'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All tags</option>' + (db.tags||[]).map(t=>`<option value="${t}" ${t===cur?'selected':''}>${t}</option>`).join('');
 }
 
+/* ═══════════ RUN NUMBER ═══════════ */
+function autoFillRunNumber() {
+  const name = document.getElementById('ef-name')?.value.trim();
+  if (!name) return;
+  const editId = document.getElementById('ef-editing-id')?.value;
+  if (editId) return; // don't overwrite when editing
+  const maxRun = db.experiments
+    .filter(e => e.name === name && e.runNumber)
+    .reduce((m,e) => Math.max(m, parseInt(e.runNumber)||0), 0);
+  const el = document.getElementById('ef-run');
+  if (el && !el.dataset.userEdited) el.value = maxRun + 1;
+}
+
+/* ═══════════ EXP FORM ═══════════ */
+let formPanels = {};
 function populateExpFormFields(e) {
-  document.getElementById('ef-name').value = e.name || '';
-  document.getElementById('ef-date').value = e.date || today();
-  document.getElementById('ef-dur').value = e.plannedHours || '';
-  document.getElementById('ef-operator').value = e.operator || '';
-  document.getElementById('ef-pstat-id').value = e.pstatId || '';
-  document.getElementById('ef-desc').value = e.description || '';
-  document.getElementById('ef-sol-dist').value = e.solDist || '';
-  document.getElementById('ef-flow').value = e.flowRate || '';
-  document.getElementById('ef-pump').value = e.pump || '';
-  document.getElementById('ef-carbon').value = e.carbon || '';
-  document.getElementById('ef-sensors').value = e.sensors || '';
-  document.getElementById('ef-leds').value = e.leds || '';
-  document.getElementById('ef-led-pwr').value = e.ledPower || '';
-  document.getElementById('ef-pstat-note').value = e.pstatNote || '';
-  document.getElementById('ef-pstat-cycles').value = e.pstatCycles || '';
-  document.getElementById('ef-notes').value = e.notes || '';
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('ef-name',e.name); set('ef-date',e.date||today()); set('ef-dur',e.plannedHours);
+  set('ef-run',e.runNumber); set('ef-ref',e.refNum);
+  set('ef-operator',e.operator); set('ef-pstat-id',e.pstatId); set('ef-desc',e.description);
+  set('ef-sol-dist',e.solDist); set('ef-flow',e.flowRate); set('ef-pump',e.pump);
+  set('ef-carbon',e.carbon); set('ef-sensors',e.sensors);
+  set('ef-leds',e.leds); set('ef-pstat-note',e.pstatNote); set('ef-pstat-cycles',e.pstatCycles);
+  set('ef-notes',e.notes);
+  formTags = e.tags ? [...e.tags] : [];
+  renderTagChips(); renderTagSelect();
   pstatSteps = e.pstatSteps ? JSON.parse(JSON.stringify(e.pstatSteps.map(s=>({voltage:s.voltage||'',duration:s.duration||''})))) : [];
   chemRows = e.chemicals ? JSON.parse(JSON.stringify(e.chemicals)) : [];
   sampleRows = e.samplePoints ? JSON.parse(JSON.stringify(e.samplePoints)) : [];
   expLedStates = e.ledConfig ? JSON.parse(JSON.stringify(e.ledConfig)) : {};
-  renderChemRows();
-  renderSampleRows();
 }
-
 function resetExpForm() {
-  const fields = ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-dist','ef-flow','ef-pump','ef-carbon','ef-sensors','ef-pstat-note','ef-pstat-cycles','ef-notes'];
-  fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-dist','ef-flow','ef-pump','ef-carbon',
+   'ef-sensors','ef-leds','ef-pstat-note','ef-pstat-cycles','ef-notes','ef-run','ef-ref'].forEach(id=>{
+    const el=document.getElementById(id); if(el){el.value='';delete el.dataset.userEdited;}
+  });
   document.getElementById('ef-date').value = today();
   document.getElementById('ef-dur').value = '';
   document.getElementById('ef-editing-id').value = '';
-  pstatSteps = []; renderPstatSteps();
-  chemRows = []; renderChemRows();
-  sampleRows = []; renderSampleRows();
-  expLedStates = {}; renderExpLedGrids();
-  formPanels = {}; renderChannelTables();
+  formTags=[]; renderTagChips(); renderTagSelect();
+  pstatSteps=[]; chemRows=[]; sampleRows=[]; expLedStates={}; formPanels={};
 }
-
 function saveExpForm() {
   const name = document.getElementById('ef-name').value.trim();
   if (!name) { alert('Experiment name required.'); return; }
+  const runNum = parseInt(document.getElementById('ef-run').value);
+  if (!runNum || runNum < 1) { alert('Run number is required.'); document.getElementById('ef-run').focus(); return; }
   const editId = document.getElementById('ef-editing-id').value;
+  const g = id => { const el=document.getElementById(id); return el?el.value:''; };
   const data = {
-    name, date: document.getElementById('ef-date').value || today(),
-    plannedHours: parseFloat(document.getElementById('ef-dur').value) || null,
-    operator: document.getElementById('ef-operator').value.trim(),
-    pstatId: document.getElementById('ef-pstat-id').value.trim(),
-    description: document.getElementById('ef-desc').value.trim(),
-    chemicals: JSON.parse(JSON.stringify(chemRows)),
-    samplePoints: JSON.parse(JSON.stringify(sampleRows)),
-    ledConfig: JSON.parse(JSON.stringify(expLedStates)),
-    solDist: document.getElementById('ef-sol-dist').value,
-    flowRate: parseFloat(document.getElementById('ef-flow').value) || null,
-    pump: document.getElementById('ef-pump').value.trim(),
-    carbon: parseFloat(document.getElementById('ef-carbon').value) || null,
-    sensors: document.getElementById('ef-sensors').value.trim(),
-    pstatNote: document.getElementById('ef-pstat-note').value.trim(),
-    pstatSteps: JSON.parse(JSON.stringify(pstatSteps)),
-    pstatCycles: parseInt(document.getElementById('ef-pstat-cycles').value) || null,
-    notes: document.getElementById('ef-notes').value.trim(),
-    panels: JSON.parse(JSON.stringify(formPanels)),
-    components: buildComponentsFromPanels(formPanels),
+    name, runNumber:runNum, refNum:g('ef-ref').trim(),
+    date:g('ef-date')||today(), plannedHours:parseFloat(g('ef-dur'))||null,
+    operator:g('ef-operator').trim(), pstatId:g('ef-pstat-id').trim(), description:g('ef-desc').trim(),
+    tags:[...formTags],
+    chemicals:JSON.parse(JSON.stringify(chemRows)), samplePoints:JSON.parse(JSON.stringify(sampleRows)),
+    ledConfig:JSON.parse(JSON.stringify(expLedStates)), solDist:g('ef-sol-dist'),
+    flowRate:parseFloat(g('ef-flow'))||null, pump:g('ef-pump').trim(),
+    carbon:parseFloat(g('ef-carbon'))||null, sensors:g('ef-sensors').trim(),
+    leds:g('ef-leds').trim(), pstatNote:g('ef-pstat-note').trim(),
+    pstatSteps:JSON.parse(JSON.stringify(pstatSteps)),
+    pstatCycles:parseInt(g('ef-pstat-cycles'))||null,
+    notes:g('ef-notes').trim(),
+    panels:JSON.parse(JSON.stringify(formPanels)),
+    components:buildComponentsFromPanels(formPanels),
   };
-  if (editId) {
-    Object.assign(ge(editId), data);
-  } else {
-    if (activeExpId) { if (!confirm('There is already an active experiment. Make this one active?')) return; ge(activeExpId).status = 'paused'; }
-    const n = { id: uid(), status: 'active', fileLinks: [], created: Date.now(), ...data };
-    db.experiments.unshift(n);
-    activeExpId = n.id;
+  if (editId) { Object.assign(ge(editId), data); }
+  else {
+    if (activeExpId) { if (!confirm('There is already an active experiment. Make this one active?')) return; ge(activeExpId).status='paused'; }
+    const n = {id:uid(),status:'active',fileLinks:[],created:Date.now(),...data};
+    db.experiments.unshift(n); activeExpId=n.id;
   }
-  saveAndSync();
-  showSub('exp', 'db', document.getElementById('stab-exp-db'));
+  saveAndSync(); closeExpPanel(); renderExpDb();
 }
-
+function repeatExp(id) {
+  const src = ge(id); if (!src) return;
+  // Calculate next run number for this experiment name
+  const maxRun = db.experiments
+    .filter(e => e.name === src.name && e.runNumber)
+    .reduce((m,e) => Math.max(m, parseInt(e.runNumber)||0), 0);
+  openExpPanel(false);
+  // Populate with source data after panel opens
+  setTimeout(() => {
+    populateExpFormFields({...src, runNumber: maxRun+1, date: today()});
+    formPanels = src.panels ? JSON.parse(JSON.stringify(src.panels)) : {};
+    document.getElementById('ef-editing-id').value = ''; // ensure new experiment
+    document.getElementById('exp-save-btn').textContent = 'Create experiment';
+    document.getElementById('exp-panel-title').textContent = 'Repeat experiment';
+    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+  }, 50);
+}
 function buildComponentsFromPanels(panels) {
   const comps = new Set(Object.keys(panels));
-  Object.values(panels).forEach(chs => chs.forEach(ch => {
-    if (!ch.dummy) { if (ch.engine) comps.add(ch.engine); if (ch.paper) comps.add(ch.paper); if (ch.glass) comps.add(ch.glass); }
-  }));
+  Object.values(panels).forEach(chs=>chs.forEach(ch=>{ if(!ch.dummy){if(ch.engine)comps.add(ch.engine);if(ch.paper)comps.add(ch.paper);if(ch.glass)comps.add(ch.glass);} }));
   return [...comps];
-}
-
-function editActiveExp() {
-  showMain('exp', document.getElementById('mtab-exp'));
-  showSub('exp', 'new', document.getElementById('stab-exp-new'));
 }
 
 /* ═══════════ PANEL / CHANNEL ═══════════ */
 function renderPanelSelectOpts() {
-  const sel = document.getElementById('panel-sel');
-  const used = Object.keys(formPanels);
-  const panels = Object.values(db.components).filter(c => c.type === 'panel' && !used.includes(c.id));
-  sel.innerHTML = '<option value="">— select a panel —</option>' +
-    panels.map(p => `<option value="${p.id}">${p.name} (${p.id}) — ${p.channels || '?'} ch</option>`).join('');
+  const sel=document.getElementById('panel-sel'); if(!sel) return;
+  const used=Object.keys(formPanels);
+  const panels=Object.values(db.components).filter(c=>c.type==='panel'&&!used.includes(c.id));
+  sel.innerHTML='<option value="">— select a panel —</option>'+panels.map(p=>`<option value="${p.id}">${p.name} (${p.id}) — ${p.channels||'?'} ch</option>`).join('');
 }
-
 function addPanelToForm() {
-  const pid = document.getElementById('panel-sel').value;
-  if (!pid) return;
-  const panel = db.components[pid];
-  if (!panel) return;
-  const nch = parseInt(panel.channels) || 1;
-  formPanels[pid] = Array.from({length: nch}, (_, i) => ({ch: i+1, engine:'', paper:'', glass:'', dummy: false}));
-  renderPanelSelectOpts();
-  renderChannelTables();
-  renderExpLedGrids();
+  const pid=document.getElementById('panel-sel').value; if(!pid) return;
+  const panel=db.components[pid]; if(!panel) return;
+  formPanels[pid]=Array.from({length:parseInt(panel.channels)||1},(_,i)=>({ch:i+1,engine:'',paper:'',glass:'',dummy:false}));
+  renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids();
 }
-
 function removePanelFromForm(pid) {
   delete formPanels[pid];
-  // Clean up LED states for this panel
-  Object.keys(expLedStates).forEach(k => { if (k.startsWith(pid+'-')) delete expLedStates[k]; });
-  renderPanelSelectOpts();
-  renderChannelTables();
-  renderExpLedGrids();
+  Object.keys(expLedStates).forEach(k=>{if(k.startsWith(pid+'-'))delete expLedStates[k];});
+  renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids();
 }
-
-function updateFormChannel(pid, idx, field, val) {
-  formPanels[pid][idx][field] = val;
-  if (field === 'dummy') renderChannelTables();
-  // Reset LED state for this slot if engine changed
-  if (field === 'engine') {
-    const key = `${pid}-${idx}`;
-    delete expLedStates[key];
-    renderExpLedGrids();
-  }
+function updateFormChannel(pid,idx,field,val) {
+  formPanels[pid][idx][field]=val;
+  if(field==='dummy') renderChannelTables();
+  if(field==='engine'){delete expLedStates[`${pid}-${idx}`]; renderExpLedGrids();}
 }
-
 function copyFirstEngine(pid) {
-  const chs = formPanels[pid]; if (!chs) return;
-  const first = chs.find(ch => !ch.dummy && ch.engine);
-  if (!first) { alert('No engine selected yet in this panel.'); return; }
-  chs.forEach((ch, i) => { if (!ch.dummy) formPanels[pid][i].engine = first.engine; });
+  const chs=formPanels[pid]; if(!chs) return;
+  const first=chs.find(ch=>!ch.dummy&&ch.engine);
+  if(!first){alert('No engine selected yet in this panel.');return;}
+  chs.forEach((ch,i)=>{if(!ch.dummy)formPanels[pid][i].engine=first.engine;});
   renderChannelTables();
 }
-
 function renderChannelTables() {
-  const wrap = document.getElementById('channel-tables');
-  const hasPanels = Object.keys(formPanels).length > 0;
-  if (!hasPanels) { wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No panels added yet</div>'; return; }
-
-  const engines = Object.values(db.components).filter(c => c.type === 'engine');
-  const papers = Object.values(db.components).filter(c => c.type === 'paper');
-  const glasses = Object.values(db.components).filter(c => c.type === 'glass');
-  const mkOpt = (arr, val) => '<option value="">—</option>' + arr.map(c => `<option value="${c.id}" ${c.id === val ? 'selected' : ''}>${c.name}</option>`).join('');
-
-  wrap.innerHTML = Object.entries(formPanels).map(([pid, channels]) => {
-    const panel = db.components[pid] || {name: pid};
-    return `<div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+  const wrap=document.getElementById('channel-tables'); if(!wrap) return;
+  if(!Object.keys(formPanels).length){wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No panels added yet</div>';return;}
+  const engines=Object.values(db.components).filter(c=>c.type==='engine');
+  const papers=Object.values(db.components).filter(c=>c.type==='paper');
+  const glasses=Object.values(db.components).filter(c=>c.type==='glass');
+  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}</option>`).join('');
+  wrap.innerHTML=Object.entries(formPanels).map(([pid,channels])=>{
+    const panel=db.components[pid]||{name:pid};
+    return `<div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
-        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:4px 10px;">Copy first engine to all</button>
-        <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
+        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Copy first engine</button>
+        <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;">Remove</button>
       </div>
       <div style="overflow-x:auto;">
-        <table class="ch-table" style="min-width:520px;">
-          <thead><tr>
-            <th style="width:36px;">Ch</th>
-            <th>Light engine</th>
-            <th>Paper frame</th>
-            <th>Glass frame</th>
-            <th style="width:55px;text-align:center;">Dummy</th>
-          </tr></thead>
-          <tbody>${channels.map((row, i) => `
-            <tr style="${row.dummy ? 'opacity:.4;' : ''}">
+        <table class="ch-table" style="min-width:480px;">
+          <thead><tr><th style="width:32px;">Ch</th><th>Light engine</th><th>Paper frame</th><th>Glass frame</th><th style="width:50px;text-align:center;">Dummy</th></tr></thead>
+          <tbody>${channels.map((row,i)=>`
+            <tr style="${row.dummy?'opacity:.4;':''}">
               <td style="font-family:var(--mono);font-size:11px;color:var(--tx3);">${row.ch}</td>
-              <td><div class="slot-row">
-                <select onchange="updateFormChannel('${pid}',${i},'engine',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(engines, row.engine)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan" style="font-size:14px;">&#128247;</button>`}
-              </div></td>
-              <td><div class="slot-row">
-                <select onchange="updateFormChannel('${pid}',${i},'paper',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(papers, row.paper)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan" style="font-size:14px;">&#128247;</button>`}
-              </div></td>
-              <td><div class="slot-row">
-                <select onchange="updateFormChannel('${pid}',${i},'glass',this.value)" ${row.dummy ? 'disabled' : ''}>${mkOpt(glasses, row.glass)}</select>
-                ${row.dummy ? '' : `<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan" style="font-size:14px;">&#128247;</button>`}
-              </div></td>
-              <td style="text-align:center;"><input type="checkbox" ${row.dummy ? 'checked' : ''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)" title="Dummy channel"></td>
+              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'engine',this.value)" ${row.dummy?'disabled':''}>${mkOpt(engines,row.engine)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
+              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'paper',this.value)" ${row.dummy?'disabled':''}>${mkOpt(papers,row.paper)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
+              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'glass',this.value)" ${row.dummy?'disabled':''}>${mkOpt(glasses,row.glass)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
+              <td style="text-align:center;"><input type="checkbox" ${row.dummy?'checked':''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)"></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1126,202 +1105,129 @@ function renderChannelTables() {
   }).join('');
 }
 
-/* ═══════════ CAMERA MODAL ═══════════ */
-let camScanner = null, camScanOn = false;
-let camTarget = null; // {type, pid, idx, field} or 'panel-sel-cam' or 'lookup-cam'
-let camDebounce = null;
-
-const CAM_TITLES = {
-  'panel-sel-cam': 'Scan panel QR / Data Matrix',
-  'lookup-cam': 'Scan component to look up',
-  'slot': 'Scan component for slot',
-};
-
-function openCam(type, pid, idx, field) {
-  camTarget = { type, pid, idx, field };
-  document.getElementById('cam-overlay').style.display = 'flex';
-  const titleKey = type === 'slot' ? 'slot' : type;
-  document.getElementById('cam-title').textContent = CAM_TITLES[titleKey] || 'Scanning...';
-  document.getElementById('cam-flash').style.display = 'none';
-  document.getElementById('cam-manual').value = '';
-  startCam();
-}
-
-function startCam() {
-  if (camScanOn) return;
-  camScanner = new Html5Qrcode('cam-reader');
-  camScanner.start(
-    { facingMode: 'environment' },
-    { fps: 12, qrbox: { width: 240, height: 240 } },
-    text => {
-      // Debounce: ignore repeat scans within 1.5s
-      if (camDebounce) return;
-      camDebounce = setTimeout(() => { camDebounce = null; }, 1500);
+/* ═══════════ CAMERA ═══════════ */
+let camScanner=null, camScanOn=false, camTarget=null, camDebounce=null;
+function openCam(type,pid,idx,field) {
+  camTarget={type,pid,idx,field};
+  const titles={'panel-sel-cam':'Scan panel','lookup-cam':'Scan to look up','slot':'Scan component for slot'};
+  document.getElementById('cam-title').textContent=titles[type==='slot'?'slot':type]||'Scanning...';
+  document.getElementById('cam-flash').style.display='none';
+  document.getElementById('cam-manual').value='';
+  document.getElementById('cam-overlay').classList.add('open');
+  if(!camScanOn){
+    camScanner=new Html5Qrcode('cam-reader');
+    camScanner.start({facingMode:'environment'},{fps:12,qrbox:{width:240,height:240}},text=>{
+      if(camDebounce)return; camDebounce=setTimeout(()=>{camDebounce=null;},1500);
       handleCamResult(text.trim());
-    },
-    () => {}
-  ).then(() => { camScanOn = true; })
-  .catch(err => {
-    document.getElementById('cam-reader').innerHTML = `<div class="cam-ph">Camera error: ${err}</div>`;
-  });
+    },()=>{}).then(()=>{camScanOn=true;}).catch(err=>{document.getElementById('cam-reader').innerHTML=`<div class="cam-ph">Camera error: ${err}</div>`;});
+  }
 }
-
 function closeCam() {
-  if (camScanner && camScanOn) { camScanner.stop().catch(() => {}); camScanOn = false; }
-  camScanner = null; camTarget = null;
-  document.getElementById('cam-overlay').style.display = 'none';
+  if(camScanner&&camScanOn){camScanner.stop().catch(()=>{});camScanOn=false;}
+  camScanner=null;camTarget=null;
+  document.getElementById('cam-overlay').classList.remove('open');
 }
-
-function closeCamIfOverlay(e) { if (e.target === document.getElementById('cam-overlay')) closeCam(); }
-
+function closeCamIfOverlay(e){if(e.target===document.getElementById('cam-overlay'))closeCam();}
 function handleCamResult(id) {
-  if (!id) return;
-  const target = camTarget;
-  if (!target) return;
-
-  if (target.type === 'panel-sel-cam') {
-    // Scan into panel select
-    const sel = document.getElementById('panel-sel');
-    if (db.components[id] && db.components[id].type === 'panel') {
-      sel.value = id;
-      showCamFlash('Panel: ' + db.components[id].name, true);
-      setTimeout(closeCam, 800);
-    } else {
-      showCamFlash(db.components[id] ? 'Not a panel: ' + db.components[id].name : 'Unknown ID: ' + id, false);
-    }
+  if(!id||!camTarget) return;
+  const {type,pid,idx,field}=camTarget;
+  if(type==='panel-sel-cam'){
+    if(db.components[id]&&db.components[id].type==='panel'){document.getElementById('panel-sel').value=id;showCamFlash('Panel: '+db.components[id].name,true);setTimeout(closeCam,800);}
+    else showCamFlash(db.components[id]?'Not a panel: '+db.components[id].name:'Unknown ID: '+id,false);
     return;
   }
-
-  if (target.type === 'lookup-cam') {
-    showCamFlash('Found: ' + id, true);
-    setTimeout(() => { closeCam(); lookupComp(id); }, 600);
-    return;
-  }
-
-  if (target.type === 'slot') {
-    const { pid, idx, field } = target;
-    const c = db.components[id];
-    if (!c) { showCamFlash('Unknown ID: ' + id, false); return; }
-    const expectedType = field === 'engine' ? 'engine' : field === 'paper' ? 'paper' : 'glass';
-    if (c.type !== expectedType) { showCamFlash(`Expected ${tn(expectedType)}, got ${tn(c.type)}`, false); return; }
-    formPanels[pid][idx][field] = id;
-    showCamFlash(c.name + ' assigned', true);
-    setTimeout(() => { closeCam(); renderChannelTables(); }, 700);
-    return;
+  if(type==='lookup-cam'){showCamFlash('Found: '+id,true);setTimeout(()=>{closeCam();lookupComp(id);},600);return;}
+  if(type==='slot'){
+    const c=db.components[id];
+    if(!c){showCamFlash('Unknown ID: '+id,false);return;}
+    const exp={engine:'engine',paper:'paper',glass:'glass'}[field];
+    if(c.type!==exp){showCamFlash(`Expected ${tn(exp)}, got ${tn(c.type)}`,false);return;}
+    formPanels[pid][idx][field]=id;
+    showCamFlash(c.name+' assigned',true);
+    setTimeout(()=>{closeCam();renderChannelTables();},700);
   }
 }
+function showCamFlash(msg,ok){const el=document.getElementById('cam-flash');el.style.display='block';el.className='cam-flash '+(ok?'ok':'err');el.textContent=msg;}
 
-function showCamFlash(msg, ok) {
-  const el = document.getElementById('cam-flash');
-  el.style.display = 'block';
-  el.className = 'cam-flash ' + (ok ? 'ok' : 'err');
-  el.textContent = msg;
+/* ═══════════ CLOSE-OUT ═══════════ */
+let urlEntries=[];
+function showCloseout() {
+  const ae=db.experiments.find(e=>e.status==='active'); if(!ae) return;
+  document.getElementById('cm-planned-lbl').textContent=ae.plannedHours||'—';
+  document.getElementById('cm-hours').value=ae.plannedHours||'';
+  document.getElementById('cm-start-vol').value=ae.startVol||'';
+  ['cm-sample-vol','cm-end-vol','cm-leakage','cm-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cm-failure').checked=false;
+  urlEntries=[]; renderUrlEntries();
+  document.getElementById('closeout-panel').style.display='block';
+  document.getElementById('closeout-panel').scrollIntoView({behavior:'smooth'});
 }
-
-/* ═══════════ COMPLETE MODAL ═══════════ */
-let urlEntries = [];
-
-function showCompleteModal() {
-  const ae = db.experiments.find(e => e.status === 'active'); if (!ae) return;
-  document.getElementById('cm-planned-lbl').textContent = ae.plannedHours || '—';
-  document.getElementById('cm-hours').value = ae.plannedHours || '';
-  document.getElementById('cm-start-vol').value = ae.startVol || '';
-  document.getElementById('cm-sample-vol').value = '';
-  document.getElementById('cm-end-vol').value = '';
-  document.getElementById('cm-leakage').value = '';
-  document.getElementById('cm-notes').value = '';
-  document.getElementById('cm-failure').checked = false;
-  urlEntries = []; renderUrlEntries();
-  // Show inline in experiment db tab — don't jump to new exp tab
-  showMain('exp', document.getElementById('mtab-exp'));
-  showSub('exp', 'db', document.getElementById('stab-exp-db'));
-  setTimeout(() => {
-    document.getElementById('active-closeout').style.display = 'block';
-    document.getElementById('active-closeout').scrollIntoView({behavior:'smooth'});
-  }, 100);
+function usePlanned(){const ae=db.experiments.find(e=>e.status==='active');if(ae?.plannedHours)document.getElementById('cm-hours').value=ae.plannedHours;}
+function calcLeakage(){
+  const s=parseFloat(document.getElementById('cm-start-vol').value);
+  const sp=parseFloat(document.getElementById('cm-sample-vol').value);
+  const e=parseFloat(document.getElementById('cm-end-vol').value);
+  document.getElementById('cm-leakage').value=(!isNaN(s)&&!isNaN(sp)&&!isNaN(e))?(s-sp-e).toFixed(1)+' mL':'';
 }
-
-function usePlanned() {
-  const ae = db.experiments.find(e => e.status === 'active');
-  if (ae?.plannedHours) document.getElementById('cm-hours').value = ae.plannedHours;
+function addUrlEntry(){urlEntries.push({title:'',url:''});renderUrlEntries();}
+function rmUrl(i){urlEntries.splice(i,1);renderUrlEntries();}
+function renderUrlEntries(){
+  const c=document.getElementById('url-entries'); if(!c) return;
+  if(!urlEntries.length){c.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:8px;">No links added</div>';return;}
+  c.innerHTML=urlEntries.map((u,i)=>`<div class="url-row"><input type="text" placeholder="Title" value="${u.title}" oninput="urlEntries[${i}].title=this.value" style="flex:1;"><input type="url" placeholder="https://..." value="${u.url}" oninput="urlEntries[${i}].url=this.value" style="flex:2;"><button class="btn-rd" onclick="rmUrl(${i})" style="padding:5px 8px;">×</button></div>`).join('');
 }
-
-function calcLeakage() {
-  const start = parseFloat(document.getElementById('cm-start-vol').value);
-  const sample = parseFloat(document.getElementById('cm-sample-vol').value);
-  const end = parseFloat(document.getElementById('cm-end-vol').value);
-  if (!isNaN(start) && !isNaN(sample) && !isNaN(end)) {
-    const leakage = start - sample - end;
-    document.getElementById('cm-leakage').value = leakage.toFixed(1) + ' mL';
-  } else { document.getElementById('cm-leakage').value = ''; }
-}
-
-function addUrlEntry() { urlEntries.push({title:'',url:''}); renderUrlEntries(); }
-function rmUrl(i) { urlEntries.splice(i,1); renderUrlEntries(); }
-function renderUrlEntries() {
-  const c = document.getElementById('url-entries');
-  if (!urlEntries.length) { c.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:8px;">No links — click Add file link</div>'; return; }
-  c.innerHTML = urlEntries.map((u,i) => `
-    <div class="url-row">
-      <input type="text" placeholder="Title" value="${u.title}" oninput="urlEntries[${i}].title=this.value" style="flex:1;">
-      <input type="url" placeholder="https://..." value="${u.url}" oninput="urlEntries[${i}].url=this.value" style="flex:2;">
-      <button class="btn-rd" onclick="rmUrl(${i})" style="padding:5px 8px;">×</button>
-    </div>`).join('');
-}
-
-function finalizeExp() {
-  const hours = parseFloat(document.getElementById('cm-hours').value);
-  if (!hours || hours <= 0) { alert('Please enter actual duration.'); return; }
-  const ae = db.experiments.find(e => e.status === 'active');
-  ae.status = 'complete'; ae.actualHours = hours;
-  ae.startVol = parseFloat(document.getElementById('cm-start-vol').value) || null;
-  ae.sampleVol = parseFloat(document.getElementById('cm-sample-vol').value) || null;
-  ae.endVol = parseFloat(document.getElementById('cm-end-vol').value) || null;
-  ae.leakage = document.getElementById('cm-leakage').value;
-  ae.completionNotes = document.getElementById('cm-notes').value.trim();
-  ae.failure = document.getElementById('cm-failure').checked;
-  ae.fileLinks = JSON.parse(JSON.stringify(urlEntries));
-  ae.completedAt = Date.now();
-  activeExpId = null;
+function finalizeExp(){
+  const hours=parseFloat(document.getElementById('cm-hours').value);
+  if(!hours||hours<=0){alert('Please enter actual duration.');return;}
+  const ae=db.experiments.find(e=>e.status==='active');
+  ae.status='complete';ae.actualHours=hours;
+  ae.startVol=parseFloat(document.getElementById('cm-start-vol').value)||null;
+  ae.sampleVol=parseFloat(document.getElementById('cm-sample-vol').value)||null;
+  ae.endVol=parseFloat(document.getElementById('cm-end-vol').value)||null;
+  ae.leakage=document.getElementById('cm-leakage').value;
+  ae.completionNotes=document.getElementById('cm-notes').value.trim();
+  ae.failure=document.getElementById('cm-failure').checked;
+  ae.fileLinks=JSON.parse(JSON.stringify(urlEntries));
+  ae.completedAt=Date.now(); activeExpId=null;
   saveAndSync();
-  document.getElementById('active-closeout').style.display = 'none';
+  document.getElementById('closeout-panel').style.display='none';
   renderExpDb();
 }
 
 /* ═══════════ EXPERIMENT DB ═══════════ */
 function renderExpDb() {
-  // Active banner
-  const ae = db.experiments.find(e => e.status === 'active');
-  const banner = document.getElementById('active-banner');
-  if (ae) {
-    banner.style.display = 'block';
-    document.getElementById('ab-name').textContent = ae.name;
-    document.getElementById('ab-meta').textContent = fdate(ae.date) + (ae.plannedHours ? ' · ' + ae.plannedHours + ' h planned' : '') + (ae.operator ? ' · ' + ae.operator : '');
-  } else { banner.style.display = 'none'; }
-
-  const q = (document.getElementById('el-search').value||'').toLowerCase();
-  const df = document.getElementById('el-from').value;
-  const dt = document.getElementById('el-to').value;
-  const sf = document.getElementById('el-status').value;
-  let exps = [...db.experiments];
-  if (q) exps = exps.filter(e => (e.name+' '+(e.description||'')+' '+(e.operator||'')+' '+(e.solConc||'')+' '+(e.notes||'')).toLowerCase().includes(q));
-  if (df) exps = exps.filter(e => e.date >= df);
-  if (dt) exps = exps.filter(e => e.date <= dt);
-  if (sf === 'failure') exps = exps.filter(e => e.failure);
-  else if (sf === 'flagged') exps = exps.filter(e => e.flaggedForDeletion);
-  else if (sf) exps = exps.filter(e => e.status === sf);
-  document.getElementById('el-count').textContent = exps.length + ' experiment' + (exps.length !== 1 ? 's' : '');
-  const list = document.getElementById('exp-list');
-  if (!exps.length) { list.innerHTML = '<div class="empty">No experiments match</div>'; return; }
-  list.innerHTML = `<div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--tx3);text-transform:uppercase;padding:14px 0 8px;border-top:1px solid var(--ln);margin-top:6px;">Experiment records</div>` + exps.map(e => {
-    const isActive = e.status === 'active';
-    const sb = isActive ? '<span class="badge b-active">active</span>' : e.failure ? '<span class="badge b-flagged">failure</span>' : '<span class="badge b-complete">complete</span>';
-    const cc = (e.components||[]).length;
+  const ae=db.experiments.find(e=>e.status==='active');
+  const banner=document.getElementById('active-banner');
+  if(ae){
+    banner.style.display='block';
+    document.getElementById('ab-name').textContent=ae.name;
+    document.getElementById('ab-meta').textContent=fdate(ae.date)+(ae.plannedHours?' · '+ae.plannedHours+' h planned':'')+(ae.operator?' · '+ae.operator:'');
+  } else { banner.style.display='none'; document.getElementById('closeout-panel').style.display='none'; }
+  const q=(document.getElementById('el-search')?.value||'').toLowerCase();
+  const df=document.getElementById('el-from')?.value;
+  const dt=document.getElementById('el-to')?.value;
+  const sf=document.getElementById('el-status')?.value;
+  let exps=[...db.experiments];
+  if(q) exps=exps.filter(e=>(e.name+' '+(e.description||'')+' '+(e.operator||'')+' '+(e.notes||'')).toLowerCase().includes(q));
+  if(df) exps=exps.filter(e=>e.date>=df);
+  if(dt) exps=exps.filter(e=>e.date<=dt);
+  if(sf==='failure') exps=exps.filter(e=>e.failure);
+  else if(sf==='flagged') exps=exps.filter(e=>e.flaggedForDeletion);
+  else if(sf) exps=exps.filter(e=>e.status===sf);
+  const tagF = document.getElementById('el-tag')?.value;
+  if(tagF) exps=exps.filter(e=>e.tags&&e.tags.includes(tagF));
+  const cnt=document.getElementById('el-count'); if(cnt) cnt.textContent=exps.length+' experiment'+(exps.length!==1?'s':'');
+  const list=document.getElementById('exp-list'); if(!list) return;
+  if(!exps.length){list.innerHTML='<div class="empty">No experiments yet — click "+ New experiment" to create one</div>';return;}
+  list.innerHTML=exps.map(e=>{
+    const isActive=e.status==='active';
+    const sb=isActive?'<span class="badge b-active">active</span>':e.failure?'<span class="badge b-flagged">failure</span>':'<span class="badge b-complete">complete</span>';
+    const cc=(e.components||[]).length;
     return `<div class="exp-row ${e.flaggedForDeletion?'flagged-row':''}">
       <div class="exp-summary" onclick="toggleExpDetail('${e.id}')">
         <input type="checkbox" class="exp-ck" data-id="${e.id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
-        <div class="exp-title">${e.name}${e.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-        <div class="exp-meta">${fdate(e.date)} · ${e.actualHours ? e.actualHours.toFixed(1)+' h' : e.plannedHours ? e.plannedHours+' h planned':'—'} · ${cc} comp</div>
+        <div class="exp-title">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}${e.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
+        <div class="exp-meta">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.plannedHours?e.plannedHours+' h planned':'—'} · ${cc} comp</div>
         ${sb}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
       </div>
@@ -1329,289 +1235,151 @@ function renderExpDb() {
     </div>`;
   }).join('');
 }
-
-function toggleExpDetail(id) { document.getElementById('ed-'+id).classList.toggle('open'); }
-
+function toggleExpDetail(id){document.getElementById('ed-'+id)?.classList.toggle('open');}
 function buildExpDetail(e) {
-  const pstatStr = e.pstatSteps?.length
-    ? e.pstatSteps.map((s,i)=>`Step ${i+1}: ${s.voltage}V for ${s.duration}s`).join(', ') + (e.pstatCycles ? ` — ${e.pstatCycles} cycles` : '')
-    : '—';
-  const channelHTML = e.panels && Object.keys(e.panels).length
-    ? Object.entries(e.panels).map(([pid,chs]) => {
-        const pname = db.components[pid]?.name || pid;
-        return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;">${pname} ${tb('panel')}</div>
-          <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;">
-          <thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
-          <tbody>${chs.map(ch => ch.dummy
-            ? `<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`
-            : `<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine ? (db.components[ch.engine]?.name||ch.engine) : '—'}</td><td style="font-size:12px;">${ch.paper ? (db.components[ch.paper]?.name||ch.paper) : '—'}</td><td style="font-size:12px;">${ch.glass ? (db.components[ch.glass]?.name||ch.glass) : '—'}</td></tr>`
-          ).join('')}</tbody></table></div></div>`;
-      }).join('') : '<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
-  const links = e.fileLinks?.length ? e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:12px;display:block;margin-bottom:3px;">${l.title||l.url}</a>`).join('') : '—';
+  const pstatStr=e.pstatSteps?.length?e.pstatSteps.map((s,i)=>`Step ${i+1}: ${s.voltage}V for ${s.duration}s`).join(', ')+(e.pstatCycles?` — ${e.pstatCycles} cycles`:''):'—';
+  const channelHTML=e.panels&&Object.keys(e.panels).length?Object.entries(e.panels).map(([pid,chs])=>{
+    const pname=db.components[pid]?.name||pid;
+    return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;">${pname} ${tb('panel')}</div>
+      <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;"><thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
+      <tbody>${chs.map(ch=>ch.dummy?`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`:`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine?(db.components[ch.engine]?.name||ch.engine):'—'}</td><td style="font-size:12px;">${ch.paper?(db.components[ch.paper]?.name||ch.paper):'—'}</td><td style="font-size:12px;">${ch.glass?(db.components[ch.glass]?.name||ch.glass):'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }).join(''):'<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
+  const links=e.fileLinks?.length?e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:12px;display:block;margin-bottom:3px;">${l.title||l.url}</a>`).join(''):'—';
   return `
     <div class="dg">
       <div class="df"><div class="dk">Date</div><div class="dv">${fdate(e.date)}</div></div>
       <div class="df"><div class="dk">Operator</div><div class="dv">${fv(e.operator)}</div></div>
+      <div class="df"><div class="dk">Run number</div><div class="dv" style="font-family:var(--mono);">${e.runNumber||'—'}</div></div>
+      <div class="df"><div class="dk">Reference</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${fv(e.refNum)}</div></div>
       <div class="df"><div class="dk">Planned / actual</div><div class="dv">${e.plannedHours||'—'} h / ${e.actualHours||'—'} h</div></div>
       <div class="df"><div class="dk">Potentiostat</div><div class="dv">${fv(e.pstatId)}</div></div>
     </div>
+    ${e.tags?.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${e.tags.map(t=>`<span style="background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:12px;padding:3px 10px;font-size:11px;font-family:var(--mono);">${t}</span>`).join('')}</div>`:''}
     ${e.description?`<div class="df frow"><div class="dk">Description</div><div class="dv">${e.description}</div></div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SOLUTION</div>
-    ${e.chemicals&&e.chemicals.length?`
-    <div style="overflow-x:auto;margin-bottom:10px;">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr>
-          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Chemical</th>
-          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Amount</th>
-          <th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">Concentration</th>
-        </tr></thead>
-        <tbody>${e.chemicals.map(c=>`<tr>
-          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${c.name||'—'}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.amount?c.amount+' '+c.unit:'—'}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.conc?c.conc+' '+c.concUnit:'—'}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`:'<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">No chemicals recorded</div>'}
+    ${e.chemicals?.length?`<div style="overflow-x:auto;margin-bottom:10px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>${['Chemical','Amount','Concentration'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}</tr></thead><tbody>${e.chemicals.map(c=>`<tr><td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${c.name||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.amount?c.amount+' '+c.unit:'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.conc?c.conc+' '+c.concUnit:'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">No chemicals recorded</div>'}
     <div class="dg">
       <div class="df"><div class="dk">Distribution</div><div class="dv">${fv(e.solDist)}</div></div>
       <div class="df"><div class="dk">Flow rate</div><div class="dv">${e.flowRate?e.flowRate+' mL/min':'—'}</div></div>
       <div class="df"><div class="dk">Pump(s)</div><div class="dv">${fv(e.pump)}</div></div>
       <div class="df"><div class="dk">Activated carbon</div><div class="dv">${e.carbon?e.carbon+' g':'—'}</div></div>
     </div>
-    ${e.endVol||e.sampleVol?`<div class="dg">
-      <div class="df"><div class="dk">End measured vol</div><div class="dv">${e.endVol?e.endVol+' mL':'—'}</div></div>
-      <div class="df"><div class="dk">Sample vol</div><div class="dv">${e.sampleVol?e.sampleVol+' mL':'—'}</div></div>
-      <div class="df"><div class="dk">Leakage / sweat</div><div class="dv" style="color:var(--am);">${fv(e.leakage)}</div></div>
-    </div>`:''}
+    ${e.endVol||e.sampleVol?`<div class="dg"><div class="df"><div class="dk">End vol</div><div class="dv">${e.endVol?e.endVol+' mL':'—'}</div></div><div class="df"><div class="dk">Sample vol</div><div class="dv">${e.sampleVol?e.sampleVol+' mL':'—'}</div></div><div class="df"><div class="dk">Leakage</div><div class="dv" style="color:var(--am);">${fv(e.leakage)}</div></div></div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LIGHT &amp; ELECTRICAL</div>
     <div class="dg">
       <div class="df"><div class="dk">LEDs</div><div class="dv">${fv(e.leds)}</div></div>
-      <div class="df"><div class="dk">LED power</div><div class="dv">${e.ledPower!=null?e.ledPower+'%':'—'}</div></div>
       <div class="df"><div class="dk">Program note</div><div class="dv">${fv(e.pstatNote)}</div></div>
       <div class="df"><div class="dk">Total cycles</div><div class="dv">${e.pstatCycles||'—'}</div></div>
     </div>
     ${e.pstatSteps?.length?`<div class="df frow"><div class="dk">Potentiostat steps</div><div class="dv" style="font-family:var(--mono);font-size:11px;">${pstatStr}</div></div>`:''}
+    ${e.ledConfig&&Object.keys(e.ledConfig).length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIG</div><div style="display:flex;flex-wrap:wrap;gap:10px;">${Object.entries(e.ledConfig).map(([key,cfg])=>{const parts=key.split('-');const pid=parts.slice(0,-1).join('-');const chIdx=parseInt(parts[parts.length-1]);const ch=(e.panels[pid]||[])[chIdx];const eng=ch?db.components[ch.engine]:null;if(!eng)return'';const active=Object.values(cfg.state||{}).filter(Boolean).length;const total=Object.keys(cfg.state||{}).length;return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;"><div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch?.ch||'?'}</span></div>${buildLedMapHTML(cfg.gen,cfg.state||{})}<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}%</div></div>`;}).join('')}</div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">PANEL LAYOUT</div>
     <div style="overflow-x:auto;">${channelHTML}</div>
     ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${e.sensors}</div></div>`:''}
-    ${e.samplePoints&&e.samplePoints.length?`
-    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SAMPLING</div>
-    <div style="overflow-x:auto;margin-bottom:10px;">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr>
-          ${['Time point','Source','Vol/sample','# samples','Row total'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}
-        </tr></thead>
-        <tbody>${e.samplePoints.map(r=>{
-          const t=(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);
-          return`<tr>
-            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.timepoint||'—'}</td>
-            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${r.source||'—'}</td>
-            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.volPerSample?r.volPerSample+' mL':'—'}</td>
-            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.numSamples||'—'}</td>
-            <td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;color:var(--am);">${t>0?t.toFixed(1)+' mL':'—'}</td>
-          </tr>`;
-        }).join('')}
-        <tr><td colspan="4" style="padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--tx3);">Total sample volume</td>
-        <td style="padding:5px 8px;font-family:var(--mono);font-size:12px;color:var(--am);font-weight:500;">${e.samplePoints.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0).toFixed(1)} mL</td></tr>
-        </tbody>
-      </table>
-    </div>`:''}
-    ${e.ledConfig&&Object.keys(e.ledConfig).length?`
-    <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIGURATION</div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;">
-      ${Object.entries(e.ledConfig).map(([key,cfg])=>{
-        const parts=key.split('-'); const pid=parts.slice(0,-1).join('-'); const chIdx=parseInt(parts[parts.length-1]);
-        const panel=db.components[pid]; const ch=(e.panels[pid]||[])[chIdx];
-        const eng=ch?db.components[ch.engine]:null;
-        if(!eng)return'';
-        const active=Object.values(cfg.state||{}).filter(Boolean).length;
-        const total=Object.keys(cfg.state||{}).length;
-        return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;">
-          <div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch?.ch||'?'}</span></div>
-          ${buildLedMapHTML(cfg.gen,cfg.state||{})}
-          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}% power</div>
-        </div>`;
-      }).join('')}
-    </div>`:''}
+    ${e.samplePoints?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SAMPLING</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>${['Time point','Source','Vol/sample','# samples','Row total'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}</tr></thead><tbody>${e.samplePoints.map(r=>{const t=(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);return`<tr><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.timepoint||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${r.source||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.volPerSample?r.volPerSample+' mL':'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.numSamples||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;color:var(--am);">${t>0?t.toFixed(1)+' mL':'—'}</td></tr>`;}).join('')}<tr><td colspan="4" style="padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--tx3);">Total</td><td style="padding:5px 8px;font-family:var(--mono);font-size:12px;color:var(--am);font-weight:500;">${e.samplePoints.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0).toFixed(1)} mL</td></tr></tbody></table></div>`:''}
     ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
     ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
-    ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}`;
+    ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      ${e.status==='active'?`<button onclick="openExpPanel(true)" style="font-size:11px;padding:5px 10px;">Edit</button>`:`<button onclick="reopenExp('${e.id}')" style="font-size:11px;padding:5px 10px;">Reopen</button>`}
+      <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
+    </div>`;
 }
-
-function flagSelExps() {
-  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
-  if (!ids.length) { alert('Select experiments first.'); return; }
-  if (!confirm(`Flag ${ids.length} experiment(s) for deletion? Admin must delete from Excel.`)) return;
-  ids.forEach(id => { const e = ge(id); if (e) e.flaggedForDeletion = true; });
-  saveAndSync(); renderExpDb();
+function reopenExp(id){
+  if(activeExpId&&activeExpId!==id){if(!confirm('There is already an active experiment. Reopen this one?'))return; ge(activeExpId).status='paused';}
+  const e=ge(id); e.status='active'; delete e.actualHours; delete e.completedAt;
+  activeExpId=id; saveAndSync(); renderExpDb();
 }
-function unflagSelExps() {
-  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
-  if (!ids.length) { alert('Select experiments first.'); return; }
-  ids.forEach(id => { const e = ge(id); if (e) e.flaggedForDeletion = false; });
-  saveAndSync(); renderExpDb();
-}
-function exportSelExps() {
-  const ids = [...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
-  const exps = ids.length ? db.experiments.filter(e=>ids.includes(e.id)) : db.experiments;
-  const h = ['id','name','date','plannedHours','actualHours','operator','description','solConc','startVol','solDist','flowRate','carbon','leds','ledPower','pstatId','pstatNote','pstatSteps','sensors','samples','notes','status','endVol','sampleVol','leakage','completionNotes','failure','fileLinks','components'];
+function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Flag ${ids.length} experiment(s)?`))return;ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=true;});saveAndSync();renderExpDb();}
+function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=false;});saveAndSync();renderExpDb();}
+function exportSelExps(){
+  const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
+  const exps=ids.length?db.experiments.filter(e=>ids.includes(e.id)):db.experiments;
+  const h=['id','name','date','plannedHours','actualHours','operator','description','solDist','flowRate','pump','carbon','leds','pstatId','pstatNote','pstatSteps','pstatCycles','sensors','notes','status','endVol','sampleVol','leakage','completionNotes','failure','components'];
   dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], 'experiments.csv');
 }
+function jumpToExp(id){showPage('exp',document.getElementById('tab-exp'));setTimeout(()=>{const el=document.getElementById('ed-'+id);if(el){el.classList.add('open');el.closest('.exp-row').scrollIntoView({behavior:'smooth',block:'center'});}},200);}
 
 /* ═══════════ COMPONENT DB ═══════════ */
 function onRegTypeChange() {
-  const t = document.getElementById('reg-type').value;
-  document.getElementById('reg-ch-wrap').style.display = t === 'panel' ? 'block' : 'none';
-  document.getElementById('reg-led-gen-wrap').style.display = t === 'engine' ? 'block' : 'none';
-  document.getElementById('reg-led-grid-wrap').style.display = t === 'engine' ? 'block' : 'none';
-  document.getElementById('reg-glass-wrap').style.display = t === 'glass' ? 'grid' : 'none';
-  if (t === 'engine') renderLedGrid();
+  const t=document.getElementById('reg-type')?.value;
+  document.getElementById('reg-ch-wrap').style.display=t==='panel'?'block':'none';
+  document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
+  document.getElementById('reg-led-grid-wrap').style.display=t==='engine'?'block':'none';
+  document.getElementById('reg-glass-wrap').style.display=t==='glass'?'grid':'none';
+  if(t==='engine') renderLedGrid();
 }
-
-/* LED layout definitions: {cols, rows} */
-const LED_LAYOUTS = {
-  gen1: {cols:3, rows:5},   // 15 LEDs
-  gen2: {cols:1, rows:3},   // 3 LEDs
-  gen3: {cols:8, rows:3},   // 24 LEDs
-};
-
-let ledState = {}; // key: "c{col}r{row}" -> true/false
-
-function renderLedGrid() {
-  const gen = document.getElementById('reg-led-gen')?.value;
-  const wrap = document.getElementById('led-grid');
-  const gridWrap = document.getElementById('reg-led-grid-wrap');
-  if (!gen || !LED_LAYOUTS[gen]) {
-    if (wrap) wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Select a generation above to configure LEDs</div>';
-    return;
-  }
-  const {cols, rows} = LED_LAYOUTS[gen];
-  // Init ledState if empty or layout changed
-  const expectedKeys = cols * rows;
-  if (Object.keys(ledState).length !== expectedKeys) {
-    ledState = {};
-    for (let c=0;c<cols;c++) for (let r=0;r<rows;r++) ledState[`c${c}r${r}`] = true;
-  }
-  // Build grid: columns left-to-right, rows top-to-bottom
-  // Use CSS grid with cols columns
-  let html = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);">`;
-  // Column labels row
-  for (let c=0;c<cols;c++) html += `<div class="led-col-label">${c+1}</div>`;
-  // LED cells
-  for (let r=0;r<rows;r++) {
-    for (let c=0;c<cols;c++) {
-      const key = `c${c}r${r}`;
-      const on = ledState[key];
-      html += `<div class="led-cell ${on?'on':''}" onclick="toggleLed('${key}')" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
-    }
-  }
-  html += '</div>';
-  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:6px;">${Object.values(ledState).filter(Boolean).length} / ${cols*rows} LEDs active</div>`;
-  wrap.innerHTML = html;
-}
-
-function toggleLed(key) {
-  ledState[key] = !ledState[key];
-  renderLedGrid();
-}
-
-function setAllLeds(val) {
-  Object.keys(ledState).forEach(k => ledState[k] = val);
-  renderLedGrid();
-}
-
-function getLedGrid() {
-  const gen = document.getElementById('reg-led-gen')?.value;
-  if (!gen) return null;
-  return JSON.parse(JSON.stringify(ledState));
-}
-
-
-function registerComp() {
-  const id = document.getElementById('reg-id').value.trim();
-  const name = document.getElementById('reg-name').value.trim();
-  if (!id||!name) { alert('ID and name required.'); return; }
-  if (db.components[id]) { alert(`ID "${id}" already exists. Component IDs cannot be overwritten.`); return; }
-  const type = document.getElementById('reg-type').value;
-  if (type === 'panel') {
-    const ch = parseInt(document.getElementById('reg-channels').value);
-    if (!ch || ch < 1) { alert('Please enter the number of channels for this panel before saving.'); return; }
-  }
-  const ledGen = type === 'engine' ? (document.getElementById('reg-led-gen')?.value || null) : null;
-  const ledActive = type === 'engine' ? getLedGrid() : null;
-  db.components[id] = {
-    id, name, type,
-    mfgDate: document.getElementById('reg-mfg').value||null,
-    channels: type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
-    ledGen: ledGen||null,
-    ledActive: ledActive,
-    glassSynthDate: type==='glass' ? (document.getElementById('reg-glass-synth').value||null) : null,
-    glassQC: type==='glass' ? (document.getElementById('reg-glass-qc').value.trim()||null) : null,
-    notes: document.getElementById('reg-notes').value.trim(),
-    registered: today()
+function registerComp(){
+  const id=document.getElementById('reg-id').value.trim();
+  const name=document.getElementById('reg-name').value.trim();
+  if(!id||!name){alert('ID and name required.');return;}
+  if(db.components[id]){alert(`ID "${id}" already exists.`);return;}
+  const type=document.getElementById('reg-type').value;
+  if(type==='panel'){const ch=parseInt(document.getElementById('reg-channels').value);if(!ch||ch<1){alert('Please enter number of channels.');return;}}
+  const ledGen=type==='engine'?(document.getElementById('reg-led-gen')?.value||null):null;
+  const ledActive=type==='engine'?getLedGrid():null;
+  db.components[id]={id,name,type,
+    mfgDate:document.getElementById('reg-mfg').value||null,
+    channels:type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
+    ledGen:ledGen||null, ledActive,
+    glassSynthDate:type==='glass'?(document.getElementById('reg-glass-synth').value||null):null,
+    glassQC:type==='glass'?(document.getElementById('reg-glass-qc').value.trim()||null):null,
+    glassUV:type==='glass'?(document.getElementById('reg-glass-uv').value||null):null,
+    glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
+    notes:document.getElementById('reg-notes').value.trim(), registered:today()
   };
-  saveAndSync();
-  ['reg-id','reg-name','reg-notes','reg-channels','reg-glass-synth','reg-glass-qc'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
-  document.getElementById('reg-mfg').value='';
-  const lg = document.getElementById('reg-led-gen'); if(lg) lg.value='';
-  renderLedGrid();
-  renderCompStats(); renderCompList();
+  saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
 }
-
-function renderCompStats() {
-  document.getElementById('comp-stats').innerHTML = ['panel','paper','glass','engine'].map(t => {
-    const ids = Object.keys(db.components).filter(id=>db.components[id].type===t);
-    const h = ids.reduce((s,id)=>s+totalHours(id),0);
-    return `<div class="stile"><div class="sl">${tn(t)}s</div><div class="sv" style="color:var(--am);">${h.toFixed(1)} h</div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;">${ids.length} registered</div></div>`;
+function renderCompStats(){
+  document.getElementById('comp-stats').innerHTML=['panel','paper','glass','engine'].map(t=>{
+    const ids=Object.keys(db.components).filter(id=>db.components[id].type===t);
+    const h=ids.reduce((s,id)=>s+totalHours(id),0);
+    return`<div class="stile"><div class="sl">${tn(t)}s</div><div class="sv" style="color:var(--am);">${h.toFixed(1)} h</div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;">${ids.length} registered</div></div>`;
   }).join('');
 }
-
-function renderCompList() {
-  const q = (document.getElementById('cl-search').value||'').toLowerCase();
-  const tf = document.getElementById('cl-type').value;
-  const df = document.getElementById('cl-from').value;
-  const dt = document.getElementById('cl-to').value;
-  let ids = Object.keys(db.components);
-  if (q) ids = ids.filter(id=>(id+' '+db.components[id].name+' '+(db.components[id].notes||'')).toLowerCase().includes(q));
-  if (tf) ids = ids.filter(id=>db.components[id].type===tf);
-  if (df) ids = ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate>=df);
-  if (dt) ids = ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate<=dt);
-  const list = document.getElementById('comp-list');
-  if (!ids.length){list.innerHTML='<div class="empty">No components match</div>';return;}
-  list.innerHTML = ids.map(id=>{
-    const c=db.components[id];const h=totalHours(id);
+function renderCompList(){
+  const q=(document.getElementById('cl-search')?.value||'').toLowerCase();
+  const tf=document.getElementById('cl-type')?.value;
+  const df=document.getElementById('cl-from')?.value;
+  const dt=document.getElementById('cl-to')?.value;
+  let ids=Object.keys(db.components);
+  if(q) ids=ids.filter(id=>(id+' '+db.components[id].name+' '+(db.components[id].notes||'')).toLowerCase().includes(q));
+  if(tf) ids=ids.filter(id=>db.components[id].type===tf);
+  if(df) ids=ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate>=df);
+  if(dt) ids=ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate<=dt);
+  const list=document.getElementById('comp-list'); if(!list) return;
+  if(!ids.length){list.innerHTML='<div class="empty">No components yet — click "+ Add component" to register one</div>';return;}
+  list.innerHTML=ids.map(id=>{
+    const c=db.components[id], h=totalHours(id);
     const ne=db.experiments.filter(e=>(e.components||[]).includes(id)&&e.actualHours).length;
-    return `<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}">
+    return`<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}">
       <input type="checkbox" class="comp-ck" data-id="${id}" style="width:auto;flex-shrink:0;">
       <div class="comp-info">
         <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
       </div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
-      <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">History</button>
+      <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">Details</button>
     </div>`;
   }).join('');
 }
-
-function lookupComp(id) {
-  if (!id) return;
-  const result = document.getElementById('lookup-result');
-  const c = db.components[id];
-  if (!c) { result.innerHTML=`<div class="card"><div style="color:var(--rd);font-family:var(--mono);font-size:12px;">Unknown: ${id}</div></div>`; return; }
-  const h = totalHours(id);
-  const allExps = db.experiments.filter(e=>(e.components||[]).includes(id));
-  const activeIn = allExps.find(e=>e.status==='active');
+function lookupComp(id){
+  if(!id) return;
+  const result=document.getElementById('lookup-result'); if(!result) return;
+  const c=db.components[id];
+  if(!c){result.innerHTML=`<div class="card"><div style="color:var(--rd);font-family:var(--mono);font-size:12px;">Unknown: ${id}</div></div>`;return;}
+  const h=totalHours(id), allExps=db.experiments.filter(e=>(e.components||[]).includes(id));
+  const activeIn=allExps.find(e=>e.status==='active');
   result.innerHTML=`<div class="card">
     <div class="clabel">Component record</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-      <div>
-        <div style="font-size:20px;font-weight:500;margin-bottom:6px;">${c.name}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">${tb(c.type)}${activeIn?'<span class="badge b-active">in active experiment</span>':''}${c.flaggedForDeletion?'<span class="badge b-flagged">flagged</span>':''}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-family:var(--mono);font-size:28px;color:var(--am);">${h.toFixed(1)}<span style="font-size:13px;color:var(--tx3);"> h</span></div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">cumulative hours</div>
+      <div><div style="font-size:20px;font-weight:500;margin-bottom:6px;">${c.name}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">${tb(c.type)}${activeIn?'<span class="badge b-active">in active experiment</span>':''}${c.flaggedForDeletion?'<span class="badge b-flagged">flagged</span>':''}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div><div style="font-family:var(--mono);font-size:28px;color:var(--am);">${h.toFixed(1)}<span style="font-size:13px;color:var(--tx3);"> h</span></div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">cumulative hours</div></div>
+        <button class="btn-am" onclick="openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
       </div>
     </div>
     <div class="dg">
@@ -1622,19 +1390,18 @@ function lookupComp(id) {
       ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
       ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3×5)',gen2:'Gen 2 (1×3)',gen3:'Gen 3 (8×3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
       ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
-      ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}    </div>
-    ${c.ledActive&&c.ledGen?`
-    <div style="margin-bottom:12px;">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;">LED MAP — ${Object.values(c.ledActive).filter(Boolean).length} / ${Object.keys(c.ledActive).length} active</div>
-      ${buildLedMapHTML(c.ledGen, c.ledActive)}
-    </div>`:''}
+      ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
+      ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
+      ${c.glassSerial?`<div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassSerial}</div></div>`:''}
+    </div>
+    ${c.ledActive&&c.ledGen?`<div style="margin-bottom:12px;"><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;">LED MAP — ${Object.values(c.ledActive).filter(Boolean).length}/${Object.keys(c.ledActive).length} active</div>${buildLedMapHTML(c.ledGen,c.ledActive)}</div>`:''}
     ${c.notes?`<div class="df" style="margin-bottom:12px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
     <hr>
     <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:10px;">EXPERIMENT HISTORY</div>
     ${allExps.length?allExps.map(e=>`
       <div class="hist-row">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.status==='active'?'in progress':'—'}</div>
           ${e.failure?'<span class="pill-rd" style="font-size:9px;margin-top:3px;display:inline-block;">FAILURE</span>':''}
           ${e.fileLinks?.length?'<div style="margin-top:4px;">'+e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:11px;display:block;">${l.title||l.url}</a>`).join('')+'</div>':''}
@@ -1642,80 +1409,139 @@ function lookupComp(id) {
         <span class="hist-link" onclick="jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
       </div>`).join(''):'<div class="empty" style="padding:16px;">Not used in any experiments yet</div>'}
   </div>`;
-  // Scroll to result
   result.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-function buildLedMapHTML(gen, ledActive) {
-  const layout = LED_LAYOUTS[gen]; if (!layout) return '';
-  const {cols, rows} = layout;
-  let html = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
-  for (let c=0;c<cols;c++) html += `<div class="led-col-label">${c+1}</div>`;
-  for (let r=0;r<rows;r++) {
-    for (let c=0;c<cols;c++) {
-      const on = ledActive[`c${c}r${r}`];
-      html += `<div class="led-cell ${on?'on':''}" title="Col ${c+1}, Row ${r+1}">${on?'●':'○'}</div>`;
-    }
+/* ═══════════ EDIT COMPONENT ═══════════ */
+let editCompLedState = {};
+function openEditCompPanel(id) {
+  const c = db.components[id]; if (!c) return;
+  document.getElementById('edit-comp-id').value = id;
+  document.getElementById('edit-comp-title').textContent = 'Edit — ' + c.name;
+  document.getElementById('ec-name').value = c.name||'';
+  document.getElementById('ec-mfg').value = c.mfgDate||'';
+  document.getElementById('ec-notes').value = c.notes||'';
+  // Show/hide type-specific fields
+  document.getElementById('ec-channels-wrap').style.display = c.type==='panel' ? 'block' : 'none';
+  document.getElementById('ec-glass-wrap').style.display = c.type==='glass' ? 'block' : 'none';
+  document.getElementById('ec-led-wrap').style.display = c.type==='engine' ? 'block' : 'none';
+  if (c.type==='panel') document.getElementById('ec-channels').value = c.channels||'';
+  if (c.type==='glass') {
+    document.getElementById('ec-glass-synth').value = c.glassSynthDate||'';
+    document.getElementById('ec-glass-qc').value = c.glassQC||'';
+    document.getElementById('ec-glass-uv').value = c.glassUV||'';
+    document.getElementById('ec-glass-serial').value = c.glassSerial||'';
   }
-  html += '</div>';
-  return html;
+  if (c.type==='engine') {
+    editCompLedState = c.ledActive ? JSON.parse(JSON.stringify(c.ledActive)) : {};
+    // Reassign ledState for renderLedGrid to use
+    Object.keys(editCompLedState).forEach(k => ledState[k] = editCompLedState[k]);
+    const gen = c.ledGen;
+    if (gen) { document.getElementById('reg-led-gen').value = gen; }
+    renderEditLedGrid(c.ledGen, editCompLedState);
+  }
+  document.getElementById('edit-comp-overlay').classList.add('open');
+  document.getElementById('edit-comp-panel').classList.add('open');
+}
+function renderEditLedGrid(gen, state) {
+  const wrap = document.getElementById('ec-led-grid'); if (!wrap) return;
+  const layout = LED_LAYOUTS[gen]; if (!layout) { wrap.innerHTML=''; return; }
+  const {cols,rows} = layout;
+  let html = `<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+  for(let c=0;c<cols;c++) html+=`<div class="led-col-label">${c+1}</div>`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const k=`c${c}r${r}`,on=state[k];html+=`<div class="led-cell ${on?'on':''}" onclick="toggleEditLed('${gen}','${k}')">${on?'●':'○'}</div>`;}
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+function toggleEditLed(gen,key){editCompLedState[key]=!editCompLedState[key];renderEditLedGrid(gen,editCompLedState);}
+function closeEditCompPanel(){
+  document.getElementById('edit-comp-overlay').classList.remove('open');
+  document.getElementById('edit-comp-panel').classList.remove('open');
+}
+function saveEditComp(){
+  const id = document.getElementById('edit-comp-id').value; if(!id) return;
+  const c = db.components[id]; if(!c) return;
+  c.name = document.getElementById('ec-name').value.trim() || c.name;
+  c.mfgDate = document.getElementById('ec-mfg').value || null;
+  c.notes = document.getElementById('ec-notes').value.trim();
+  if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
+  if(c.type==='glass'){
+    c.glassSynthDate = document.getElementById('ec-glass-synth').value||null;
+    c.glassQC = document.getElementById('ec-glass-qc').value.trim()||null;
+    c.glassUV = document.getElementById('ec-glass-uv').value||null;
+    c.glassSerial = document.getElementById('ec-glass-serial').value.trim()||null;
+  }
+  if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
+  saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
+  // Refresh lookup if visible
+  lookupComp(id);
 }
 
-function jumpToExp(id) {
-  showMain('exp', document.getElementById('mtab-exp'));
-  showSub('exp','db',document.getElementById('stab-exp-db'));
-  setTimeout(() => {
-    const el = document.getElementById('ed-'+id);
-    if (el) { el.classList.add('open'); el.closest('.exp-row').scrollIntoView({behavior:'smooth',block:'center'}); }
-  }, 200);
+/* ═══════════ CLEAR FILTERS ═══════════ */
+function clearExpFilters(){
+  ['el-search','el-from','el-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('el-status').value=''; document.getElementById('el-tag').value='';
+  renderExpDb();
 }
-
-function flagSelComps() {
-  const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
-  if(!ids.length){alert('Select components first.');return;}
-  if(!confirm(`Flag ${ids.length} component(s) for deletion?`))return;
-  ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=true;});
-  saveAndSync();renderCompList();
+function clearCompFilters(){
+  ['cl-search','cl-from','cl-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cl-type').value=''; renderCompList();
 }
-function unflagSelComps() {
-  const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
-  if(!ids.length){alert('Select components first.');return;}
-  ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=false;});
-  saveAndSync();renderCompList();
+function buildLedMapHTML(gen,ledActive){
+  const layout=LED_LAYOUTS[gen]; if(!layout) return '';
+  const {cols,rows}=layout;
+  let html=`<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+  for(let c=0;c<cols;c++) html+=`<div class="led-col-label">${c+1}</div>`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const on=ledActive[`c${c}r${r}`];html+=`<div class="led-cell ${on?'on':''}">${on?'●':'○'}</div>`;}
+  return html+'</div>';
 }
-function exportSelComps() {
+function flagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}if(!confirm(`Flag ${ids.length} component(s)?`))return;ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=true;});saveAndSync();renderCompList();}
+function unflagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=false;});saveAndSync();renderCompList();}
+function exportSelComps(){
   const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
   const comps=ids.length?ids.filter(id=>db.components[id]).map(id=>db.components[id]):Object.values(db.components);
-  const h=['id','type','name','mfgDate','channels','notes','registered','totalHours','experiments'];
-  dlCSV([h,...comps.map(c=>[c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',totalHours(c.id).toFixed(1),db.experiments.filter(e=>(e.components||[]).includes(c.id)).length])],'components.csv');
+  dlCSV([['id','type','name','mfgDate','channels','notes','registered','totalHours','experiments'],...comps.map(c=>[c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',totalHours(c.id).toFixed(1),db.experiments.filter(e=>(e.components||[]).includes(c.id)).length])],'components.csv');
 }
+
+/* ═══════════ LED REGISTRATION ═══════════ */
+let ledState={};
+function renderLedGrid(){
+  const gen=document.getElementById('reg-led-gen')?.value;
+  const wrap=document.getElementById('led-grid'); if(!wrap) return;
+  const gridWrap=document.getElementById('reg-led-grid-wrap');
+  if(!gen||!LED_LAYOUTS[gen]){wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Select a generation above</div>';return;}
+  const {cols,rows}=LED_LAYOUTS[gen];
+  if(Object.keys(ledState).length!==cols*rows){ledState={};for(let c=0;c<cols;c++)for(let r=0;r<rows;r++)ledState[`c${c}r${r}`]=true;}
+  let html=`<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
+  for(let c=0;c<cols;c++) html+=`<div class="led-col-label">${c+1}</div>`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const k=`c${c}r${r}`,on=ledState[k];html+=`<div class="led-cell ${on?'on':''}" onclick="toggleLed('${k}')">${on?'●':'○'}</div>`;}
+  html+='</div>';
+  html+=`<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:6px;">${Object.values(ledState).filter(Boolean).length}/${cols*rows} LEDs active</div>`;
+  wrap.innerHTML=html;
+}
+function toggleLed(key){ledState[key]=!ledState[key];renderLedGrid();}
+function setAllLeds(val){Object.keys(ledState).forEach(k=>ledState[k]=val);renderLedGrid();}
+function getLedGrid(){const gen=document.getElementById('reg-led-gen')?.value;if(!gen)return null;return JSON.parse(JSON.stringify(ledState));}
 
 /* ═══════════ EXPORT ═══════════ */
-function dlCSV(rows,name){
-  const csv=rows.map(r=>r.map(c=>`"${String(c===null||c===undefined?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();
-}
+function dlCSV(rows,name){const csv=rows.map(r=>r.map(c=>`"${String(c===null||c===undefined?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();}
 
 /* ═══════════ RENDER ALL ═══════════ */
-function renderAll() { renderExpDb(); renderCompStats(); renderCompList(); }
+function renderAll(){renderExpDb();renderCompStats();renderCompList();renderExpTagFilter();}
 
 /* ═══════════ INIT ═══════════ */
-// Expose for console debugging
-window._db = () => db;
-window._sync = () => ({ driveId, accessToken: !!accessToken });
+window._db=()=>db;
+window._sync=()=>({driveId,accessToken:!!accessToken});
 loadLocal();
 onRegTypeChange();
-renderPstatSteps();
 
-// MSAL redirect handle
 msal$.handleRedirectPromise().then(r=>{
   if(r){msal$.setActiveAccount(r.account);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in','ok');showApp();syncFromCloud();});}
 }).catch(e=>console.error(e));
 
-// Auto sign-in only if user hasn't explicitly signed out
-const userSignedOut = localStorage.getItem('sapa_signed_out');
-const cached = msal$.getAllAccounts();
-if(cached.length>0 && !userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');showApp();syncFromCloud();}).catch(()=>{setSS('Session expired','err');showLogin('Session expired — please sign in again.');});}
+const userSignedOut=localStorage.getItem('sapa_signed_out');
+const cached=msal$.getAllAccounts();
+if(cached.length>0&&!userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');showApp();syncFromCloud();}).catch(()=>{setSS('Session expired','err');showLogin('Session expired — please sign in again.');});}
 else{showLogin();}
 </script>
 </body>
