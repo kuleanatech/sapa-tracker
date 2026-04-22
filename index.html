@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-023</title>
+<title>SAPA Lab Tracker — v2026-04-21-024</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-023</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-024</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1237,6 +1237,18 @@ async function startCam() {
       let frameCount = 0;
       const scanFn = zb.scanImage || zb.scan || zb.scanImageData || zb.default?.scanImage;
       if (!scanFn) { if(dbg()) dbg().textContent = 'No scan fn. Keys: '+Object.keys(zb).join(', '); return; }
+      // Log all exports to see if ZBarSymbolType or similar is available
+      if(dbg()) dbg().textContent = 'ZBar keys: '+Object.keys(zb).join(', ');
+      // Build scan options with all symbologies enabled including Data Matrix
+      const ZBarSymbolType = zb.ZBarSymbolType || zb.SymbolType || null;
+      const scanOpts = ZBarSymbolType ? {
+        scanSymbols: [
+          ZBarSymbolType.ZBAR_QRCODE,
+          ZBarSymbolType.ZBAR_DATAMATRIX || ZBarSymbolType.ZBAR_CODE128,
+          ZBarSymbolType.ZBAR_CODE128,
+          ZBarSymbolType.ZBAR_CODE39,
+        ].filter(Boolean)
+      } : {};
       if(dbg()) dbg().textContent = 'ZBar ready — point at code';
       const scan = async () => {
         if (!camStream) return;
@@ -1247,7 +1259,7 @@ async function startCam() {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           try {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const symbols = await scanFn(imageData);
+            const symbols = await scanFn(imageData, scanOpts);
             if(dbg()) dbg().textContent = `frame ${frameCount} — ${symbols.length?'FOUND: '+symbols[0].decode():'scanning...'}`;
             if (symbols.length && !camDebounce) {
               camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
