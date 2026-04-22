@@ -313,7 +313,9 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="failure">Failures</option>
           <option value="flagged">Flagged</option>
         </select>
-        <select id="el-tag" onchange="renderExpDb()" multiple size="3" style="min-width:160px;font-size:12px;"><option value="" selected>All tags</option></select>
+        <select id="el-tag" onchange="addFilterTag(this.value);this.value='';" style="min-width:140px;"><option value="">Filter by tag...</option></select>
+      </div>
+      <div id="filter-tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:0;"></div>
       </div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
@@ -927,10 +929,29 @@ function addNewTag() {
   inp.value = '';
 }
 function removeTag(i) { formTags.splice(i,1); renderTagChips(); }
+let filterTags = [];
+function addFilterTag(tag) {
+  if (!tag || filterTags.includes(tag)) return;
+  filterTags.push(tag);
+  renderFilterTagChips();
+  renderExpDb();
+}
+function removeFilterTag(i) {
+  filterTags.splice(i, 1);
+  renderFilterTagChips();
+  renderExpDb();
+}
+function renderFilterTagChips() {
+  const wrap = document.getElementById('filter-tag-chips'); if (!wrap) return;
+  if (!filterTags.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = filterTags.map((t,i) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:12px;padding:3px 10px;font-size:12px;font-family:var(--mono);">${t}<span onclick="removeFilterTag(${i})" style="cursor:pointer;font-size:14px;line-height:1;margin-left:2px;opacity:.7;">×</span></span>`
+  ).join('');
+}
 function renderExpTagFilter() {
   const sel = document.getElementById('el-tag'); if (!sel) return;
-  const curVals = [...sel.selectedOptions].map(o=>o.value);
-  sel.innerHTML = '<option value="">All tags</option>' + (db.tags||[]).map(t=>`<option value="${t}" ${curVals.includes(t)?'selected':''}>${t}</option>`).join('');
+  sel.innerHTML = '<option value="">Filter by tag...</option>' +
+    (db.tags||[]).filter(t=>!filterTags.includes(t)).map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 
 /* ═══════════ RUN NUMBER ═══════════ */
@@ -1211,7 +1232,7 @@ function renderExpDb() {
   else if(sf==='flagged') exps=exps.filter(e=>e.flaggedForDeletion);
   else if(sf) exps=exps.filter(e=>e.status===sf);
   const tagSel = document.getElementById('el-tag');
-  const tagFs = tagSel?[...tagSel.selectedOptions].map(o=>o.value).filter(v=>v):[];
+  const tagFs = filterTags;
   if(tagFs.length) exps=exps.filter(e=>tagFs.every(t=>e.tags&&e.tags.includes(t)));
   const cnt=document.getElementById('el-count'); if(cnt) cnt.textContent=exps.length+' experiment'+(exps.length!==1?'s':'');
   const list=document.getElementById('exp-list'); if(!list) return;
@@ -1294,9 +1315,7 @@ function exportSelExps(){
   const exps=ids.length?db.experiments.filter(e=>ids.includes(e.id)):db.experiments;
   const h=['id','name','runNumber','refNum','date','plannedHours','actualHours','operator','description','tags','solDist','flowRate','pump','carbon','pstatId','pstatNote','pstatSteps','pstatCycles','sensors','notes','status','endVol','sampleVol','leakage','completionNotes','failure','components'];
   const statusF=document.getElementById('el-status')?.value||'all';
-  const tagSel=document.getElementById('el-tag');
-  const tagFs2=tagSel?[...tagSel.selectedOptions].map(o=>o.value).filter(v=>v):[];
-  const tagLabel=tagFs2.length?'_'+tagFs2.join('-'):'';
+  const tagLabel=filterTags.length?'_'+filterTags.join('-'):'';
   const fname=`experiments_${statusF}${tagLabel}_${today()}.csv`;
   dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], fname);
 }
@@ -1491,7 +1510,8 @@ function saveEditComp(){
 /* ═══════════ CLEAR FILTERS ═══════════ */
 function clearExpFilters(){
   ['el-search','el-from','el-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('el-status').value=''; document.getElementById('el-tag').value='';
+  document.getElementById('el-status').value='';
+  filterTags=[]; renderFilterTagChips(); renderExpTagFilter();
   renderExpDb();
 }
 function clearCompFilters(){
