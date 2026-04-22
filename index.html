@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-006</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<title>SAPA Lab Tracker — v2026-04-21-012</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
@@ -110,7 +110,8 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .panel-footer{padding:14px 20px;border-top:1px solid var(--ln);display:flex;gap:8px;flex-shrink:0;}
 
 /* ── EXPERIMENT LIST ── */
-.exp-row{background:var(--bg1);border:1px solid var(--ln);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;}
+.exp-row{background:var(--bg1);border-bottom:1px solid var(--ln);overflow:hidden;}
+.exp-row:last-child{border-bottom:none;}
 .exp-row.flagged-row{border-left:3px solid var(--rd);}
 .exp-summary{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;transition:background .15s;user-select:none;}
 .exp-summary:hover{background:var(--bg2);}
@@ -198,8 +199,8 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .cam-overlay.open{display:flex;}
 .cam-modal{background:var(--bg1);border:1px solid var(--ln2);border-radius:var(--rl);padding:20px;width:100%;max-width:400px;}
 .cam-title{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:12px;letter-spacing:.06em;}
-.cam-wrap{border-radius:var(--r);overflow:hidden;background:var(--bg2);min-height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
-.cam-wrap>div{width:100%!important;}
+.cam-wrap{border-radius:var(--r);overflow:hidden;background:#000;height:280px;margin-bottom:12px;position:relative;}
+.cam-wrap video{display:block;}
 .cam-ph{text-align:center;color:var(--tx3);font-family:var(--mono);font-size:11px;padding:20px;}
 .cam-flash{padding:8px 12px;border-radius:var(--r);font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;display:none;}
 .cam-flash.ok{display:block;background:var(--grd);color:var(--gr);}
@@ -219,7 +220,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-006</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-012</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -235,6 +236,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   <div style="font-family:var(--mono);font-size:14px;letter-spacing:.12em;color:var(--tx);">SAPA TRACKER</div>
   <div style="font-size:13px;color:var(--tx2);max-width:320px;line-height:1.7;">Sign in with your Kuleana Microsoft account to access the lab tracker.</div>
   <button class="btn-gr" onclick="handleAuth()" style="font-size:13px;padding:12px 28px;">Sign in with Microsoft</button>
+  <button onclick="enterDebugMode()" style="font-size:11px;padding:6px 16px;opacity:.6;">Debug mode (no login)</button>
   <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);" id="login-status"></div>
 </div>
 
@@ -316,7 +318,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <select id="el-tag" onchange="addFilterTag(this.value);this.value='';" style="min-width:140px;"><option value="">Filter by tag...</option></select>
       </div>
       <div id="filter-tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:0;"></div>
-      </div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
         <button onclick="exportSelExps()">Export selected</button>
@@ -600,7 +601,10 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 <div class="cam-overlay" id="cam-overlay" onclick="closeCamIfOverlay(event)">
   <div class="cam-modal">
     <div class="cam-title" id="cam-title">Scanning...</div>
-    <div class="cam-wrap"><div id="cam-reader"><div class="cam-ph">Starting camera...</div></div></div>
+    <div class="cam-wrap">
+      <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:var(--r);display:block;"></video>
+      <canvas id="cam-canvas" style="display:none;"></canvas>
+    </div>
     <div class="cam-flash" id="cam-flash"></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
@@ -704,7 +708,56 @@ async function getDriveId() {
   driveId = (await res.json()).id; return driveId;
 }
 function filePath() { return `${FILE_FOLDER}/${FILE_NAME}`; }
+let debugMode = false;
+function enterDebugMode() {
+  debugMode = true;
+  // Seed with some sample data if empty
+  if (!Object.keys(db.components).length) {
+    db.components = {
+      'PANEL-001': {id:'PANEL-001',name:'Panel 01',type:'panel',mfgDate:'2026-01-10',channels:4,notes:'First panel',registered:'2026-01-10'},
+      'ENGINE-001': {id:'ENGINE-001',name:'Engine 01',type:'engine',ledGen:'gen2',ledActive:{c0r0:true,c0r1:true,c0r2:true},mfgDate:'2026-01-15',notes:'',registered:'2026-01-15'},
+      'PAPER-001': {id:'PAPER-001',name:'Paper 01',type:'paper',mfgDate:'2026-01-12',notes:'',registered:'2026-01-12'},
+      'GLASS-001': {id:'GLASS-001',name:'Glass 01',type:'glass',mfgDate:'2026-02-01',glassSynthDate:'2026-01-28',glassQC:'11.2 µA',glassUV:'82.4',glassSerial:'SN-2026-001',notes:'',registered:'2026-02-01'},
+    };
+    db.tags = ['oxidation','control','high-intensity','UV-test'];
+    db.experiments = [{
+      id:'debug-exp-1', name:'Low intensity test', runNumber:1, refNum:'LAB-001',
+      date:'2026-04-01', plannedHours:4, actualHours:3.8, operator:'J. Smith',
+      description:'Baseline low intensity run', tags:['control'],
+      status:'complete', chemicals:[{name:'DI Water',amount:500,unit:'mL',conc:'',concUnit:'N/A'}],
+      samplePoints:[{timepoint:'0h',source:'inlet',volPerSample:'5',numSamples:'3'}],
+      panels:{'PANEL-001':[{ch:1,engine:'ENGINE-001',paper:'PAPER-001',glass:'GLASS-001',dummy:false},{ch:2,engine:'',paper:'',glass:'',dummy:true}]},
+      components:['PANEL-001','ENGINE-001','PAPER-001','GLASS-001'],
+      solDist:'Gravity',flowRate:10,pstatId:'Main unit',pstatNote:'Standard CV',
+      pstatSteps:[{voltage:'0.5',duration:'55'},{voltage:'1.5',duration:'5'}],pstatCycles:300,
+      ledConfig:{},notes:'Debug sample experiment',fileLinks:[],
+      completionNotes:'Completed normally',failure:false,completedAt:Date.now()-86400000
+    }];
+    saveLocal();
+  }
+  document.getElementById('auth-btn').textContent = 'Debug mode';
+  setSS('Debug mode — no sync', 'syncing');
+  // Show a debug badge in nav
+  const brand = document.querySelector('.nav-brand');
+  if (brand && !document.getElementById('debug-badge')) {
+    const badge = document.createElement('span');
+    badge.id = 'debug-badge';
+    badge.style.cssText = 'background:#c0392b;color:#fff;font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.05em;';
+    badge.textContent = 'DEBUG';
+    brand.appendChild(badge);
+  }
+  showApp();
+  renderAll();
+}
+// Override saveAndSync in debug mode to skip cloud
+const _origSaveAndSync = saveAndSync;
+async function saveAndSync() {
+  if (debugMode) { saveLocal(); setSS('Saved locally (debug)', 'ok'); return; }
+  return _origSaveAndSync();
+}
 async function syncToCloud() {
+  if (debugMode) { setSS('Debug mode — no sync', 'syncing'); return; }
+  // original below
   if (!accessToken) return;
   setSS('Saving...','syncing');
   try {
@@ -1117,25 +1170,57 @@ function renderChannelTables() {
 }
 
 /* ═══════════ CAMERA ═══════════ */
-let camScanner=null, camScanOn=false, camTarget=null, camDebounce=null;
+let camStream=null, camTarget=null, camDebounce=null, camAnimFrame=null;
+
 function openCam(type,pid,idx,field) {
   camTarget={type,pid,idx,field};
-  const titles={'panel-sel-cam':'Scan panel','lookup-cam':'Scan to look up','slot':'Scan component for slot'};
+  const titles={'panel-sel-cam':'Scan panel QR','lookup-cam':'Scan to look up','slot':'Scan component for slot'};
   document.getElementById('cam-title').textContent=titles[type==='slot'?'slot':type]||'Scanning...';
   document.getElementById('cam-flash').style.display='none';
   document.getElementById('cam-manual').value='';
   document.getElementById('cam-overlay').classList.add('open');
-  if(!camScanOn){
-    camScanner=new Html5Qrcode('cam-reader');
-    camScanner.start({facingMode:'environment'},{fps:12,qrbox:{width:240,height:240}},text=>{
-      if(camDebounce)return; camDebounce=setTimeout(()=>{camDebounce=null;},1500);
-      handleCamResult(text.trim());
-    },()=>{}).then(()=>{camScanOn=true;}).catch(err=>{document.getElementById('cam-reader').innerHTML=`<div class="cam-ph">Camera error: ${err}</div>`;});
+  startCam();
+}
+
+async function startCam() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    const video = document.getElementById('cam-video');
+    video.srcObject = camStream;
+    video.onloadedmetadata = () => { video.play(); scanFrame(); };
+  } catch(err) {
+    document.getElementById('cam-flash').style.cssText='display:block;';
+    document.getElementById('cam-flash').className='cam-flash err';
+    document.getElementById('cam-flash').textContent='Camera error: '+err.message;
   }
 }
+
+function scanFrame() {
+  const video = document.getElementById('cam-video');
+  const canvas = document.getElementById('cam-canvas');
+  if (!video || !camStream) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', {willReadFrequently: true});
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {inversionAttempts:'dontInvert'});
+    if (code && !camDebounce) {
+      camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
+      handleCamResult(code.data.trim());
+    }
+  }
+  // Scan at ~10fps instead of every frame to reduce CPU load
+  camAnimFrame = setTimeout(()=>{ camAnimFrame = requestAnimationFrame(scanFrame); }, 100);
+}
+
 function closeCam() {
-  if(camScanner&&camScanOn){camScanner.stop().catch(()=>{});camScanOn=false;}
-  camScanner=null;camTarget=null;
+  if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
+  if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  const video = document.getElementById('cam-video');
+  if (video) { video.srcObject=null; }
+  camTarget=null;
   document.getElementById('cam-overlay').classList.remove('open');
 }
 function closeCamIfOverlay(e){if(e.target===document.getElementById('cam-overlay'))closeCam();}
