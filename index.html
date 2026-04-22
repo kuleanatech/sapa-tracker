@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-017</title>
+<title>SAPA Lab Tracker — v2026-04-21-018</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-017</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-018</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1195,16 +1195,6 @@ let zxingCodeReader = null;
 
 async function startCam() {
   try {
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.QR_CODE,
-      ZXing.BarcodeFormat.DATA_MATRIX,
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-    ]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingCodeReader = new ZXing.BrowserMultiFormatReader(hints);
-
     camStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
     });
@@ -1212,20 +1202,47 @@ async function startCam() {
     video.srcObject = camStream;
     await video.play();
 
-    // Use ZXing's built-in decode loop on the video element
-    zxingCodeReader.decodeFromVideoElement(video, (result, err) => {
-      if (result && !camDebounce) {
-        camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
-        handleCamResult(result.getText().trim());
-      }
-    });
+    // Use native BarcodeDetector if available (Chrome Android, Safari iOS 17+)
+    // Falls back to ZXing canvas scanning
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({
+        formats: ['qr_code','data_matrix','code_128','code_39','ean_13','ean_8']
+      });
+      const detect = async () => {
+        if (!camStream) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length && !camDebounce) {
+            camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
+            handleCamResult(codes[0].rawValue.trim());
+          }
+        } catch(e) {}
+        camAnimFrame = setTimeout(detect, 150);
+      };
+      detect();
+    } else {
+      // ZXing canvas fallback
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX,
+        ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+      ]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      zxingCodeReader = new ZXing.BrowserMultiFormatReader(hints);
+      zxingCodeReader.decodeFromVideoElement(video, (result, err) => {
+        if (result && !camDebounce) {
+          camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
+          handleCamResult(result.getText().trim());
+        }
+      });
+    }
   } catch(err) {
     const flash = document.getElementById('cam-flash');
     if (flash) { flash.style.display='block'; flash.style.background='#fdecea'; flash.style.color='#c0392b'; flash.textContent='Camera error: '+err.message; }
   }
 }
 
-function scanFrame() {} // no-op, ZXing handles its own loop
+function scanFrame() {}
 
 function closeCam() {
   if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
