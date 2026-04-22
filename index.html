@@ -6,8 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-019</title>
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<title>SAPA Lab Tracker — v2026-04-21-020</title>
+<script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-019</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-020</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1229,20 +1229,37 @@ async function startCam() {
       };
       detect();
     } else {
-      if(dbg()) dbg().textContent = 'No BarcodeDetector — using ZXing';
-      const hints = new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX,
-        ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-      ]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      zxingCodeReader = new ZXing.BrowserMultiFormatReader(hints);
-      zxingCodeReader.decodeFromVideoElement(video, (result, err) => {
-        if (result && !camDebounce) {
-          if(dbg()) dbg().textContent = 'ZXing found: '+result.getText();
-          camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
-          handleCamResult(result.getText().trim());
-        }
+      if(dbg()) dbg().textContent = 'No BarcodeDetector — using ZBar WASM';
+      // ZBar WASM — supports QR, Data Matrix, Code 128, etc.
+      const canvas = document.getElementById('cam-canvas');
+      let zbarReady = false;
+      zbarWasm.getDefaultScanner().then(scanner => {
+        zbarReady = true;
+        if(dbg()) dbg().textContent = 'ZBar ready — point at code';
+        let frameCount = 0;
+        const scan = async () => {
+          if (!camStream) return;
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            frameCount++;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d', {willReadFrequently:true});
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            try {
+              const symbols = await scanner.scanImageData(imageData);
+              if(dbg()) dbg().textContent = `ZBar frame ${frameCount} — ${symbols.length ? 'FOUND: '+symbols[0].decode() : 'scanning...'}`;
+              if (symbols.length && !camDebounce) {
+                camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
+                handleCamResult(symbols[0].decode().trim());
+              }
+            } catch(e) {}
+          }
+          camAnimFrame = setTimeout(scan, 150);
+        };
+        scan();
+      }).catch(e => {
+        if(dbg()) dbg().textContent = 'ZBar error: '+e.message;
       });
     }
   } catch(err) {
@@ -1256,8 +1273,8 @@ function scanFrame() {}
 
 function closeCam() {
   if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
-  if (zxingCodeReader) { try { zxingCodeReader.reset(); } catch(e){} zxingCodeReader=null; }
   if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  zxingCodeReader = null;
   camTarget=null;
   const overlay = document.getElementById('cam-overlay');
   if (overlay) overlay.remove();
