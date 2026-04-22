@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-018</title>
+<title>SAPA Lab Tracker — v2026-04-21-019</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-018</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-019</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1176,10 +1176,11 @@ function openCam(type,pid,idx,field) {
   overlay.innerHTML = `
     <div style="background:#fff;border-radius:9px;padding:20px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.4);">
       <div style="font-family:var(--mono);font-size:11px;color:#505666;margin-bottom:12px;letter-spacing:.06em;">${title}</div>
-      <div style="border-radius:5px;overflow:hidden;background:#000;height:280px;margin-bottom:12px;">
+      <div style="border-radius:5px;overflow:hidden;background:#000;height:280px;margin-bottom:8px;">
         <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
         <canvas id="cam-canvas" style="display:none;"></canvas>
       </div>
+      <div id="cam-debug" style="font-family:monospace;font-size:10px;color:#999;margin-bottom:6px;word-break:break-all;min-height:14px;">Starting...</div>
       <div id="cam-flash" style="display:none;padding:8px 12px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;"></div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"
@@ -1194,6 +1195,7 @@ function openCam(type,pid,idx,field) {
 let zxingCodeReader = null;
 
 async function startCam() {
+  const dbg = () => document.getElementById('cam-debug');
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
@@ -1202,26 +1204,32 @@ async function startCam() {
     video.srcObject = camStream;
     await video.play();
 
-    // Use native BarcodeDetector if available (Chrome Android, Safari iOS 17+)
-    // Falls back to ZXing canvas scanning
     if ('BarcodeDetector' in window) {
+      if(dbg()) dbg().textContent = 'Using BarcodeDetector — point at code';
+      const supported = await BarcodeDetector.getSupportedFormats();
+      if(dbg()) dbg().textContent = 'BarcodeDetector formats: ' + supported.join(', ');
       const detector = new BarcodeDetector({
-        formats: ['qr_code','data_matrix','code_128','code_39','ean_13','ean_8']
+        formats: supported.filter(f => ['qr_code','data_matrix','code_128','code_39','ean_13'].includes(f))
       });
+      let frameCount = 0;
       const detect = async () => {
         if (!camStream) return;
         try {
+          frameCount++;
           const codes = await detector.detect(video);
+          if(dbg()) dbg().textContent = `BarcodeDetector frame ${frameCount} — ${codes.length ? 'FOUND: '+codes[0].rawValue : 'scanning...'}`;
           if (codes.length && !camDebounce) {
             camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
             handleCamResult(codes[0].rawValue.trim());
           }
-        } catch(e) {}
+        } catch(e) {
+          if(dbg()) dbg().textContent = 'Detect error: '+e.message;
+        }
         camAnimFrame = setTimeout(detect, 150);
       };
       detect();
     } else {
-      // ZXing canvas fallback
+      if(dbg()) dbg().textContent = 'No BarcodeDetector — using ZXing';
       const hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
         ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.DATA_MATRIX,
@@ -1231,6 +1239,7 @@ async function startCam() {
       zxingCodeReader = new ZXing.BrowserMultiFormatReader(hints);
       zxingCodeReader.decodeFromVideoElement(video, (result, err) => {
         if (result && !camDebounce) {
+          if(dbg()) dbg().textContent = 'ZXing found: '+result.getText();
           camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
           handleCamResult(result.getText().trim());
         }
@@ -1239,6 +1248,7 @@ async function startCam() {
   } catch(err) {
     const flash = document.getElementById('cam-flash');
     if (flash) { flash.style.display='block'; flash.style.background='#fdecea'; flash.style.color='#c0392b'; flash.textContent='Camera error: '+err.message; }
+    if(dbg()) dbg().textContent = 'Error: '+err.message;
   }
 }
 
