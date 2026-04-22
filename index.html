@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-016</title>
+<title>SAPA Lab Tracker — v2026-04-21-017</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-016</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-017</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1191,7 +1191,7 @@ function openCam(type,pid,idx,field) {
   startCam();
 }
 
-let zxingReader = null;
+let zxingCodeReader = null;
 
 async function startCam() {
   try {
@@ -1203,42 +1203,33 @@ async function startCam() {
       ZXing.BarcodeFormat.CODE_39,
     ]);
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.MultiFormatReader();
-    zxingReader.setHints(hints);
-    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    zxingCodeReader = new ZXing.BrowserMultiFormatReader(hints);
+
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
+    });
     const video = document.getElementById('cam-video');
     video.srcObject = camStream;
-    video.onloadedmetadata = () => { video.play(); scanFrame(); };
+    await video.play();
+
+    // Use ZXing's built-in decode loop on the video element
+    zxingCodeReader.decodeFromVideoElement(video, (result, err) => {
+      if (result && !camDebounce) {
+        camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
+        handleCamResult(result.getText().trim());
+      }
+    });
   } catch(err) {
     const flash = document.getElementById('cam-flash');
     if (flash) { flash.style.display='block'; flash.style.background='#fdecea'; flash.style.color='#c0392b'; flash.textContent='Camera error: '+err.message; }
   }
 }
 
-function scanFrame() {
-  const video = document.getElementById('cam-video');
-  const canvas = document.getElementById('cam-canvas');
-  if (!video || !camStream || !zxingReader) return;
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d', {willReadFrequently: true});
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    try {
-      const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-      const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
-      const result = zxingReader.decode(binaryBitmap);
-      if (result && !camDebounce) {
-        camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
-        handleCamResult(result.getText().trim());
-      }
-    } catch(e) { /* NotFoundException normal when no code visible */ }
-  }
-  camAnimFrame = setTimeout(()=>{ camAnimFrame = requestAnimationFrame(scanFrame); }, 100);
-}
+function scanFrame() {} // no-op, ZXing handles its own loop
 
 function closeCam() {
   if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
+  if (zxingCodeReader) { try { zxingCodeReader.reset(); } catch(e){} zxingCodeReader=null; }
   if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   camTarget=null;
   const overlay = document.getElementById('cam-overlay');
