@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-014</title>
+<title>SAPA Lab Tracker — v2026-04-21-015</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -220,7 +220,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-014</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-015</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1159,10 +1159,32 @@ let camStream=null, camTarget=null, camDebounce=null, camAnimFrame=null;
 function openCam(type,pid,idx,field) {
   camTarget={type,pid,idx,field};
   const titles={'panel-sel-cam':'Scan panel QR','lookup-cam':'Scan to look up','slot':'Scan component for slot'};
-  document.getElementById('cam-title').textContent=titles[type==='slot'?'slot':type]||'Scanning...';
-  document.getElementById('cam-flash').style.display='none';
-  document.getElementById('cam-manual').value='';
-  document.getElementById('cam-overlay').style.display = 'flex';
+  const title = titles[type==='slot'?'slot':type]||'Scanning...';
+
+  // Remove any existing overlay
+  const existing = document.getElementById('cam-overlay');
+  if (existing) existing.remove();
+
+  // Build overlay as direct body child — avoids stacking context traps
+  const overlay = document.createElement('div');
+  overlay.id = 'cam-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = (e) => { if (e.target === overlay) closeCam(); };
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:9px;padding:20px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+      <div style="font-family:var(--mono);font-size:11px;color:#505666;margin-bottom:12px;letter-spacing:.06em;">${title}</div>
+      <div style="border-radius:5px;overflow:hidden;background:#000;height:280px;margin-bottom:12px;">
+        <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+        <canvas id="cam-canvas" style="display:none;"></canvas>
+      </div>
+      <div id="cam-flash" style="display:none;padding:8px 12px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"
+          onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
+        <button onclick="closeCam()" style="font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid #ccc;border-radius:5px;background:#f0f1f3;cursor:pointer;">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
   startCam();
 }
 
@@ -1202,10 +1224,9 @@ function scanFrame() {
 function closeCam() {
   if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
   if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
-  const video = document.getElementById('cam-video');
-  if (video) { video.srcObject=null; }
   camTarget=null;
-  document.getElementById('cam-overlay').style.display = 'none';
+  const overlay = document.getElementById('cam-overlay');
+  if (overlay) overlay.remove();
 }
 function closeCamIfOverlay(e){if(e.target===document.getElementById('cam-overlay'))closeCam();}
 function handleCamResult(id) {
@@ -1235,7 +1256,14 @@ function handleCamResult(id) {
     setTimeout(()=>{closeCam();renderChannelTables();},700);
   }
 }
-function showCamFlash(msg,ok){const el=document.getElementById('cam-flash');el.style.display='block';el.className='cam-flash '+(ok?'ok':'err');el.textContent=msg;}
+function showCamFlash(msg,ok){
+  const el=document.getElementById('cam-flash');
+  if (!el) return;
+  el.style.display='block';
+  el.style.background=ok?'#e8f5e9':'#fdecea';
+  el.style.color=ok?'#1a7f45':'#c0392b';
+  el.textContent=msg;
+}
 
 /* ═══════════ CLOSE-OUT ═══════════ */
 let urlEntries=[];
@@ -1650,20 +1678,6 @@ const cached=msal$.getAllAccounts();
 if(cached.length>0&&!userSignedOut){msal$.setActiveAccount(cached[0]);getToken().then(()=>{document.getElementById('auth-btn').textContent='Sign out';setSS('Signed in — loading...','syncing');showApp();syncFromCloud();}).catch(()=>{setSS('Session expired','err');showLogin('Session expired — please sign in again.');});}
 else{showLogin();}
 </script>
-<!-- ═══════ CAMERA MODAL ═══════ -->
-<div class="cam-overlay" id="cam-overlay" onclick="closeCamIfOverlay(event)">
-  <div class="cam-modal">
-    <div class="cam-title" id="cam-title">Scanning...</div>
-    <div class="cam-wrap">
-      <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:var(--r);display:block;"></video>
-      <canvas id="cam-canvas" style="display:none;"></canvas>
-    </div>
-    <div class="cam-flash" id="cam-flash"></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
-      <button onclick="closeCam()">Cancel</button>
-    </div>
-  </div>
-</div>
+<!-- camera overlay injected dynamically by JS -->
 </body>
 </html>
