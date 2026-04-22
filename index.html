@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-021</title>
+<title>SAPA Lab Tracker — v2026-04-21-022</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -223,7 +223,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-021</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-022</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1229,33 +1229,33 @@ async function startCam() {
       };
       detect();
     } else {
-      if(dbg()) dbg().textContent = 'No BarcodeDetector — using ZBar WASM';
+      // Find zbar under whatever global it registered
+      const zb = window.zbarWasm || window.ZBar || window.zbar || window['@undecaf/zbar-wasm'];
+      if(dbg()) dbg().textContent = 'zbar global: ' + (zb ? Object.keys(zb).slice(0,8).join(', ') : 'NOT FOUND. Globals: '+Object.keys(window).filter(k=>k.toLowerCase().includes('bar')||k.toLowerCase().includes('scan')).join(', '));
+      if (!zb) { return; }
       const canvas = document.getElementById('cam-canvas');
       let frameCount = 0;
+      const scanFn = zb.scanImage || zb.scan || zb.scanImageData || zb.default?.scanImage;
+      if (!scanFn) { if(dbg()) dbg().textContent = 'No scan fn. Keys: '+Object.keys(zb).join(', '); return; }
+      if(dbg()) dbg().textContent = 'ZBar ready — point at code';
       const scan = async () => {
         if (!camStream) return;
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
           frameCount++;
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          canvas.width = video.videoWidth; canvas.height = video.videoHeight;
           const ctx = canvas.getContext('2d', {willReadFrequently:true});
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           try {
-            const symbols = await zbarWasm.scanImage(canvas);
-            if(dbg()) dbg().textContent = `ZBar frame ${frameCount} — ${symbols.length ? 'FOUND: '+symbols[0].decode() : 'scanning...'}`;
+            const symbols = await scanFn(canvas);
+            if(dbg()) dbg().textContent = `frame ${frameCount} — ${symbols.length?'FOUND: '+symbols[0].decode():'scanning...'}`;
             if (symbols.length && !camDebounce) {
               camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
               handleCamResult(symbols[0].decode().trim());
-            } else if (!symbols.length) {
-              if(dbg()) dbg().textContent = `ZBar scanning... frame ${frameCount}`;
             }
-          } catch(e) {
-            if(dbg()) dbg().textContent = 'ZBar scan error: '+e.message;
-          }
+          } catch(e) { if(dbg()) dbg().textContent = 'scan error: '+e.message; }
         }
         camAnimFrame = setTimeout(scan, 200);
       };
-      if(dbg()) dbg().textContent = 'ZBar ready — point at code';
       scan();
     }
   } catch(err) {
