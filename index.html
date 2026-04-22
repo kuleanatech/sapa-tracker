@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-004</title>
+<title>SAPA Lab Tracker — v2026-04-21-005</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -20,7 +20,7 @@
   --pu:#6a1b9a;--pud:rgba(106,27,154,0.1);
   --r:5px;--rl:9px;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-  --panel-w:480px;
+  --panel-w:600px;
 }
 body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
 
@@ -219,7 +219,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-004</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-005</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -313,7 +313,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="failure">Failures</option>
           <option value="flagged">Flagged</option>
         </select>
-        <select id="el-tag" onchange="renderExpDb()"><option value="">All tags</option></select>
+        <select id="el-tag" onchange="renderExpDb()" multiple size="3" style="min-width:160px;font-size:12px;"><option value="" selected>All tags</option></select>
       </div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
@@ -338,23 +338,12 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <button class="btn-gr" onclick="openCompPanel()">+ Add component</button>
       </div>
 
-      <!-- Scan lookup -->
-      <div class="card" style="margin-bottom:12px;">
-        <div class="clabel">Scan component to view record</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="text" id="lookup-id" placeholder="Type component ID or scan" onkeydown="if(event.key==='Enter')lookupComp(this.value.trim());" style="flex:1;">
-          <button onclick="lookupComp(document.getElementById('lookup-id').value.trim())">Look up</button>
-          <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan">&#128247;</button>
-        </div>
-      </div>
-      <div id="lookup-result" style="margin-bottom:12px;"></div>
-
-      <!-- Stats -->
-      <div class="sband" id="comp-stats"></div>
-
-      <!-- Search -->
+      <!-- Unified search + scan -->
       <div class="search-bar">
-        <input type="text" id="cl-search" placeholder="Search ID, name, notes..." oninput="renderCompList()">
+        <div style="display:flex;gap:6px;align-items:center;flex:2;min-width:200px;">
+          <input type="text" id="cl-search" placeholder="Search serial number, name, notes..." oninput="handleCompSearch(this.value)" style="flex:1;">
+          <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan QR to look up" style="font-size:15px;flex-shrink:0;">&#128247;</button>
+        </div>
         <select id="cl-type" onchange="renderCompList()">
           <option value="">All types</option>
           <option value="panel">Panels</option>
@@ -362,8 +351,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="glass">Glass frames</option>
           <option value="engine">Light engines</option>
         </select>
-        <input type="date" id="cl-from" oninput="renderCompList()" title="Mfg from">
-        <input type="date" id="cl-to" oninput="renderCompList()" title="Mfg to">
+        <input type="date" id="cl-from" oninput="renderCompList()" title="Fab date from">
+        <input type="date" id="cl-to" oninput="renderCompList()" title="Fab date to">
       </div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearCompFilters()">Clear filters</button>
@@ -371,6 +360,11 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <button class="btn-gr" onclick="unflagSelComps()">Unflag selected</button>
         <button class="btn-rd" onclick="flagSelComps()">Flag for deletion</button>
       </div>
+
+      <div id="lookup-result" style="margin-bottom:12px;"></div>
+
+      <!-- Stats -->
+      <div class="sband" id="comp-stats"></div>
 
       <div class="card">
         <div id="comp-list"></div>
@@ -436,9 +430,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
         <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
       </div>
-      <div class="fg2 frow">
-        <div><label>Which LEDs</label><input type="text" id="ef-leds" placeholder="e.g. 450nm blue"></div>
-        <div><label>Total program cycles</label><input type="number" id="ef-pstat-cycles" min="1" step="1" placeholder="e.g. 300"></div>
+      <div class="frow">
+        <label>Total program cycles</label><input type="number" id="ef-pstat-cycles" min="1" step="1" placeholder="e.g. 300" style="max-width:200px;">
       </div>
       <div class="frow">
         <label>Potentiostat steps</label>
@@ -515,7 +508,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   </div>
   <div class="panel-body">
     <div class="fg3 frow">
-      <div><label>Component ID *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
       <div><label>Type *</label>
         <select id="reg-type" onchange="onRegTypeChange()">
           <option value="panel">Panel</option>
@@ -525,9 +517,10 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         </select>
       </div>
       <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
+      <div><label>Serial number *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
     </div>
     <div class="fg3 frow">
-      <div><label>Manufacture / receive date</label><input type="date" id="reg-mfg"></div>
+      <div><label>Fabrication date</label><input type="date" id="reg-mfg"></div>
       <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
       <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
         <select id="reg-led-gen" onchange="renderLedGrid()">
@@ -555,11 +548,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       </div>
       <div id="led-grid"></div>
     </div>
-    <div class="card" style="background:var(--bld);border-color:rgba(77,184,255,.15);padding:12px 14px;">
-      <div class="clabel" style="color:var(--bl);margin-bottom:5px;">QR &amp; Data Matrix codes</div>
-      <div style="font-size:12px;color:var(--tx2);">Encode just the component ID as plain text. Free: <strong style="color:var(--tx);">qr-code-generator.com</strong></div>
-    </div>
-  </div>
   <div class="panel-footer">
     <button class="btn-gr" onclick="registerComp()">Register component</button>
     <button onclick="closeCompPanel()">Cancel</button>
@@ -576,7 +564,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
   <div class="panel-body">
     <input type="hidden" id="edit-comp-id">
     <div class="frow"><label>Name / label</label><input type="text" id="ec-name" placeholder="e.g. Engine 04"></div>
-    <div class="frow"><label>Manufacture / receive date</label><input type="date" id="ec-mfg"></div>
+
     <div id="ec-channels-wrap" style="display:none;" class="frow"><label>Number of channels</label><input type="number" id="ec-channels" min="1" step="1"></div>
     <div id="ec-glass-wrap" style="display:none;">
       <div class="fg2 frow">
@@ -941,8 +929,8 @@ function addNewTag() {
 function removeTag(i) { formTags.splice(i,1); renderTagChips(); }
 function renderExpTagFilter() {
   const sel = document.getElementById('el-tag'); if (!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">All tags</option>' + (db.tags||[]).map(t=>`<option value="${t}" ${t===cur?'selected':''}>${t}</option>`).join('');
+  const curVals = [...sel.selectedOptions].map(o=>o.value);
+  sel.innerHTML = '<option value="">All tags</option>' + (db.tags||[]).map(t=>`<option value="${t}" ${curVals.includes(t)?'selected':''}>${t}</option>`).join('');
 }
 
 /* ═══════════ RUN NUMBER ═══════════ */
@@ -967,7 +955,7 @@ function populateExpFormFields(e) {
   set('ef-operator',e.operator); set('ef-pstat-id',e.pstatId); set('ef-desc',e.description);
   set('ef-sol-dist',e.solDist); set('ef-flow',e.flowRate); set('ef-pump',e.pump);
   set('ef-carbon',e.carbon); set('ef-sensors',e.sensors);
-  set('ef-leds',e.leds); set('ef-pstat-note',e.pstatNote); set('ef-pstat-cycles',e.pstatCycles);
+  set('ef-pstat-note',e.pstatNote); set('ef-pstat-cycles',e.pstatCycles);
   set('ef-notes',e.notes);
   formTags = e.tags ? [...e.tags] : [];
   renderTagChips(); renderTagSelect();
@@ -978,7 +966,7 @@ function populateExpFormFields(e) {
 }
 function resetExpForm() {
   ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-dist','ef-flow','ef-pump','ef-carbon',
-   'ef-sensors','ef-leds','ef-pstat-note','ef-pstat-cycles','ef-notes','ef-run','ef-ref'].forEach(id=>{
+   'ef-sensors','ef-pstat-note','ef-pstat-cycles','ef-notes','ef-run','ef-ref'].forEach(id=>{
     const el=document.getElementById(id); if(el){el.value='';delete el.dataset.userEdited;}
   });
   document.getElementById('ef-date').value = today();
@@ -1003,7 +991,7 @@ function saveExpForm() {
     ledConfig:JSON.parse(JSON.stringify(expLedStates)), solDist:g('ef-sol-dist'),
     flowRate:parseFloat(g('ef-flow'))||null, pump:g('ef-pump').trim(),
     carbon:parseFloat(g('ef-carbon'))||null, sensors:g('ef-sensors').trim(),
-    leds:g('ef-leds').trim(), pstatNote:g('ef-pstat-note').trim(),
+    pstatNote:g('ef-pstat-note').trim(),
     pstatSteps:JSON.parse(JSON.stringify(pstatSteps)),
     pstatCycles:parseInt(g('ef-pstat-cycles'))||null,
     notes:g('ef-notes').trim(),
@@ -1136,7 +1124,15 @@ function handleCamResult(id) {
     else showCamFlash(db.components[id]?'Not a panel: '+db.components[id].name:'Unknown ID: '+id,false);
     return;
   }
-  if(type==='lookup-cam'){showCamFlash('Found: '+id,true);setTimeout(()=>{closeCam();lookupComp(id);},600);return;}
+  if(type==='lookup-cam'){
+    showCamFlash('Found: '+id,true);
+    setTimeout(()=>{
+      closeCam();
+      const s=document.getElementById('cl-search');
+      if(s){s.value=id;handleCompSearch(id);}
+    },600);
+    return;
+  }
   if(type==='slot'){
     const c=db.components[id];
     if(!c){showCamFlash('Unknown ID: '+id,false);return;}
@@ -1214,8 +1210,9 @@ function renderExpDb() {
   if(sf==='failure') exps=exps.filter(e=>e.failure);
   else if(sf==='flagged') exps=exps.filter(e=>e.flaggedForDeletion);
   else if(sf) exps=exps.filter(e=>e.status===sf);
-  const tagF = document.getElementById('el-tag')?.value;
-  if(tagF) exps=exps.filter(e=>e.tags&&e.tags.includes(tagF));
+  const tagSel = document.getElementById('el-tag');
+  const tagFs = tagSel?[...tagSel.selectedOptions].map(o=>o.value).filter(v=>v):[];
+  if(tagFs.length) exps=exps.filter(e=>tagFs.every(t=>e.tags&&e.tags.includes(t)));
   const cnt=document.getElementById('el-count'); if(cnt) cnt.textContent=exps.length+' experiment'+(exps.length!==1?'s':'');
   const list=document.getElementById('exp-list'); if(!list) return;
   if(!exps.length){list.innerHTML='<div class="empty">No experiments yet — click "+ New experiment" to create one</div>';return;}
@@ -1251,7 +1248,7 @@ function buildExpDetail(e) {
       <div class="df"><div class="dk">Operator</div><div class="dv">${fv(e.operator)}</div></div>
       <div class="df"><div class="dk">Run number</div><div class="dv" style="font-family:var(--mono);">${e.runNumber||'—'}</div></div>
       <div class="df"><div class="dk">Reference</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${fv(e.refNum)}</div></div>
-      <div class="df"><div class="dk">Planned / actual</div><div class="dv">${e.plannedHours||'—'} h / ${e.actualHours||'—'} h</div></div>
+      <div class="df"><div class="dk">Actual / planned</div><div class="dv">${e.actualHours||'—'} h / ${e.plannedHours||'—'} h</div></div>
       <div class="df"><div class="dk">Potentiostat</div><div class="dv">${fv(e.pstatId)}</div></div>
     </div>
     ${e.tags?.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${e.tags.map(t=>`<span style="background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:12px;padding:3px 10px;font-size:11px;font-family:var(--mono);">${t}</span>`).join('')}</div>`:''}
@@ -1295,8 +1292,13 @@ function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checke
 function exportSelExps(){
   const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
   const exps=ids.length?db.experiments.filter(e=>ids.includes(e.id)):db.experiments;
-  const h=['id','name','date','plannedHours','actualHours','operator','description','solDist','flowRate','pump','carbon','leds','pstatId','pstatNote','pstatSteps','pstatCycles','sensors','notes','status','endVol','sampleVol','leakage','completionNotes','failure','components'];
-  dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], 'experiments.csv');
+  const h=['id','name','runNumber','refNum','date','plannedHours','actualHours','operator','description','tags','solDist','flowRate','pump','carbon','pstatId','pstatNote','pstatSteps','pstatCycles','sensors','notes','status','endVol','sampleVol','leakage','completionNotes','failure','components'];
+  const statusF=document.getElementById('el-status')?.value||'all';
+  const tagSel=document.getElementById('el-tag');
+  const tagFs2=tagSel?[...tagSel.selectedOptions].map(o=>o.value).filter(v=>v):[];
+  const tagLabel=tagFs2.length?'_'+tagFs2.join('-'):'';
+  const fname=`experiments_${statusF}${tagLabel}_${today()}.csv`;
+  dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], fname);
 }
 function jumpToExp(id){showPage('exp',document.getElementById('tab-exp'));setTimeout(()=>{const el=document.getElementById('ed-'+id);if(el){el.classList.add('open');el.closest('.exp-row').scrollIntoView({behavior:'smooth',block:'center'});}},200);}
 
@@ -1331,6 +1333,17 @@ function registerComp(){
   saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
 }
+function handleCompSearch(val) {
+  renderCompList();
+  // If exact match on ID, show detail record
+  if (val && db.components[val]) {
+    lookupComp(val);
+  } else if (val && !db.components[val]) {
+    // Clear lookup result if no exact match
+    const r = document.getElementById('lookup-result');
+    if (r) r.innerHTML = '';
+  }
+}
 function renderCompStats(){
   document.getElementById('comp-stats').innerHTML=['panel','paper','glass','engine'].map(t=>{
     const ids=Object.keys(db.components).filter(id=>db.components[id].type===t);
@@ -1357,7 +1370,7 @@ function renderCompList(){
       <input type="checkbox" class="comp-ck" data-id="${id}" style="width:auto;flex-shrink:0;">
       <div class="comp-info">
         <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-        <div class="comp-sub">${id}${c.mfgDate?' · mfg '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+        <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
       </div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
       <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">Details</button>
@@ -1383,8 +1396,8 @@ function lookupComp(id){
       </div>
     </div>
     <div class="dg">
-      <div class="df"><div class="dk">Component ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
-      <div class="df"><div class="dk">Manufacture date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
+      <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
+      <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
       <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
       <div class="df"><div class="dk">Registered</div><div class="dv">${fdate(c.registered)}</div></div>
       ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
@@ -1419,7 +1432,6 @@ function openEditCompPanel(id) {
   document.getElementById('edit-comp-id').value = id;
   document.getElementById('edit-comp-title').textContent = 'Edit — ' + c.name;
   document.getElementById('ec-name').value = c.name||'';
-  document.getElementById('ec-mfg').value = c.mfgDate||'';
   document.getElementById('ec-notes').value = c.notes||'';
   // Show/hide type-specific fields
   document.getElementById('ec-channels-wrap').style.display = c.type==='panel' ? 'block' : 'none';
@@ -1462,7 +1474,6 @@ function saveEditComp(){
   const id = document.getElementById('edit-comp-id').value; if(!id) return;
   const c = db.components[id]; if(!c) return;
   c.name = document.getElementById('ec-name').value.trim() || c.name;
-  c.mfgDate = document.getElementById('ec-mfg').value || null;
   c.notes = document.getElementById('ec-notes').value.trim();
   if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
   if(c.type==='glass'){
@@ -1485,7 +1496,9 @@ function clearExpFilters(){
 }
 function clearCompFilters(){
   ['cl-search','cl-from','cl-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('cl-type').value=''; renderCompList();
+  document.getElementById('cl-type').value='';
+  const r=document.getElementById('lookup-result'); if(r) r.innerHTML='';
+  renderCompList();
 }
 function buildLedMapHTML(gen,ledActive){
   const layout=LED_LAYOUTS[gen]; if(!layout) return '';
@@ -1500,7 +1513,9 @@ function unflagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:chec
 function exportSelComps(){
   const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
   const comps=ids.length?ids.filter(id=>db.components[id]).map(id=>db.components[id]):Object.values(db.components);
-  dlCSV([['id','type','name','mfgDate','channels','notes','registered','totalHours','experiments'],...comps.map(c=>[c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',totalHours(c.id).toFixed(1),db.experiments.filter(e=>(e.components||[]).includes(c.id)).length])],'components.csv');
+    const typeF=document.getElementById('cl-type')?.value||'all';
+  const cfname=`components_${typeF}_${today()}.csv`;
+  dlCSV([['id','type','name','fabDate','channels','notes','registered','totalHours','experiments'],...comps.map(c=>[c.id,c.type,c.name,c.mfgDate||'',c.channels||'',c.notes||'',c.registered||'',totalHours(c.id).toFixed(1),db.experiments.filter(e=>(e.components||[]).includes(c.id)).length])],cfname);
 }
 
 /* ═══════════ LED REGISTRATION ═══════════ */
