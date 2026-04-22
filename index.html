@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAPA Lab Tracker — v2026-04-21-005</title>
+<title>SAPA Lab Tracker — v2026-04-21-006</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -219,7 +219,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-005</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-006</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -324,7 +324,9 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <button class="btn-rd" onclick="flagSelExps()">Flag for deletion</button>
       </div>
 
-      <div id="exp-list"></div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="exp-list"></div>
+      </div>
     </div>
   </div>
 
