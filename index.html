@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-030</title>
+<title>SAPA Lab Tracker — v2026-04-21-042</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -120,8 +120,8 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .exp-summary:hover{background:var(--bg2);}
 .exp-title{font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .exp-meta{font-family:var(--mono);font-size:10px;color:var(--tx3);white-space:nowrap;}
-.exp-detail{display:none;border-top:1px solid var(--ln);padding:16px 18px;}
-.exp-detail.open{display:block;}
+.exp-detail{display:none;border-top:2px solid var(--ln2);padding:16px 18px;background:var(--bg2);}
+.exp-detail.open{display:block;border-bottom:2px solid var(--ln2);}
 
 /* ── ACTIVE EXP BANNER ── */
 .active-banner{background:var(--bg1);border:1px solid rgba(61,255,122,.3);border-radius:var(--rl);padding:14px 18px;margin-bottom:14px;}
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-030</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-042</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -369,8 +369,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <button class="btn-gr" onclick="unflagSelComps()">Unflag selected</button>
         <button class="btn-rd" onclick="flagSelComps()">Flag for deletion</button>
       </div>
-
-      <div id="lookup-result" style="margin-bottom:12px;"></div>
 
       <!-- Stats -->
       <div class="sband" id="comp-stats"></div>
@@ -563,42 +561,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 </div>
 
 <!-- ═══════ EDIT COMPONENT SLIDE PANEL ═══════ -->
-<div class="panel-overlay" id="edit-comp-overlay" onclick="closeEditCompPanel()"></div>
-<div class="slide-panel" id="edit-comp-panel">
-  <div class="panel-header">
-    <div class="panel-title" id="edit-comp-title">Edit component</div>
-    <button class="panel-close" onclick="closeEditCompPanel()">×</button>
-  </div>
-  <div class="panel-body">
-    <input type="hidden" id="edit-comp-id">
-    <div class="frow"><label>Name / label</label><input type="text" id="ec-name" placeholder="e.g. Engine 04"></div>
-
-    <div id="ec-channels-wrap" style="display:none;" class="frow"><label>Number of channels</label><input type="number" id="ec-channels" min="1" step="1"></div>
-    <div id="ec-glass-wrap" style="display:none;">
-      <div class="fg2 frow">
-        <div><label>Synthesis date</label><input type="date" id="ec-glass-synth"></div>
-        <div><label>QC photocurrent</label><input type="text" id="ec-glass-qc" placeholder="e.g. 12.4 µA"></div>
-        <div><label>UV absorption (%)</label><input type="number" id="ec-glass-uv" min="0" max="100" step="0.1"></div>
-        <div><label>Serial number</label><input type="text" id="ec-glass-serial"></div>
-      </div>
-    </div>
-    <div id="ec-led-wrap" style="display:none;">
-      <div class="frow">
-        <label>Active LEDs</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button onclick="setAllLeds(true)" style="font-size:11px;padding:4px 10px;">All on</button>
-          <button onclick="setAllLeds(false)" class="btn-rd" style="font-size:11px;padding:4px 10px;">All off</button>
-        </div>
-        <div id="ec-led-grid"></div>
-      </div>
-    </div>
-    <div class="frow"><label>Notes</label><textarea id="ec-notes" placeholder="Any notes..."></textarea></div>
-  </div>
-  <div class="panel-footer">
-    <button class="btn-gr" onclick="saveEditComp()">Save changes</button>
-    <button onclick="closeEditCompPanel()">Cancel</button>
-  </div>
-</div>
+<!-- edit comp panel injected dynamically -->
 
 <script>
 /* ═══════════ CONFIG ═══════════ */
@@ -1071,7 +1034,14 @@ function saveExpForm() {
     const n = {id:uid(),status:'active',fileLinks:[],createdAt:Date.now(),...data};
     db.experiments.unshift(n); activeExpId=n.id;
   }
-  saveAndSync(); closeExpPanel(); renderExpDb();
+  saveAndSync(); closeExpPanel();
+  renderExpDb();
+  // Re-expand the saved experiment
+  const savedId = editId || db.experiments[0]?.id;
+  if (savedId) setTimeout(() => {
+    const el = document.getElementById('ed-'+savedId);
+    if (el) { el.classList.add('open'); el.closest('.exp-row')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  }, 100);
 }
 function repeatExp(id) {
   const src = ge(id); if (!src) return;
@@ -1279,7 +1249,7 @@ function handleCamResult(id) {
     setTimeout(()=>{
       closeCam();
       const s=document.getElementById('cl-search');
-      if(s){s.value=id;handleCompSearch(id);}
+      if(s){s.value=id;renderCompList();setTimeout(()=>{const el=document.getElementById('cd-'+id);if(el&&!el.classList.contains('open'))toggleCompDetail(id);el?.closest('.comp-row')?.scrollIntoView({behavior:'smooth',block:'center'});},100);}
     },600);
     return;
   }
@@ -1346,7 +1316,7 @@ function finalizeExp(){
   ae.completionNotes=document.getElementById('cm-notes').value.trim();
   ae.failure=document.getElementById('cm-failure').checked;
   ae.fileLinks=JSON.parse(JSON.stringify(urlEntries));
-  ae.completedAt=Date.now(); ae.closedAt=Date.now(); activeExpId=null;
+  ae.completedAt=Date.now(); ae.closedAt=Date.now(); ae.editedAt=Date.now(); activeExpId=null;
   saveAndSync();
   document.getElementById('closeout-panel').style.display='none';
   renderExpDb();
@@ -1394,7 +1364,14 @@ function renderExpDb() {
     </div>`;
   }).join('');
 }
-function toggleExpDetail(id){document.getElementById('ed-'+id)?.classList.toggle('open');}
+function toggleExpDetail(id){
+  const el = document.getElementById('ed-'+id); if (!el) return;
+  const isOpen = el.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.exp-detail.open').forEach(d => d.classList.remove('open'));
+  // Open this one if it was closed
+  if (!isOpen) el.classList.add('open');
+}
 function buildExpDetail(e) {
   const pstatStr=e.pstatSteps?.length?e.pstatSteps.map((s,i)=>`Step ${i+1}: ${s.voltage}V for ${s.duration}s`).join(', ')+(e.pstatCycles?` — ${e.pstatCycles} cycles`:''):'—';
   const channelHTML=e.panels&&Object.keys(e.panels).length?Object.entries(e.panels).map(([pid,chs])=>{
@@ -1439,14 +1416,16 @@ function buildExpDetail(e) {
     ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
     ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-      <button onclick="openExpPanel('${e.id}')" style="font-size:11px;padding:5px 10px;">Edit</button>
-      <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
-    </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:10px;padding-top:8px;border-top:1px solid var(--ln);display:flex;flex-wrap:wrap;gap:12px;">
-      ${e.createdAt?`<span>Created: ${new Date(e.createdAt).toLocaleString()}</span>`:''}
-      ${e.closedAt?`<span>Closed: ${new Date(e.closedAt).toLocaleString()}</span>`:''}
-      ${e.editedAt?`<span>Last edited: ${new Date(e.editedAt).toLocaleString()}</span>`:''}
+    <div style="border-top:1px solid var(--ln);margin-top:14px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="openExpPanel('${e.id}')" style="font-size:11px;padding:5px 10px;">Edit</button>
+        <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;flex-wrap:wrap;gap:12px;">
+        <span>Created: ${e.createdAt?new Date(e.createdAt).toLocaleString():fdate(e.date)}</span>
+        ${e.closedAt?`<span>Closed: ${new Date(e.closedAt).toLocaleString()}</span>`:''}
+        ${e.editedAt?`<span>Last edited: ${new Date(e.editedAt).toLocaleString()}</span>`:''}
+      </div>
     </div>`;
 }
 
@@ -1466,16 +1445,10 @@ function jumpToExp(id){showPage('exp',document.getElementById('tab-exp'));setTim
 function goToComp(id){
   showPage('comp',document.getElementById('tab-comp'));
   setTimeout(()=>{
-    // Set search to this ID so it filters to the component
-    const s=document.getElementById('cl-search');
-    if(s){s.value=id;handleCompSearch(id);}
-    // Find and expand the component row
-    setTimeout(()=>{
-      const el=document.getElementById('cd-'+id);
-      if(el&&!el.classList.contains('open')) toggleCompDetail(id);
-      el?.closest('.comp-row')?.scrollIntoView({behavior:'smooth',block:'center'});
-    },150);
-  },200);
+    const el=document.getElementById('cd-'+id);
+    if(el&&!el.classList.contains('open')) toggleCompDetail(id);
+    el?.closest('.comp-row')?.scrollIntoView({behavior:'smooth',block:'center'});
+  },250);
 }
 
 /* ═══════════ COMPONENT DB ═══════════ */
@@ -1511,13 +1484,13 @@ function registerComp(){
 }
 function handleCompSearch(val) {
   renderCompList();
-  // If exact match on ID, show detail record
+  // If exact ID match, expand that component's detail
   if (val && db.components[val]) {
-    lookupComp(val);
-  } else if (val && !db.components[val]) {
-    // Clear lookup result if no exact match
-    const r = document.getElementById('lookup-result');
-    if (r) r.innerHTML = '';
+    setTimeout(() => {
+      const el = document.getElementById('cd-'+val);
+      if (el && !el.classList.contains('open')) toggleCompDetail(val);
+      el?.closest('.comp-row')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }, 50);
   }
 }
 function renderCompStats(){
@@ -1547,7 +1520,8 @@ function renderCompList(){
         <input type="checkbox" class="comp-ck" data-id="${id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
         <div class="comp-info">
           <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-          <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+          <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}</div>
+        ${c.notes?'<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+c.notes+'</div>':''}
         </div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;margin-left:auto;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
@@ -1556,83 +1530,92 @@ function renderCompList(){
     </div>`;
   }).join('');
 }
-function lookupComp(id){
-  if(!id) return;
-  const result=document.getElementById('lookup-result'); if(!result) return;
-  const c=db.components[id];
-  if(!c){result.innerHTML=`<div class="card"><div style="color:var(--rd);font-family:var(--mono);font-size:12px;">Unknown: ${id}</div></div>`;return;}
-  const h=totalHours(id), allExps=db.experiments.filter(e=>(e.components||[]).includes(id));
-  const activeIn=allExps.find(e=>e.status==='active');
-  result.innerHTML=`<div class="card">
-    <div class="clabel">Component record</div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-      <div><div style="font-size:20px;font-weight:500;margin-bottom:6px;">${c.name}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">${tb(c.type)}${activeIn?'<span class="badge b-active">in active experiment</span>':''}${c.flaggedForDeletion?'<span class="badge b-flagged">flagged</span>':''}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-        <div><div style="font-family:var(--mono);font-size:28px;color:var(--am);">${h.toFixed(1)}<span style="font-size:13px;color:var(--tx3);"> h</span></div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">cumulative hours</div></div>
-        <button class="btn-am" onclick="openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
-      </div>
-    </div>
-    <div class="dg">
-      <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
-      <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
-      <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
-      <div class="df"><div class="dk">Registered</div><div class="dv">${fdate(c.registered)}</div></div>
-      ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
-      ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3×5)',gen2:'Gen 2 (1×3)',gen3:'Gen 3 (8×3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
-      ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
-      ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
-      ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
-      ${c.glassSerial?`<div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassSerial}</div></div>`:''}
-    </div>
-    ${c.ledActive&&c.ledGen?`<div style="margin-bottom:12px;"><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;">LED MAP — ${Object.values(c.ledActive).filter(Boolean).length}/${Object.keys(c.ledActive).length} active</div>${buildLedMapHTML(c.ledGen,c.ledActive)}</div>`:''}
-    ${c.notes?`<div class="df" style="margin-bottom:12px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
-    <hr>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:10px;">EXPERIMENT HISTORY</div>
-    ${allExps.length?allExps.map(e=>`
-      <div class="hist-row">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.status==='active'?'in progress':'—'}</div>
-          ${e.failure?'<span class="pill-rd" style="font-size:9px;margin-top:3px;display:inline-block;">FAILURE</span>':''}
-          ${e.fileLinks?.length?'<div style="margin-top:4px;">'+e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:11px;display:block;">${l.title||l.url}</a>`).join('')+'</div>':''}
-        </div>
-        <span class="hist-link" onclick="jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
-      </div>`).join(''):'<div class="empty" style="padding:16px;">Not used in any experiments yet</div>'}
-  </div>`;
-  result.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
+function lookupComp(id){ goToComp(id); }
 
 /* ═══════════ EDIT COMPONENT ═══════════ */
 let editCompLedState = {};
 function openEditCompPanel(id) {
   const c = db.components[id]; if (!c) return;
-  document.getElementById('edit-comp-id').value = id;
-  document.getElementById('edit-comp-title').textContent = 'Edit — ' + c.name;
-  document.getElementById('ec-name').value = c.name||'';
-  document.getElementById('ec-notes').value = c.notes||'';
-  // Show/hide type-specific fields
-  document.getElementById('ec-channels-wrap').style.display = c.type==='panel' ? 'block' : 'none';
-  document.getElementById('ec-glass-wrap').style.display = c.type==='glass' ? 'block' : 'none';
-  document.getElementById('ec-led-wrap').style.display = c.type==='engine' ? 'block' : 'none';
-  if (c.type==='panel') document.getElementById('ec-channels').value = c.channels||'';
-  if (c.type==='glass') {
-    document.getElementById('ec-glass-synth').value = c.glassSynthDate||'';
-    document.getElementById('ec-glass-qc').value = c.glassQC||'';
-    document.getElementById('ec-glass-uv').value = c.glassUV||'';
-    document.getElementById('ec-glass-serial').value = c.glassSerial||'';
-  }
+
+  // Remove any existing edit panel
+  const existing = document.getElementById('edit-comp-overlay');
+  if (existing) existing.remove();
+  const existingP = document.getElementById('edit-comp-panel');
+  if (existingP) existingP.remove();
+
+  // Glass fields HTML
+  const glassFields = c.type==='glass' ? `
+    <div class="fg2 frow">
+      <div><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">Synthesis date</label><input type="date" id="ec-glass-synth" value="${c.glassSynthDate||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+      <div><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">QC photocurrent</label><input type="text" id="ec-glass-qc" value="${c.glassQC||''}" placeholder="e.g. 12.4 µA" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+      <div><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">UV absorption (%)</label><input type="number" id="ec-glass-uv" value="${c.glassUV||''}" min="0" max="100" step="0.1" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+      <div><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">Serial number</label><input type="text" id="ec-glass-serial" value="${c.glassSerial||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+    </div>` : '';
+
+  const channelsField = c.type==='panel' ? `
+    <div style="margin-bottom:12px;"><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">Number of channels</label>
+    <input type="number" id="ec-channels" value="${c.channels||''}" min="1" step="1" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>` : '';
+
+  // Build LED grid for engines
+  let ledGridHTML = '';
   if (c.type==='engine') {
     editCompLedState = c.ledActive ? JSON.parse(JSON.stringify(c.ledActive)) : {};
-    // Reassign ledState for renderLedGrid to use
-    Object.keys(editCompLedState).forEach(k => ledState[k] = editCompLedState[k]);
-    const gen = c.ledGen;
-    if (gen) { document.getElementById('reg-led-gen').value = gen; }
-    renderEditLedGrid(c.ledGen, editCompLedState);
+    const layout = LED_LAYOUTS[c.ledGen]; if (layout) {
+      const {cols,rows} = layout;
+      let g = `<div style="display:inline-grid;grid-template-columns:repeat(${cols},22px);gap:4px;padding:10px;background:#f0f1f3;border-radius:5px;">`;
+      for(let col=0;col<cols;col++) g+=`<div style="font-size:9px;text-align:center;color:#888;">${col+1}</div>`;
+      for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){const k=`c${col}r${r}`,on=editCompLedState[k];g+=`<div onclick="toggleEditLed('${c.ledGen}','${k}')" style="width:22px;height:22px;border-radius:50%;border:1.5px solid #ccc;background:${on?'#b05c00':'#e4e6ea'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:${on?'#fff':'#999'};">${on?'●':'○'}</div>`;}
+      g+='</div>';
+      ledGridHTML = `<div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:8px;">Active LEDs</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button onclick="ecSetAllLeds(true)" style="font-size:11px;padding:4px 10px;background:#f0f1f3;border:1px solid #ccc;border-radius:4px;cursor:pointer;">All on</button>
+          <button onclick="ecSetAllLeds(false)" style="font-size:11px;padding:4px 10px;background:#fdecea;color:#c0392b;border:1px solid #e8b4b0;border-radius:4px;cursor:pointer;">All off</button>
+        </div>
+        <div id="ec-led-grid">${g}</div></div>`;
+    }
   }
-  document.getElementById('edit-comp-overlay').classList.add('open');
-  document.getElementById('edit-comp-panel').classList.add('open');
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'edit-comp-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;opacity:0;transition:opacity .25s;';
+  overlay.onclick = (e) => { if(e.target===overlay) closeEditCompPanel(); };
+  requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+
+  // Create panel
+  const panel = document.createElement('div');
+  panel.id = 'edit-comp-panel';
+  panel.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:600px;max-width:100vw;background:#fff;border-left:1px solid #ddd;z-index:99999;display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,.15);';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;flex-shrink:0;">
+      <div style="font-family:monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;">Edit — ${c.name}</div>
+      <button onclick="closeEditCompPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;">
+      <input type="hidden" id="edit-comp-id" value="${id}">
+      <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Name / label</label>
+        <input type="text" id="ec-name" value="${c.name||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+      ${channelsField}
+      ${glassFields}
+      ${ledGridHTML}
+      <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Notes</label>
+        <textarea id="ec-notes" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;min-height:80px;resize:vertical;">${c.notes||''}</textarea></div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0;">
+      <button onclick="saveEditComp()" style="background:#e8f5e9;color:#1a7f45;border:1px solid #a5d6a7;border-radius:5px;padding:8px 16px;font-family:monospace;font-size:11px;cursor:pointer;font-weight:500;">Save changes</button>
+      <button onclick="closeEditCompPanel()" style="background:#f0f1f3;border:1px solid #ddd;border-radius:5px;padding:8px 16px;font-family:monospace;font-size:11px;cursor:pointer;">Cancel</button>
+    </div>`;
+
+  panel.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:600px;max-width:100vw;background:#fff;border-left:1px solid #ddd;z-index:99999;display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);';
+  document.body.appendChild(overlay);
+  document.body.appendChild(panel);
+  requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
+}
+
+function ecSetAllLeds(val) {
+  Object.keys(editCompLedState).forEach(k=>editCompLedState[k]=val);
+  const c = db.components[document.getElementById('edit-comp-id')?.value];
+  if(c) renderEditLedGrid(c.ledGen, editCompLedState);
 }
 function renderEditLedGrid(gen, state) {
   const wrap = document.getElementById('ec-led-grid'); if (!wrap) return;
@@ -1646,8 +1629,14 @@ function renderEditLedGrid(gen, state) {
 }
 function toggleEditLed(gen,key){editCompLedState[key]=!editCompLedState[key];renderEditLedGrid(gen,editCompLedState);}
 function closeEditCompPanel(){
-  document.getElementById('edit-comp-overlay').classList.remove('open');
-  document.getElementById('edit-comp-panel').classList.remove('open');
+  const overlay = document.getElementById('edit-comp-overlay');
+  const panel = document.getElementById('edit-comp-panel');
+  if (panel) panel.style.transform = 'translateX(100%)';
+  if (overlay) overlay.style.opacity = '0';
+  setTimeout(() => {
+    if (overlay) overlay.remove();
+    if (panel) panel.remove();
+  }, 300);
 }
 function saveEditComp(){
   const id = document.getElementById('edit-comp-id').value; if(!id) return;
@@ -1663,6 +1652,7 @@ function saveEditComp(){
   }
   if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
   db.components[id].editedAt = Date.now(); saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
+
   // Refresh lookup if visible
   lookupComp(id);
 }
@@ -1677,7 +1667,6 @@ function clearExpFilters(){
 function clearCompFilters(){
   ['cl-search','cl-from','cl-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('cl-type').value='';
-  const r=document.getElementById('lookup-result'); if(r) r.innerHTML='';
   renderCompList();
 }
 function toggleCompDetail(id) {
@@ -1687,28 +1676,36 @@ function toggleCompDetail(id) {
     el.classList.remove('open');
     el.innerHTML = '';
   } else {
-    // Build detail inline using lookupComp HTML
-    const c = db.components[id];
-    if (!c) return;
+    // Close all other open comp details
+    document.querySelectorAll('[id^="cd-"].open').forEach(d => { d.classList.remove('open'); d.innerHTML = ''; });
+    const c = db.components[id]; if (!c) return;
     const h = totalHours(id), allExps = db.experiments.filter(e=>(e.components||[]).includes(id));
-    const activeIn = allExps.find(e=>e.status==='active');
-    const links = allExps.length ? allExps.map(e=>`
+    const expLinks = allExps.length ? allExps.map(e=>`
       <div class="hist-row">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.status==='active'?'in progress':'—'}</div>
           ${e.failure?'<span class="pill-rd" style="font-size:9px;margin-top:3px;display:inline-block;">FAILURE</span>':''}
         </div>
-        <span class="hist-link" onclick="jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
+        <span class="hist-link" onclick="event.stopPropagation();jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
       </div>`).join('') : '<div class="empty" style="padding:12px;">Not used in any experiments yet</div>';
-    el.innerHTML = `<div style="padding:12px 0 4px;border-top:1px solid var(--ln);">
+    const repairs = c.repairs||[];
+    const repairRows = repairs.length ? repairs.map((r,i)=>`
+      <div class="hist-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:2px;">${fdate(r.date)} &nbsp;<span style="background:${r.type==='damage'?'var(--rdd)':r.type==='observation'?'var(--bld)':'var(--grd)'};color:${r.type==='damage'?'var(--rd)':r.type==='observation'?'var(--bl)':'var(--gr)'};padding:1px 6px;border-radius:3px;font-size:9px;">${r.type==='damage'?'DAMAGE':r.type==='observation'?'OBSERVATION':'REPAIR'}</span></div>
+          <div style="font-size:13px;">${r.detail||'—'}</div>
+        </div>
+        <span class="hist-link" onclick="event.stopPropagation();rmRepair('${id}',${i})" style="color:var(--rd);">[remove]</span>
+      </div>`).join('') : '<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No records yet</div>';
+    el.innerHTML = `<div style="padding:12px 0 4px;">
       <div class="dg" style="margin-bottom:10px;">
         <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
         <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
         <div class="df"><div class="dk">Total hours</div><div class="dv" style="font-family:var(--mono);font-size:18px;color:var(--am);">${h.toFixed(1)}<span style="font-size:11px;color:var(--tx3);"> h</span></div></div>
         <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
         ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
-        ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3×5)',gen2:'Gen 2 (1×3)',gen3:'Gen 3 (8×3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
+        ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3x5)',gen2:'Gen 2 (1x3)',gen3:'Gen 3 (8x3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
         ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
         ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
         ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
@@ -1716,22 +1713,53 @@ function toggleCompDetail(id) {
       </div>
       ${c.ledActive&&c.ledGen?`<div style="margin-bottom:10px;">${buildLedMapHTML(c.ledGen,c.ledActive)}</div>`:''}
       ${c.notes?`<div class="df" style="margin-bottom:10px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
-      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;display:flex;flex-wrap:wrap;gap:12px;">
-        ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
-        ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
+      <div style="font-family:var(--mono);font-size:10px;color:var(--rd);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">DAMAGE / REPAIR LOG</div>
+      ${repairRows}
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:flex-end;">
+        <div><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">TYPE</div>
+          <select id="rt-${id}" onclick="event.stopPropagation()" style="font-size:12px;padding:6px 8px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg1);color:var(--tx);">
+            <option value="damage">Damage</option><option value="repair">Repair</option><option value="observation">Observation</option>
+          </select></div>
+        <div><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">DATE</div>
+          <input type="date" id="rd-${id}" value="${today()}" onclick="event.stopPropagation()" style="font-size:12px;padding:6px 8px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg1);color:var(--tx);"></div>
+        <div style="flex:1;min-width:160px;"><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">DETAILS</div>
+          <input type="text" id="rn-${id}" placeholder="Describe damage or repair..." onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();addRepair('${id}');}" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg1);color:var(--tx);"></div>
+        <button onclick="event.stopPropagation();addRepair('${id}')" style="font-size:11px;padding:7px 12px;white-space:nowrap;">+ Add</button>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-        <button class="btn-am" onclick="openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">EXPERIMENT HISTORY</div>
+      ${expLinks}
+      <div style="border-top:1px solid var(--ln);margin-top:10px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <button class="btn-am" onclick="event.stopPropagation();openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;flex-wrap:wrap;gap:12px;">
+          ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
+          ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
+        </div>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:12px;">
-        ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
-        ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:8px;">EXPERIMENT HISTORY</div>
-      ${links}
     </div>`;
     el.classList.add('open');
   }
+}
+
+function addRepair(id) {
+  const c = db.components[id]; if (!c) return;
+  const type = document.getElementById('rt-'+id)?.value;
+  const date = document.getElementById('rd-'+id)?.value;
+  const detail = document.getElementById('rn-'+id)?.value.trim();
+  if (!detail) { alert('Please enter details.'); return; }
+  if (!c.repairs) c.repairs = [];
+  c.repairs.unshift({type, date:date||today(), detail, addedAt:Date.now()});
+  c.editedAt = Date.now();
+  saveAndSync();
+  toggleCompDetail(id); setTimeout(()=>toggleCompDetail(id), 50);
+}
+
+function rmRepair(id, idx) {
+  const c = db.components[id]; if (!c||!c.repairs) return;
+  if (!confirm('Remove this record?')) return;
+  c.repairs.splice(idx,1);
+  c.editedAt = Date.now();
+  saveAndSync();
+  toggleCompDetail(id); setTimeout(()=>toggleCompDetail(id), 50);
 }
 
 function buildLedMapHTML(gen,ledActive){
