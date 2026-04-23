@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-042</title>
+<title>SAPA Lab Tracker — v2026-04-21-044</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-042</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-044</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -1376,7 +1376,7 @@ function buildExpDetail(e) {
   const pstatStr=e.pstatSteps?.length?e.pstatSteps.map((s,i)=>`Step ${i+1}: ${s.voltage}V for ${s.duration}s`).join(', ')+(e.pstatCycles?` — ${e.pstatCycles} cycles`:''):'—';
   const channelHTML=e.panels&&Object.keys(e.panels).length?Object.entries(e.panels).map(([pid,chs])=>{
     const pname=db.components[pid]?.name||pid;
-    return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;">${pname} ${tb('panel')}</div>
+    return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;"><span class="comp-link" onclick="goToComp('${pid}')">${pname}</span> ${tb('panel')}</div>
       <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;"><thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
       <tbody>${chs.map(ch=>ch.dummy?`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`:`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td><td style="font-size:12px;">${ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td><td style="font-size:12px;">${ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
   }).join(''):'<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
@@ -1713,7 +1713,7 @@ function toggleCompDetail(id) {
       </div>
       ${c.ledActive&&c.ledGen?`<div style="margin-bottom:10px;">${buildLedMapHTML(c.ledGen,c.ledActive)}</div>`:''}
       ${c.notes?`<div class="df" style="margin-bottom:10px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
-      <div style="font-family:var(--mono);font-size:10px;color:var(--rd);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">DAMAGE / REPAIR LOG</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--rd);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">DAMAGE / REPAIR / OBSERVATIONS</div>
       ${repairRows}
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:flex-end;">
         <div><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">TYPE</div>
