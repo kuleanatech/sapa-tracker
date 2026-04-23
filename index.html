@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-027</title>
+<title>SAPA Lab Tracker — v2026-04-21-030</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -141,7 +141,8 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 /* ── HISTORY ── */
 .hist-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ln);gap:10px;}
 .hist-row:last-child{border-bottom:none;}
-.hist-link{font-family:var(--mono);font-size:10px;color:var(--bl);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.comp-link{color:var(--bl);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.comp-link:hover{opacity:.75;}
 .hist-link:hover{text-decoration:underline;}
 
 /* ── SEARCH BAR ── */
@@ -223,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-027</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-030</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <div class="nav-right">
@@ -260,7 +261,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           </div>
           <div class="brow">
             <button class="btn-gr" onclick="showCloseout()">Close out</button>
-            <button onclick="openExpPanel(true)">Edit</button>
+            <button onclick="openExpPanel(activeExpId)">Edit</button>
           </div>
         </div>
       </div>
@@ -401,9 +402,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div><label>Reference number</label><input type="text" id="ef-ref" placeholder="e.g. LAB-2024-001"></div>
       <div><label>Operator</label><input type="text" id="ef-operator" placeholder="Name"></div>
     </div>
-    <div class="fg2 frow">
-      <div><label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4"></div>
-      <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
+    <div class="frow" style="max-width:220px;">
+      <label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4">
     </div>
     <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
     <div class="frow">
@@ -545,7 +545,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div><label>Synthesis date</label><input type="date" id="reg-glass-synth"></div>
       <div><label>QC photocurrent</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4 µA"></div>
       <div><label>UV absorption (%)</label><input type="number" id="reg-glass-uv" min="0" max="100" step="0.1" placeholder="e.g. 85.2"></div>
-      <div><label>Serial number</label><input type="text" id="reg-glass-serial" placeholder="e.g. SN-2024-001"></div>
+      <div><label>Serial number</label><div style="display:flex;gap:6px;"><input type="text" id="reg-glass-serial" placeholder="e.g. SN-2024-001" style="flex:1;"><button class="btn-cam" onclick="openCam('serial-cam')" title="Scan" style="font-size:15px;flex-shrink:0;">&#128247;</button></div></div>
     </div>
     <!-- LED grid -->
     <div id="reg-led-grid-wrap" style="display:none;margin-bottom:12px;">
@@ -794,12 +794,16 @@ function showPage(name, btn) {
 }
 
 /* ═══════════ SLIDE PANELS ═══════════ */
-function openExpPanel(editing) {
-  const ae = editing ? db.experiments.find(e => e.status === 'active') : null;
-  document.getElementById('exp-panel-title').textContent = editing ? 'Edit experiment' : 'New experiment';
-  document.getElementById('exp-save-btn').textContent = editing ? 'Save changes' : 'Create experiment';
-  document.getElementById('ef-editing-id').value = ae ? ae.id : '';
-  if (ae) { populateExpFormFields(ae); formPanels = ae.panels ? JSON.parse(JSON.stringify(ae.panels)) : {}; }
+function openExpPanel(editId) {
+  // editId can be an experiment ID string, true (active exp), or falsy (new)
+  let exp = null;
+  if (editId === true) exp = db.experiments.find(e => e.status === 'active');
+  else if (editId && typeof editId === 'string') exp = ge(editId);
+  const isEdit = !!exp;
+  document.getElementById('exp-panel-title').textContent = isEdit ? 'Edit experiment' : 'New experiment';
+  document.getElementById('exp-save-btn').textContent = isEdit ? 'Save changes' : 'Create experiment';
+  document.getElementById('ef-editing-id').value = exp ? exp.id : '';
+  if (exp) { populateExpFormFields(exp); formPanels = exp.panels ? JSON.parse(JSON.stringify(exp.panels)) : {}; }
   else resetExpForm();
   renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
   document.getElementById('exp-overlay').classList.add('open');
@@ -1061,10 +1065,10 @@ function saveExpForm() {
     panels:JSON.parse(JSON.stringify(formPanels)),
     components:buildComponentsFromPanels(formPanels),
   };
-  if (editId) { Object.assign(ge(editId), data); }
+  if (editId) { Object.assign(ge(editId), data, {editedAt: Date.now()}); }
   else {
     if (activeExpId) { if (!confirm('There is already an active experiment. Make this one active?')) return; ge(activeExpId).status='paused'; }
-    const n = {id:uid(),status:'active',fileLinks:[],created:Date.now(),...data};
+    const n = {id:uid(),status:'active',fileLinks:[],createdAt:Date.now(),...data};
     db.experiments.unshift(n); activeExpId=n.id;
   }
   saveAndSync(); closeExpPanel(); renderExpDb();
@@ -1180,22 +1184,22 @@ function openCam(type,pid,idx,field) {
         <video id="cam-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
         <canvas id="cam-canvas" style="display:none;"></canvas>
       </div>
-      <div id="cam-debug" style="font-family:monospace;font-size:10px;color:#999;margin-bottom:6px;word-break:break-all;min-height:14px;">Starting...</div>
       <div id="cam-flash" style="display:none;padding:8px 12px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-bottom:10px;text-align:center;"></div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="cam-manual" placeholder="Or type ID and press Enter" style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"
-          onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
-        <button onclick="closeCam()" style="font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid #ccc;border-radius:5px;background:#f0f1f3;cursor:pointer;">Cancel</button>
+      <div style="margin-bottom:8px;">
+        <div style="font-family:var(--mono);font-size:10px;color:#888;margin-bottom:6px;">Can't scan? Type ID manually:</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="cam-manual" placeholder="Type component ID here..." style="flex:1;padding:10px 12px;border:2px solid #1565c0;border-radius:5px;font-size:14px;font-family:monospace;"
+            autofocus onkeydown="if(event.key==='Enter'){handleCamResult(this.value.trim());this.value='';}">
+          <button onclick="handleCamResult(document.getElementById('cam-manual').value.trim())" style="font-family:var(--mono);font-size:11px;padding:10px 14px;border:1px solid #1565c0;border-radius:5px;background:#e3f2fd;color:#1565c0;cursor:pointer;font-weight:500;">Enter</button>
+        </div>
       </div>
+      <button onclick="closeCam()" style="width:100%;font-family:var(--mono);font-size:11px;padding:8px;border:1px solid #ccc;border-radius:5px;background:#f0f1f3;cursor:pointer;">Cancel</button>
     </div>`;
   document.body.appendChild(overlay);
   startCam();
 }
 
-let zxingCodeReader = null;
-
 async function startCam() {
-  const dbg = () => document.getElementById('cam-debug');
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
@@ -1205,63 +1209,43 @@ async function startCam() {
     await video.play();
 
     if ('BarcodeDetector' in window) {
-      console.log('BarcodeDetector available');
-      if(dbg()) dbg().textContent = 'Using BarcodeDetector...';
       const supported = await BarcodeDetector.getSupportedFormats();
-      console.log('Supported formats:', supported);
-      if(dbg()) dbg().textContent = 'Formats: '+supported.join(', ');
       const detector = new BarcodeDetector({
         formats: supported.filter(f => ['qr_code','data_matrix','code_128','code_39','ean_13'].includes(f))
       });
-      let frameCount = 0;
       const detect = async () => {
         if (!camStream) return;
         try {
-          frameCount++;
           const codes = await detector.detect(video);
-          if(dbg()) dbg().textContent = `BarcodeDetector frame ${frameCount} — ${codes.length ? 'FOUND: '+codes[0].rawValue : 'scanning...'}`;
           if (codes.length && !camDebounce) {
             camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
             handleCamResult(codes[0].rawValue.trim());
           }
-        } catch(e) {
-          if(dbg()) dbg().textContent = 'Detect error: '+e.message;
-        }
+        } catch(e) {}
         camAnimFrame = setTimeout(detect, 150);
       };
       detect();
     } else {
-      // Find zbar under whatever global it registered
-      const zb = window.zbarWasm || window.ZBar || window.zbar || window['@undecaf/zbar-wasm'];
-      if(dbg()) dbg().textContent = 'zbar global: ' + (zb ? Object.keys(zb).slice(0,8).join(', ') : 'NOT FOUND. Globals: '+Object.keys(window).filter(k=>k.toLowerCase().includes('bar')||k.toLowerCase().includes('scan')).join(', '));
-      if (!zb) { return; }
+      // ZBar WASM fallback — supports QR, Code 128, Code 39 (not Data Matrix)
+      const zb = window.zbarWasm || window.ZBar || window.zbar;
+      if (!zb?.scanImageData) return;
       const canvas = document.getElementById('cam-canvas');
-      let frameCount = 0;
-      const scanImageData = zb.scanImageData;
-      if (!scanImageData) { if(dbg()) dbg().textContent = 'No scanImageData found'; return; }
-
-      // Get symbol types - log them so we can see Data Matrix key
       const ST = zb.ZBarSymbolType;
-      console.log('ZBarSymbolType keys:', Object.keys(ST));
-      // Enable all symbologies including Data Matrix
       const enabledSymbols = Object.values(ST).filter(v => typeof v === 'number' && v > 0);
-      if(dbg()) dbg().textContent = 'ZBar ready — point at code';
       const scan = async () => {
         if (!camStream) return;
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          frameCount++;
           canvas.width = video.videoWidth; canvas.height = video.videoHeight;
           const ctx = canvas.getContext('2d', {willReadFrequently:true});
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           try {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const symbols = await scanImageData(imageData, enabledSymbols);
-            if(dbg()) dbg().textContent = `frame ${frameCount} — ${symbols.length?'FOUND: '+symbols[0].decode():'scanning...'}`;
+            const symbols = await zb.scanImageData(imageData, enabledSymbols);
             if (symbols.length && !camDebounce) {
               camDebounce = setTimeout(()=>{camDebounce=null;}, 1500);
               handleCamResult(symbols[0].decode().trim());
             }
-          } catch(e) { if(dbg()) dbg().textContent = 'scan error: '+e.message; }
+          } catch(e) {}
         }
         camAnimFrame = setTimeout(scan, 200);
       };
@@ -1270,11 +1254,8 @@ async function startCam() {
   } catch(err) {
     const flash = document.getElementById('cam-flash');
     if (flash) { flash.style.display='block'; flash.style.background='#fdecea'; flash.style.color='#c0392b'; flash.textContent='Camera error: '+err.message; }
-    if(dbg()) dbg().textContent = 'Error: '+err.message;
   }
 }
-
-function scanFrame() {}
 
 function closeCam() {
   if (camAnimFrame) { clearTimeout(camAnimFrame); cancelAnimationFrame(camAnimFrame); camAnimFrame=null; }
@@ -1300,6 +1281,11 @@ function handleCamResult(id) {
       const s=document.getElementById('cl-search');
       if(s){s.value=id;handleCompSearch(id);}
     },600);
+    return;
+  }
+  if(type==='serial-cam'){
+    const s=document.getElementById('reg-glass-serial');
+    if(s){s.value=id;showCamFlash('Serial: '+id,true);setTimeout(closeCam,800);}
     return;
   }
   if(type==='slot'){
@@ -1360,7 +1346,7 @@ function finalizeExp(){
   ae.completionNotes=document.getElementById('cm-notes').value.trim();
   ae.failure=document.getElementById('cm-failure').checked;
   ae.fileLinks=JSON.parse(JSON.stringify(urlEntries));
-  ae.completedAt=Date.now(); activeExpId=null;
+  ae.completedAt=Date.now(); ae.closedAt=Date.now(); activeExpId=null;
   saveAndSync();
   document.getElementById('closeout-panel').style.display='none';
   renderExpDb();
@@ -1415,7 +1401,7 @@ function buildExpDetail(e) {
     const pname=db.components[pid]?.name||pid;
     return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;">${pname} ${tb('panel')}</div>
       <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;"><thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
-      <tbody>${chs.map(ch=>ch.dummy?`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`:`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine?(db.components[ch.engine]?.name||ch.engine):'—'}</td><td style="font-size:12px;">${ch.paper?(db.components[ch.paper]?.name||ch.paper):'—'}</td><td style="font-size:12px;">${ch.glass?(db.components[ch.glass]?.name||ch.glass):'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
+      <tbody>${chs.map(ch=>ch.dummy?`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`:`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td><td style="font-size:12px;">${ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td><td style="font-size:12px;">${ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
   }).join(''):'<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
   const links=e.fileLinks?.length?e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:12px;display:block;margin-bottom:3px;">${l.title||l.url}</a>`).join(''):'—';
   return `
@@ -1454,15 +1440,16 @@ function buildExpDetail(e) {
     ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-      ${e.status==='active'?`<button onclick="openExpPanel(true)" style="font-size:11px;padding:5px 10px;">Edit</button>`:`<button onclick="reopenExp('${e.id}')" style="font-size:11px;padding:5px 10px;">Reopen</button>`}
+      <button onclick="openExpPanel('${e.id}')" style="font-size:11px;padding:5px 10px;">Edit</button>
       <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:10px;padding-top:8px;border-top:1px solid var(--ln);display:flex;flex-wrap:wrap;gap:12px;">
+      ${e.createdAt?`<span>Created: ${new Date(e.createdAt).toLocaleString()}</span>`:''}
+      ${e.closedAt?`<span>Closed: ${new Date(e.closedAt).toLocaleString()}</span>`:''}
+      ${e.editedAt?`<span>Last edited: ${new Date(e.editedAt).toLocaleString()}</span>`:''}
     </div>`;
 }
-function reopenExp(id){
-  if(activeExpId&&activeExpId!==id){if(!confirm('There is already an active experiment. Reopen this one?'))return; ge(activeExpId).status='paused';}
-  const e=ge(id); e.status='active'; delete e.actualHours; delete e.completedAt;
-  activeExpId=id; saveAndSync(); renderExpDb();
-}
+
 function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Flag ${ids.length} experiment(s)?`))return;ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=true;});saveAndSync();renderExpDb();}
 function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=false;});saveAndSync();renderExpDb();}
 function exportSelExps(){
@@ -1475,6 +1462,21 @@ function exportSelExps(){
   dlCSV([h,...exps.map(e=>h.map(k=>{const v=e[k];return Array.isArray(v)||typeof v==='object'?JSON.stringify(v):(v??'');}))], fname);
 }
 function jumpToExp(id){showPage('exp',document.getElementById('tab-exp'));setTimeout(()=>{const el=document.getElementById('ed-'+id);if(el){el.classList.add('open');el.closest('.exp-row').scrollIntoView({behavior:'smooth',block:'center'});}},200);}
+
+function goToComp(id){
+  showPage('comp',document.getElementById('tab-comp'));
+  setTimeout(()=>{
+    // Set search to this ID so it filters to the component
+    const s=document.getElementById('cl-search');
+    if(s){s.value=id;handleCompSearch(id);}
+    // Find and expand the component row
+    setTimeout(()=>{
+      const el=document.getElementById('cd-'+id);
+      if(el&&!el.classList.contains('open')) toggleCompDetail(id);
+      el?.closest('.comp-row')?.scrollIntoView({behavior:'smooth',block:'center'});
+    },150);
+  },200);
+}
 
 /* ═══════════ COMPONENT DB ═══════════ */
 function onRegTypeChange() {
@@ -1502,7 +1504,7 @@ function registerComp(){
     glassQC:type==='glass'?(document.getElementById('reg-glass-qc').value.trim()||null):null,
     glassUV:type==='glass'?(document.getElementById('reg-glass-uv').value||null):null,
     glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
-    notes:document.getElementById('reg-notes').value.trim(), registered:today()
+    notes:document.getElementById('reg-notes').value.trim(), registered:today(), createdAt:Date.now()
   };
   saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
@@ -1540,14 +1542,17 @@ function renderCompList(){
   list.innerHTML=ids.map(id=>{
     const c=db.components[id], h=totalHours(id);
     const ne=db.experiments.filter(e=>(e.components||[]).includes(id)&&e.actualHours).length;
-    return`<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}">
-      <input type="checkbox" class="comp-ck" data-id="${id}" style="width:auto;flex-shrink:0;">
-      <div class="comp-info">
-        <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
-        <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+    return`<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}" style="flex-direction:column;align-items:stretch;padding:0;">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;" onclick="toggleCompDetail('${id}')">
+        <input type="checkbox" class="comp-ck" data-id="${id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
+        <div class="comp-info">
+          <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
+          <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}${c.notes?' · '+c.notes:''}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;margin-left:auto;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
       </div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
-      <button onclick="lookupComp('${id}')" style="font-size:11px;padding:5px 10px;">Details</button>
+      <div class="exp-detail" id="cd-${id}"></div>
     </div>`;
   }).join('');
 }
@@ -1657,7 +1662,7 @@ function saveEditComp(){
     c.glassSerial = document.getElementById('ec-glass-serial').value.trim()||null;
   }
   if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
-  saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
+  db.components[id].editedAt = Date.now(); saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
   // Refresh lookup if visible
   lookupComp(id);
 }
@@ -1675,6 +1680,60 @@ function clearCompFilters(){
   const r=document.getElementById('lookup-result'); if(r) r.innerHTML='';
   renderCompList();
 }
+function toggleCompDetail(id) {
+  const el = document.getElementById('cd-'+id);
+  if (!el) return;
+  if (el.classList.contains('open')) {
+    el.classList.remove('open');
+    el.innerHTML = '';
+  } else {
+    // Build detail inline using lookupComp HTML
+    const c = db.components[id];
+    if (!c) return;
+    const h = totalHours(id), allExps = db.experiments.filter(e=>(e.components||[]).includes(id));
+    const activeIn = allExps.find(e=>e.status==='active');
+    const links = allExps.length ? allExps.map(e=>`
+      <div class="hist-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:1px;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.status==='active'?'in progress':'—'}</div>
+          ${e.failure?'<span class="pill-rd" style="font-size:9px;margin-top:3px;display:inline-block;">FAILURE</span>':''}
+        </div>
+        <span class="hist-link" onclick="jumpToExp('${e.id}')">[${e.status==='active'?'active':'view'}]</span>
+      </div>`).join('') : '<div class="empty" style="padding:12px;">Not used in any experiments yet</div>';
+    el.innerHTML = `<div style="padding:12px 0 4px;border-top:1px solid var(--ln);">
+      <div class="dg" style="margin-bottom:10px;">
+        <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
+        <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
+        <div class="df"><div class="dk">Total hours</div><div class="dv" style="font-family:var(--mono);font-size:18px;color:var(--am);">${h.toFixed(1)}<span style="font-size:11px;color:var(--tx3);"> h</span></div></div>
+        <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
+        ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
+        ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3×5)',gen2:'Gen 2 (1×3)',gen3:'Gen 3 (8×3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
+        ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
+        ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
+        ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
+        ${c.glassSerial?`<div class="df"><div class="dk">Glass serial</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassSerial}</div></div>`:''}
+      </div>
+      ${c.ledActive&&c.ledGen?`<div style="margin-bottom:10px;">${buildLedMapHTML(c.ledGen,c.ledActive)}</div>`:''}
+      ${c.notes?`<div class="df" style="margin-bottom:10px;"><div class="dk">Notes</div><div class="dv">${c.notes}</div></div>`:''}
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:8px;display:flex;flex-wrap:wrap;gap:12px;">
+        ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
+        ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn-am" onclick="openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:12px;">
+        ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
+        ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gr);letter-spacing:.1em;margin-bottom:8px;">EXPERIMENT HISTORY</div>
+      ${links}
+    </div>`;
+    el.classList.add('open');
+  }
+}
+
 function buildLedMapHTML(gen,ledActive){
   const layout=LED_LAYOUTS[gen]; if(!layout) return '';
   const {cols,rows}=layout;
