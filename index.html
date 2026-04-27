@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-044</title>
+<title>SAPA Lab Tracker — v2026-04-21-045</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,9 +224,10 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-044</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-045</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
+  <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
   <div class="nav-right">
     <div class="sync-dot" id="sync-dot"></div>
     <span class="sync-lbl" id="sync-lbl">Not signed in</span>
@@ -376,6 +377,19 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="card">
         <div id="comp-list"></div>
       </div>
+    </div>
+  </div>
+  <!-- ═══════ ADMIN PAGE ═══════ -->
+  <div class="page" id="page-admin">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title" style="color:var(--rd);">Admin — Flagged for deletion</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;">Permanently removes items from the database. This cannot be undone.</div>
+        </div>
+        <button onclick="renderAdminPage()" style="font-size:11px;">Refresh</button>
+      </div>
+      <div id="admin-content"></div>
     </div>
   </div>
 
@@ -640,6 +654,10 @@ function showApp() {
   document.getElementById('app-content').style.display = 'block';
   document.getElementById('tab-exp').style.display = 'inline-block';
   document.getElementById('tab-comp').style.display = 'inline-block';
+  // Show admin tab only if ?admin=1 in URL
+  if (new URLSearchParams(window.location.search).get('admin') === '1') {
+    document.getElementById('tab-admin').style.display = 'inline-block';
+  }
   if (!document.querySelector('.nav-tab.active')) showPage('exp', document.getElementById('tab-exp'));
 }
 function showLogin(msg) {
@@ -754,6 +772,7 @@ function showPage(name, btn) {
   closeCam();
   if (name === 'exp') renderExpDb();
   if (name === 'comp') { renderCompStats(); renderCompList(); }
+  if (name === 'admin') renderAdminPage();
 }
 
 /* ═══════════ SLIDE PANELS ═══════════ */
@@ -1803,7 +1822,78 @@ function getLedGrid(){const gen=document.getElementById('reg-led-gen')?.value;if
 /* ═══════════ EXPORT ═══════════ */
 function dlCSV(rows,name){const csv=rows.map(r=>r.map(c=>`"${String(c===null||c===undefined?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();}
 
-/* ═══════════ RENDER ALL ═══════════ */
+/* ═══════════ ADMIN ═══════════ */
+function renderAdminPage() {
+  const c = document.getElementById('admin-content'); if (!c) return;
+  const flaggedExps = db.experiments.filter(e => e.flaggedForDeletion);
+  const flaggedComps = Object.values(db.components).filter(c => c.flaggedForDeletion);
+
+  if (!flaggedExps.length && !flaggedComps.length) {
+    c.innerHTML = '<div class="empty" style="padding:40px;">No items flagged for deletion.</div>';
+    return;
+  }
+
+  let html = '';
+
+  if (flaggedExps.length) {
+    html += `<div class="card" style="margin-bottom:16px;">
+      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Flagged experiments (${flaggedExps.length})</div>
+      ${flaggedExps.map(e => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln);gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.operator||'—'} · ${e.status}</div>
+          </div>
+          <button class="btn-rd" onclick="permDeleteExp('${e.id}')" style="flex-shrink:0;">Delete permanently</button>
+        </div>`).join('')}
+      <div style="margin-top:12px;">
+        <button class="btn-rd" onclick="permDeleteAllFlaggedExps()">Delete all ${flaggedExps.length} flagged experiments</button>
+      </div>
+    </div>`;
+  }
+
+  if (flaggedComps.length) {
+    html += `<div class="card">
+      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Flagged components (${flaggedComps.length})</div>
+      ${flaggedComps.map(comp => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln);gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;">${comp.name} ${tb(comp.type)}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${comp.id}${comp.mfgDate?' · fab '+fdate(comp.mfgDate):''}</div>
+          </div>
+          <button class="btn-rd" onclick="permDeleteComp('${comp.id}')" style="flex-shrink:0;">Delete permanently</button>
+        </div>`).join('')}
+      <div style="margin-top:12px;">
+        <button class="btn-rd" onclick="permDeleteAllFlaggedComps()">Delete all ${flaggedComps.length} flagged components</button>
+      </div>
+    </div>`;
+  }
+
+  c.innerHTML = html;
+}
+
+function permDeleteExp(id) {
+  if (!confirm('Permanently delete this experiment? This cannot be undone.')) return;
+  db.experiments = db.experiments.filter(e => e.id !== id);
+  saveAndSync(); renderAdminPage(); renderExpDb();
+}
+function permDeleteAllFlaggedExps() {
+  const n = db.experiments.filter(e => e.flaggedForDeletion).length;
+  if (!confirm(`Permanently delete ${n} experiments? This cannot be undone.`)) return;
+  db.experiments = db.experiments.filter(e => !e.flaggedForDeletion);
+  saveAndSync(); renderAdminPage(); renderExpDb();
+}
+function permDeleteComp(id) {
+  if (!confirm('Permanently delete this component? This cannot be undone.')) return;
+  delete db.components[id];
+  saveAndSync(); renderAdminPage(); renderCompList(); renderCompStats();
+}
+function permDeleteAllFlaggedComps() {
+  const n = Object.values(db.components).filter(c => c.flaggedForDeletion).length;
+  if (!confirm(`Permanently delete ${n} components? This cannot be undone.`)) return;
+  Object.keys(db.components).forEach(id => { if (db.components[id].flaggedForDeletion) delete db.components[id]; });
+  saveAndSync(); renderAdminPage(); renderCompList(); renderCompStats();
+}
 function renderAll(){renderExpDb();renderCompStats();renderCompList();renderExpTagFilter();}
 
 /* ═══════════ INIT ═══════════ */
