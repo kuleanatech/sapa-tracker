@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-045</title>
+<title>SAPA Lab Tracker — v2026-04-21-046</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-045</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-046</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -318,7 +318,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="active">Active</option>
           <option value="complete">Complete</option>
           <option value="failure">Failures</option>
-          <option value="flagged">Flagged</option>
+
         </select>
         <select id="el-tag" onchange="addFilterTag(this.value);this.value='';" style="min-width:140px;"><option value="">Filter by tag...</option></select>
       </div>
@@ -326,8 +326,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
         <button onclick="exportSelExps()">Export selected</button>
-        <button class="btn-gr" onclick="unflagSelExps()">Unflag selected</button>
-        <button class="btn-rd" onclick="flagSelExps()">Flag for deletion</button>
+        <button class="btn-gr" onclick="unflagSelExps()">Restore selected</button>
+        <button class="btn-rd" onclick="flagSelExps()">Delete selected</button>
       </div>
 
       <div class="card" style="padding:0;overflow:hidden;">
@@ -367,8 +367,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearCompFilters()">Clear filters</button>
         <button onclick="exportSelComps()">Export selected</button>
-        <button class="btn-gr" onclick="unflagSelComps()">Unflag selected</button>
-        <button class="btn-rd" onclick="flagSelComps()">Flag for deletion</button>
+        <button class="btn-gr" onclick="unflagSelComps()">Restore selected</button>
+        <button class="btn-rd" onclick="flagSelComps()">Delete selected</button>
       </div>
 
       <!-- Stats -->
@@ -1354,12 +1354,12 @@ function renderExpDb() {
   const df=document.getElementById('el-from')?.value;
   const dt=document.getElementById('el-to')?.value;
   const sf=document.getElementById('el-status')?.value;
-  let exps=[...db.experiments];
+  let exps=[...db.experiments].filter(e=>!e.deletedAt);
   if(q) exps=exps.filter(e=>(e.name+' '+(e.description||'')+' '+(e.operator||'')+' '+(e.notes||'')).toLowerCase().includes(q));
   if(df) exps=exps.filter(e=>e.date>=df);
   if(dt) exps=exps.filter(e=>e.date<=dt);
   if(sf==='failure') exps=exps.filter(e=>e.failure);
-  else if(sf==='flagged') exps=exps.filter(e=>e.flaggedForDeletion);
+  // flagged filter removed - deleted items hidden from normal view
   else if(sf) exps=exps.filter(e=>e.status===sf);
   const tagSel = document.getElementById('el-tag');
   const tagFs = filterTags;
@@ -1448,8 +1448,8 @@ function buildExpDetail(e) {
     </div>`;
 }
 
-function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Flag ${ids.length} experiment(s)?`))return;ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=true;});saveAndSync();renderExpDb();}
-function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e)e.flaggedForDeletion=false;});saveAndSync();renderExpDb();}
+function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Delete ${ids.length} experiment(s)? They can be restored from the Admin panel.`))return;const user=msal$.getAllAccounts()[0]?.username||'unknown';ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=true;e.deletedAt=Date.now();e.deletedBy=user;}});saveAndSync();renderExpDb();}
+function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=false;delete e.deletedAt;delete e.deletedBy;}});saveAndSync();renderExpDb();}
 function exportSelExps(){
   const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
   const exps=ids.length?db.experiments.filter(e=>ids.includes(e.id)):db.experiments;
@@ -1524,7 +1524,7 @@ function renderCompList(){
   const tf=document.getElementById('cl-type')?.value;
   const df=document.getElementById('cl-from')?.value;
   const dt=document.getElementById('cl-to')?.value;
-  let ids=Object.keys(db.components);
+  let ids=Object.keys(db.components).filter(id=>!db.components[id].deletedAt);
   if(q) ids=ids.filter(id=>(id+' '+db.components[id].name+' '+(db.components[id].notes||'')).toLowerCase().includes(q));
   if(tf) ids=ids.filter(id=>db.components[id].type===tf);
   if(df) ids=ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate>=df);
@@ -1789,8 +1789,8 @@ function buildLedMapHTML(gen,ledActive){
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const on=ledActive[`c${c}r${r}`];html+=`<div class="led-cell ${on?'on':''}">${on?'●':'○'}</div>`;}
   return html+'</div>';
 }
-function flagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}if(!confirm(`Flag ${ids.length} component(s)?`))return;ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=true;});saveAndSync();renderCompList();}
-function unflagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}ids.forEach(id=>{if(db.components[id])db.components[id].flaggedForDeletion=false;});saveAndSync();renderCompList();}
+function flagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}if(!confirm(`Delete ${ids.length} component(s)? They can be restored from the Admin panel.`))return;const user=msal$.getAllAccounts()[0]?.username||'unknown';ids.forEach(id=>{if(db.components[id]){db.components[id].flaggedForDeletion=true;db.components[id].deletedAt=Date.now();db.components[id].deletedBy=user;}});saveAndSync();renderCompList();}
+function unflagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}ids.forEach(id=>{if(db.components[id]){db.components[id].flaggedForDeletion=false;delete db.components[id].deletedAt;delete db.components[id].deletedBy;}});saveAndSync();renderCompList();}
 function exportSelComps(){
   const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
   const comps=ids.length?ids.filter(id=>db.components[id]).map(id=>db.components[id]):Object.values(db.components);
@@ -1825,46 +1825,57 @@ function dlCSV(rows,name){const csv=rows.map(r=>r.map(c=>`"${String(c===null||c=
 /* ═══════════ ADMIN ═══════════ */
 function renderAdminPage() {
   const c = document.getElementById('admin-content'); if (!c) return;
-  const flaggedExps = db.experiments.filter(e => e.flaggedForDeletion);
-  const flaggedComps = Object.values(db.components).filter(c => c.flaggedForDeletion);
+  const deletedExps = db.experiments.filter(e => e.deletedAt);
+  const deletedComps = Object.values(db.components).filter(c => c.deletedAt);
 
-  if (!flaggedExps.length && !flaggedComps.length) {
-    c.innerHTML = '<div class="empty" style="padding:40px;">No items flagged for deletion.</div>';
+  if (!deletedExps.length && !deletedComps.length) {
+    c.innerHTML = '<div class="empty" style="padding:40px;">No deleted items.</div>';
     return;
   }
 
+  const fts = ts => ts ? new Date(ts).toLocaleString() : '—';
   let html = '';
 
-  if (flaggedExps.length) {
+  if (deletedExps.length) {
     html += `<div class="card" style="margin-bottom:16px;">
-      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Flagged experiments (${flaggedExps.length})</div>
-      ${flaggedExps.map(e => `
+      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Deleted experiments (${deletedExps.length})</div>
+      ${deletedExps.map(e => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln);gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:500;">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.operator||'—'} · ${e.status}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(e.date)} · ${e.operator||'—'}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--rd);">Deleted ${fts(e.deletedAt)} by ${e.deletedBy||'unknown'}</div>
           </div>
-          <button class="btn-rd" onclick="permDeleteExp('${e.id}')" style="flex-shrink:0;">Delete permanently</button>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn-gr" onclick="restoreExp('${e.id}')">Restore</button>
+            <button class="btn-rd" onclick="hardDeleteExp('${e.id}')">Purge</button>
+          </div>
         </div>`).join('')}
-      <div style="margin-top:12px;">
-        <button class="btn-rd" onclick="permDeleteAllFlaggedExps()">Delete all ${flaggedExps.length} flagged experiments</button>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn-gr" onclick="restoreAllExps()">Restore all</button>
+        <button class="btn-rd" onclick="hardDeleteAllExps()">Purge all ${deletedExps.length} experiments</button>
       </div>
     </div>`;
   }
 
-  if (flaggedComps.length) {
+  if (deletedComps.length) {
     html += `<div class="card">
-      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Flagged components (${flaggedComps.length})</div>
-      ${flaggedComps.map(comp => `
+      <div class="clabel" style="color:var(--rd);margin-bottom:12px;">Deleted components (${deletedComps.length})</div>
+      ${deletedComps.map(comp => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln);gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:500;">${comp.name} ${tb(comp.type)}</div>
             <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${comp.id}${comp.mfgDate?' · fab '+fdate(comp.mfgDate):''}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--rd);">Deleted ${fts(comp.deletedAt)} by ${comp.deletedBy||'unknown'}</div>
           </div>
-          <button class="btn-rd" onclick="permDeleteComp('${comp.id}')" style="flex-shrink:0;">Delete permanently</button>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn-gr" onclick="restoreComp('${comp.id}')">Restore</button>
+            <button class="btn-rd" onclick="hardDeleteComp('${comp.id}')">Purge</button>
+          </div>
         </div>`).join('')}
-      <div style="margin-top:12px;">
-        <button class="btn-rd" onclick="permDeleteAllFlaggedComps()">Delete all ${flaggedComps.length} flagged components</button>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn-gr" onclick="restoreAllComps()">Restore all</button>
+        <button class="btn-rd" onclick="hardDeleteAllComps()">Purge all ${deletedComps.length} components</button>
       </div>
     </div>`;
   }
@@ -1872,28 +1883,14 @@ function renderAdminPage() {
   c.innerHTML = html;
 }
 
-function permDeleteExp(id) {
-  if (!confirm('Permanently delete this experiment? This cannot be undone.')) return;
-  db.experiments = db.experiments.filter(e => e.id !== id);
-  saveAndSync(); renderAdminPage(); renderExpDb();
-}
-function permDeleteAllFlaggedExps() {
-  const n = db.experiments.filter(e => e.flaggedForDeletion).length;
-  if (!confirm(`Permanently delete ${n} experiments? This cannot be undone.`)) return;
-  db.experiments = db.experiments.filter(e => !e.flaggedForDeletion);
-  saveAndSync(); renderAdminPage(); renderExpDb();
-}
-function permDeleteComp(id) {
-  if (!confirm('Permanently delete this component? This cannot be undone.')) return;
-  delete db.components[id];
-  saveAndSync(); renderAdminPage(); renderCompList(); renderCompStats();
-}
-function permDeleteAllFlaggedComps() {
-  const n = Object.values(db.components).filter(c => c.flaggedForDeletion).length;
-  if (!confirm(`Permanently delete ${n} components? This cannot be undone.`)) return;
-  Object.keys(db.components).forEach(id => { if (db.components[id].flaggedForDeletion) delete db.components[id]; });
-  saveAndSync(); renderAdminPage(); renderCompList(); renderCompStats();
-}
+function restoreExp(id){const e=ge(id);if(e){e.flaggedForDeletion=false;delete e.deletedAt;delete e.deletedBy;}saveAndSync();renderAdminPage();renderExpDb();}
+function restoreAllExps(){db.experiments.forEach(e=>{if(e.deletedAt){e.flaggedForDeletion=false;delete e.deletedAt;delete e.deletedBy;}});saveAndSync();renderAdminPage();renderExpDb();}
+function hardDeleteExp(id){if(!confirm('Permanently purge this experiment? Cannot be undone.'))return;db.experiments=db.experiments.filter(e=>e.id!==id);saveAndSync();renderAdminPage();renderExpDb();}
+function hardDeleteAllExps(){const n=db.experiments.filter(e=>e.deletedAt).length;if(!confirm(`Permanently purge ${n} experiments? Cannot be undone.`))return;db.experiments=db.experiments.filter(e=>!e.deletedAt);saveAndSync();renderAdminPage();renderExpDb();}
+function restoreComp(id){if(db.components[id]){db.components[id].flaggedForDeletion=false;delete db.components[id].deletedAt;delete db.components[id].deletedBy;}saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
+function restoreAllComps(){Object.values(db.components).forEach(c=>{if(c.deletedAt){c.flaggedForDeletion=false;delete c.deletedAt;delete c.deletedBy;}});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
+function hardDeleteComp(id){if(!confirm('Permanently purge this component? Cannot be undone.'))return;delete db.components[id];saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
+function hardDeleteAllComps(){const n=Object.values(db.components).filter(c=>c.deletedAt).length;if(!confirm(`Permanently purge ${n} components? Cannot be undone.`))return;Object.keys(db.components).forEach(id=>{if(db.components[id].deletedAt)delete db.components[id];});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 function renderAll(){renderExpDb();renderCompStats();renderCompList();renderExpTagFilter();}
 
 /* ═══════════ INIT ═══════════ */
