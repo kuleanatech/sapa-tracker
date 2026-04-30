@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-054</title>
+<title>SAPA Lab Tracker — v2026-04-21-055</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-054</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-055</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -2027,6 +2027,7 @@ function buildResultsSection(e) {
   // Deduplicate sample points by timepoint (take first unique)
   const seen = new Set();
   const uniqueSamples = (e.samplePoints||[]).filter(sp => {
+    if (!sp) return false;
     const key = (sp.timepoint||'').trim();
     if (seen.has(key)) return false;
     seen.add(key); return true;
@@ -2034,11 +2035,12 @@ function buildResultsSection(e) {
 
   // Merge with any stored results samples
   const merged = uniqueSamples.map(sp => {
-    const stored = results.samples.find(rs => rs.timepoint === sp.timepoint && rs.source === sp.source) || {};
+    const stored = (results.samples||[]).find(rs => rs && rs.timepoint === sp.timepoint && rs.source === sp.source) || {};
     return {timepoint: sp.timepoint||'', source: sp.source||'', ...stored};
   });
   // Also include any manually added samples not in samplePoints
-  results.samples.forEach(rs => {
+  (results.samples||[]).forEach(rs => {
+    if (!rs) return;
     if (!merged.find(m => m.timepoint === rs.timepoint && m.source === rs.source)) merged.push(rs);
   });
 
