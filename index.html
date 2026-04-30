@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-059</title>
+<title>SAPA Lab Tracker — v2026-04-21-060</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-059</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-060</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1514,7 +1514,7 @@ function buildExpDetail(e) {
     ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${e.sensors}</div></div>`:''}
     ${e.samplePoints?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SAMPLING</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>${['Time point','Source','Vol/sample','# samples','Row total'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}</tr></thead><tbody>${e.samplePoints.map(r=>{const t=(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);return`<tr><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.timepoint||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${r.source||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.volPerSample?r.volPerSample+' mL':'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.numSamples||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;color:var(--am);">${t>0?t.toFixed(1)+' mL':'—'}</td></tr>`;}).join('')}<tr><td colspan="4" style="padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--tx3);">Total</td><td style="padding:5px 8px;font-family:var(--mono);font-size:12px;color:var(--am);font-weight:500;">${e.samplePoints.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0).toFixed(1)} mL</td></tr></tbody></table></div>`:''}
     ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
-    ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
+    ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv" style="white-space:pre-wrap;">${e.completionNotes.split('\n').map(l=>l.trim()).filter(l=>l).map(l=>/^[-•*]/.test(l)?'<span style="display:block;padding-left:14px;position:relative;"><span style="position:absolute;left:0;">•</span>'+l.replace(/^[-•*]\s*/,'')+'</span>':'<span style="display:block;">'+l+'</span>').join('')}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
     ${e.status==='complete'?buildResultsSection(e):''}
     <div style="border-top:1px solid var(--ln);margin-top:14px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -2014,8 +2014,8 @@ function hardDeleteComp(id){if(!confirm('Permanently purge this component? Canno
 function hardDeleteAllComps(){const n=Object.values(db.components).filter(c=>c.deletedAt).length;if(!confirm(`Permanently purge ${n} components? Cannot be undone.`))return;Object.keys(db.components).forEach(id=>{if(db.components[id].deletedAt)delete db.components[id];});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 /* ═══════════ RESULTS ═══════════ */
 const ANALYTES = [
-  {key:'sodium', label:'Sodium Na⁺', unit:'mM/L'},
-  {key:'chloride', label:'Chloride Cl⁻', unit:'mM/L'},
+  {key:'sodium', label:'Sodium Na⁺', unit:'mM'},
+  {key:'chloride', label:'Chloride Cl⁻', unit:'mM'},
   {key:'bun', label:'BUN', unit:'mg/dL'},
   {key:'urea', label:'Urea concentration', unit:'mM'},
   {key:'ureaRemoval', label:'Cumulative Urea Removal Rate', unit:'mg/cm²/hr'},
@@ -2106,7 +2106,20 @@ function buildResultsEditView(e, state) {
   const sampleRows = state.samples.map((s,i) => `<tr>
     <td style="${tdS}"><input type="text" value="${s.timepoint||''}" placeholder="0h" style="${inS}width:52px;" onchange="rsUpdateField('${e.id}',${i},'timepoint',this.value)"></td>
     <td style="${tdS}"><input type="text" value="${s.source||''}" placeholder="Pt." style="${inS}width:52px;" onchange="rsUpdateField('${e.id}',${i},'source',this.value)"></td>
-    ${ANALYTES.map(a=>`<td style="${tdS}text-align:right;"><input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}" style="${inS}width:58px;text-align:right;" onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)"></td>`).join('')}
+    ${ANALYTES.map(a => {
+      if (a.key === 'bun') {
+        const factor = s.bunFactor!=null ? s.bunFactor : 2.2378;
+        return `<td style="${tdS}text-align:right;">
+          <div style="display:flex;align-items:center;gap:2px;justify-content:flex-end;">
+            <input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}" style="${inS}width:52px;text-align:right;" onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)" id="rs-bun-${e.id}-${i}">
+            <span style="font-size:9px;color:var(--tx3);">÷</span>
+            <input type="number" step="0.0001" value="${factor}" style="${inS}width:52px;text-align:right;font-size:11px;" onchange="rsUpdateField('${e.id}',${i},'bunFactor',this.value)" id="rs-bunf-${e.id}-${i}" title="Conversion factor (default 2.2378)">
+            <button onclick="rsCalcUrea('${e.id}',${i})" style="font-size:10px;padding:2px 5px;background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:3px;cursor:pointer;white-space:nowrap;" title="Calculate urea from BUN">→</button>
+          </div>
+        </td>`;
+      }
+      return `<td style="${tdS}text-align:right;"><input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}" style="${inS}width:58px;text-align:right;" onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)" id="rs-${a.key}-${e.id}-${i}"></td>`;
+    }).join('')}
     <td style="${tdS}"><input type="text" value="${s.sampleNotes||''}" placeholder="Notes..." style="${inS}width:100%;min-width:70px;" onchange="rsUpdateField('${e.id}',${i},'sampleNotes',this.value)"></td>
     <td style="${tdS}"><button class="btn-rd" onclick="rsRemoveSample('${e.id}',${i})" style="font-size:10px;padding:2px 6px;">×</button></td>
   </tr>`).join('');
@@ -2164,6 +2177,18 @@ function rsCancelEdit(eid) {
   resultsEditState[eid].editing = false;
   const body = document.getElementById('results-body-'+eid);
   if (body) body.innerHTML = buildResultsReadView(e, resultsEditState[eid]);
+}
+
+function rsCalcUrea(eid, idx) {
+  const state = resultsEditState[eid]; if (!state||!state.samples[idx]) return;
+  const bun = parseFloat(state.samples[idx].bun);
+  const factor = parseFloat(state.samples[idx].bunFactor) || 2.2378;
+  if (isNaN(bun)) { alert('Enter a BUN value first.'); return; }
+  const urea = Math.round((bun / factor) * 1000) / 1000;
+  state.samples[idx].urea = urea;
+  // Update the urea input field directly
+  const ureaEl = document.getElementById(`rs-urea-${eid}-${idx}`);
+  if (ureaEl) ureaEl.value = urea;
 }
 
 function rsUpdateField(eid, idx, field, val) {
