@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-055</title>
+<title>SAPA Lab Tracker — v2026-04-21-057</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-055</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-057</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -2018,125 +2018,217 @@ const ANALYTES = [
   {key:'chloride', label:'Chloride Cl⁻', unit:'mM/L'},
   {key:'bun', label:'BUN', unit:'mg/dL'},
   {key:'urea', label:'Urea concentration', unit:'mM'},
+  {key:'ureaRemoval', label:'Cumulative Urea Removal Rate', unit:'mg/cm²/hr'},
 ];
 
-function buildResultsSection(e) {
-  const results = e.results || {samples:[], analysis:''};
-  const isOpen = results.samples.length || results.analysis;
+// In-memory edit state per experiment — avoids oninput chaos
+const resultsEditState = {}; // {eid: {samples:[...], analysis:'', editing:bool}}
 
-  // Deduplicate sample points by timepoint (take first unique)
+function initResultsState(e) {
+  const results = e.results || {samples:[], analysis:''};
+  // Build merged sample list from samplePoints (deduplicated) + stored results
   const seen = new Set();
   const uniqueSamples = (e.samplePoints||[]).filter(sp => {
     if (!sp) return false;
-    const key = (sp.timepoint||'').trim();
+    const key = (sp.timepoint||'').trim() + '|' + (sp.source||'').trim();
     if (seen.has(key)) return false;
     seen.add(key); return true;
   });
-
-  // Merge with any stored results samples
   const merged = uniqueSamples.map(sp => {
     const stored = (results.samples||[]).find(rs => rs && rs.timepoint === sp.timepoint && rs.source === sp.source) || {};
     return {timepoint: sp.timepoint||'', source: sp.source||'', ...stored};
   });
-  // Also include any manually added samples not in samplePoints
   (results.samples||[]).forEach(rs => {
     if (!rs) return;
-    if (!merged.find(m => m.timepoint === rs.timepoint && m.source === rs.source)) merged.push(rs);
+    if (!merged.find(m => m.timepoint === rs.timepoint && m.source === rs.source)) merged.push({...rs});
   });
+  // Only init if not already editing
+  if (!resultsEditState[e.id]) {
+    resultsEditState[e.id] = {samples: JSON.parse(JSON.stringify(merged)), analysis: results.analysis||'', editing: false};
+  }
+  return resultsEditState[e.id];
+}
 
-  const sampleRows = merged.map((s, i) => `
-    <div style="background:var(--bg1);border:1px solid var(--ln);border-radius:var(--r);padding:12px;margin-bottom:8px;">
+function buildResultsSection(e) {
+  const state = initResultsState(e);
+  const hasData = state.samples.some(s => ANALYTES.some(a => s[a.key]!=null&&s[a.key]!=='')) || state.analysis;
+  const isOpen = hasData || state.editing;
+
+  // Header — more visible
+  const header = `
+    <div style="border-top:2px solid var(--bl);margin-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bld);cursor:pointer;border-radius:0 0 ${isOpen?'0 0':'var(--r) var(--r)'};" onclick="toggleResultsSection('${e.id}')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;font-weight:500;">📊 Results</span>
+          ${hasData?`<span style="font-family:var(--mono);font-size:10px;color:var(--bl);opacity:.7;">${state.samples.filter(s=>ANALYTES.some(a=>s[a.key]!=null&&s[a.key]!=='')).length} sample${state.samples.length!==1?'s':''} entered</span>`:'<span style="font-family:var(--mono);font-size:10px;color:var(--bl);opacity:.5;">click to add results</span>'}
+        </div>
+        <span style="font-family:var(--mono);font-size:14px;color:var(--bl);transition:transform .2s;display:inline-block;${isOpen?'transform:rotate(180deg)':''}">▾</span>
+      </div>
+      <div id="results-body-${e.id}" style="${isOpen?'':'display:none;'}border:1px solid var(--bl);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px;">
+        ${state.editing ? buildResultsEditView(e, state) : buildResultsReadView(e, state)}
+      </div>
+    </div>`;
+  return header;
+}
+
+function buildResultsReadView(e, state) {
+  if (!state.samples.length && !state.analysis) {
+    return `<div style="text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--tx3);">No results entered yet</div>
+      <div style="text-align:center;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:6px 14px;">+ Add results</button></div>`;
+  }
+  let html = '';
+  state.samples.forEach(s => {
+    const hasAny = ANALYTES.some(a => s[a.key]!=null && s[a.key]!=='');
+    if (!hasAny && !s.timepoint) return;
+    html += `<div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:500;margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap;">
+        <span>Sample: <strong>${s.timepoint||'—'}</strong></span>
+        <span style="color:var(--tx2);">Location: <strong>${s.source||'—'}</strong></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px;">
+        ${ANALYTES.map(a => `<div style="background:var(--bg1);border-radius:var(--r);padding:6px 10px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:2px;">${a.label}</div>
+          <div style="font-family:var(--mono);font-size:14px;color:${s[a.key]!=null&&s[a.key]!==''?'var(--am)':'var(--tx3)'};">${s[a.key]!=null&&s[a.key]!==''?s[a.key]+' <span style="font-size:10px;color:var(--tx3);">'+a.unit+'</span>':'—'}</div>
+        </div>`).join('')}
+      </div>
+      ${s.sampleNotes?`<div style="margin-top:6px;font-size:12px;color:var(--tx2);font-style:italic;">${s.sampleNotes}</div>`:''}
+    </div>`;
+  });
+  if (state.analysis) {
+    html += `<div style="margin-top:10px;"><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</div>
+      <div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 14px;font-size:13px;white-space:pre-wrap;">${state.analysis}</div></div>`;
+  }
+  html += `<div style="margin-top:12px;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:5px 12px;">Edit results</button></div>`;
+  return html;
+}
+
+function buildResultsEditView(e, state) {
+  const sampleRows = state.samples.map((s, i) => `
+    <div style="background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px;margin-bottom:8px;" id="rs-row-${e.id}-${i}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-        <div style="font-size:12px;font-weight:500;">Sample: <input type="text" value="${s.timepoint||''}" oninput="updateResultSample('${e.id}',${i},'timepoint',this.value)" style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;font-weight:500;width:80px;padding:2px 4px;"></div>
-        <div style="font-size:12px;color:var(--tx2);">Location: <input type="text" value="${s.source||''}" oninput="updateResultSample('${e.id}',${i},'source',this.value)" style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;width:80px;padding:2px 4px;"></div>
-        <button class="btn-rd" onclick="removeResultSample('${e.id}',${i})" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
+        <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;">
+          Sample:
+          <input type="text" value="${s.timepoint||''}" placeholder="e.g. 0h"
+            style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;font-weight:500;width:70px;padding:2px 4px;"
+            onchange="rsUpdateField('${e.id}',${i},'timepoint',this.value)">
+        </div>
+        <div style="font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:6px;">
+          Location:
+          <input type="text" value="${s.source||''}" placeholder="e.g. Pt."
+            style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;width:70px;padding:2px 4px;"
+            onchange="rsUpdateField('${e.id}',${i},'source',this.value)">
+        </div>
+        <button class="btn-rd" onclick="rsRemoveSample('${e.id}',${i})" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
         ${ANALYTES.map(a => `
-          <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">${a.label} (${a.unit})</label>
-          <input type="number" step="0.01" placeholder="—" value="${s[a.key]||''}" oninput="updateResultSample('${e.id}',${i},'${a.key}',this.value)"
-            style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;font-family:var(--mono);background:var(--bg2);"></div>`).join('')}
+          <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">${a.label} <span style="opacity:.6;">(${a.unit})</span></label>
+            <input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}"
+              style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;font-family:var(--mono);"
+              onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)">
+          </div>`).join('')}
+        <div style="grid-column:1/-1;"><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">Sample notes</label>
+          <input type="text" placeholder="Any notes for this sample..." value="${s.sampleNotes||''}"
+            style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;"
+            onchange="rsUpdateField('${e.id}',${i},'sampleNotes',this.value)">
+        </div>
       </div>
     </div>`).join('');
 
   return `
-    <div style="border-top:2px solid var(--ln2);margin-top:14px;padding-top:2px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;user-select:none;" onclick="toggleResultsSection('${e.id}')">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;font-weight:500;">Results${results.samples.length?' ('+results.samples.length+' samples)':''}</div>
-        <span id="results-arrow-${e.id}" style="font-family:var(--mono);font-size:12px;color:var(--tx3);transition:transform .2s;${isOpen?'transform:rotate(180deg)':''}">▾</span>
+    <div id="rs-edit-${e.id}">
+      ${sampleRows}
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button onclick="rsAddSample('${e.id}')" style="font-size:11px;padding:5px 12px;">+ Add sample</button>
       </div>
-      <div id="results-body-${e.id}" style="${isOpen?'':'display:none;'}padding-bottom:10px;">
-        <div id="results-samples-${e.id}">${sampleRows}</div>
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <button onclick="addResultSample('${e.id}')" style="font-size:11px;padding:5px 12px;">+ Add sample</button>
-          <button class="btn-gr" onclick="saveResults('${e.id}')" style="font-size:11px;padding:5px 12px;">Save results</button>
-        </div>
-        <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</label>
-          <textarea id="results-analysis-${e.id}" style="width:100%;min-height:100px;padding:10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;resize:vertical;background:var(--bg2);" placeholder="Overall analysis and interpretation of results...">${results.analysis||''}</textarea>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="btn-gr" onclick="saveResults('${e.id}')" style="font-size:11px;padding:5px 12px;">Save results</button>
-        </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</label>
+        <textarea id="rs-analysis-${e.id}" style="width:100%;min-height:100px;padding:10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;resize:vertical;"
+          placeholder="Overall analysis and interpretation of results..."
+          onchange="resultsEditState['${e.id}'].analysis=this.value">${state.analysis||''}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-gr" onclick="rsSave('${e.id}')" style="font-size:11px;padding:6px 14px;">Save results</button>
+        <button onclick="rsCancelEdit('${e.id}')" style="font-size:11px;padding:6px 14px;">Cancel</button>
       </div>
     </div>`;
 }
 
 function toggleResultsSection(eid) {
   const body = document.getElementById('results-body-'+eid);
-  const arrow = document.getElementById('results-arrow-'+eid);
   if (!body) return;
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  if (arrow) arrow.style.transform = open ? 'rotate(180deg)' : '';
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
 }
 
-function getResultsFromDOM(eid) {
-  // Collect sample data from DOM inputs
-  const sampleContainer = document.getElementById('results-samples-'+eid);
-  const samples = [];
-  if (sampleContainer) {
-    sampleContainer.querySelectorAll('[oninput*="updateResultSample"]').forEach(inp => {
-      // Already handled via updateResultSample
-    });
-  }
+function enterResultsEdit(eid) {
   const e = ge(eid); if (!e) return;
-  return e.results || {samples:[], analysis:''};
+  const state = resultsEditState[eid];
+  if (!state) return;
+  state.editing = true;
+  const body = document.getElementById('results-body-'+eid);
+  if (body) body.innerHTML = buildResultsEditView(e, state);
 }
 
-function updateResultSample(eid, idx, field, val) {
+function rsCancelEdit(eid) {
   const e = ge(eid); if (!e) return;
-  if (!e.results) e.results = {samples:[], analysis:''};
-  if (!e.results.samples[idx]) e.results.samples[idx] = {};
-  e.results.samples[idx][field] = field === 'timepoint' || field === 'source' ? val : (parseFloat(val)||null);
+  const state = resultsEditState[eid]; if (!state) return;
+  state.editing = false;
+  // Revert to saved data
+  delete resultsEditState[eid];
+  initResultsState(e);
+  resultsEditState[eid].editing = false;
+  const body = document.getElementById('results-body-'+eid);
+  if (body) body.innerHTML = buildResultsReadView(e, resultsEditState[eid]);
 }
 
-function addResultSample(eid) {
+function rsUpdateField(eid, idx, field, val) {
+  const state = resultsEditState[eid]; if (!state) return;
+  if (!state.samples[idx]) state.samples[idx] = {};
+  const textFields = ['timepoint', 'source', 'sampleNotes'];
+  state.samples[idx][field] = textFields.includes(field) ? val : (val===''?null:parseFloat(val));
+}
+
+function rsAddSample(eid) {
+  const state = resultsEditState[eid]; if (!state) return;
+  state.samples.push({timepoint:'', source:''});
+  // Re-render edit view
   const e = ge(eid); if (!e) return;
-  if (!e.results) e.results = {samples:[], analysis:''};
-  e.results.samples.push({timepoint:'', source:''});
-  saveResults(eid);
+  const body = document.getElementById('results-body-'+eid);
+  if (body) body.innerHTML = buildResultsEditView(e, state);
 }
 
-function removeResultSample(eid, idx) {
-  const e = ge(eid); if (!e||!e.results) return;
-  e.results.samples.splice(idx, 1);
-  saveResults(eid);
-}
-
-function saveResults(eid) {
+function rsRemoveSample(eid, idx) {
+  const state = resultsEditState[eid]; if (!state) return;
+  state.samples.splice(idx, 1);
   const e = ge(eid); if (!e) return;
-  if (!e.results) e.results = {samples:[], analysis:''};
-  const analysis = document.getElementById('results-analysis-'+eid);
-  if (analysis) e.results.analysis = analysis.value;
+  const body = document.getElementById('results-body-'+eid);
+  if (body) body.innerHTML = buildResultsEditView(e, state);
+}
+
+function rsSave(eid) {
+  const e = ge(eid); if (!e) return;
+  const state = resultsEditState[eid]; if (!state) return;
+  // Collect analysis from textarea in case onchange didn't fire
+  const ta = document.getElementById('rs-analysis-'+eid);
+  if (ta) state.analysis = ta.value;
+  // Save to experiment
+  e.results = {samples: JSON.parse(JSON.stringify(state.samples)), analysis: state.analysis};
   e.editedAt = Date.now(); e.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
+  state.editing = false;
   saveAndSync();
-  // Re-render just this experiment's detail
+  // Re-render detail
   const det = document.getElementById('ed-'+eid);
   if (det && det.classList.contains('open')) {
     det.innerHTML = buildExpDetail(e);
-    det.classList.add('open');
   }
 }
+
+// Legacy stubs (no longer used but kept to avoid errors if called)
+function updateResultSample(){}
+function addResultSample(eid){rsAddSample(eid);}
+function removeResultSample(eid,idx){rsRemoveSample(eid,idx);}
+function saveResults(eid){rsSave(eid);}
+
 
 function copyCompToNew(id) {
   const c = db.components[id]; if (!c) return;
