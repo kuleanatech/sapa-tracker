@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-046</title>
+<title>SAPA Lab Tracker — v2026-04-21-048</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-046</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-048</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -277,8 +277,14 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           </div>
         </div>
         <div class="fg3 frow">
-          <div><label>Starting volume (mL)</label><input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
-          <div><label>Total sample volume removed (mL)</label><input type="number" id="cm-sample-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+          <div><label>Starting volume (mL)</label>
+          <input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-start-hint"></div>
+        </div>
+          <div><label>Total sample volume removed (mL)</label>
+          <input type="number" id="cm-sample-vol" step="0.1" placeholder="mL (auto from sample plan)" oninput="calcLeakage()">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-sample-hint"></div>
+        </div>
           <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
         </div>
         <div class="frow">
@@ -286,6 +292,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <input type="text" id="cm-leakage" readonly placeholder="auto-calculated">
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL, end 950 mL = 38 mL leakage</div>
         </div>
+        <div class="frow"><label>Volume note <span style="color:var(--tx3);font-weight:300;">(optional — if values differ from plan)</span></label><input type="text" id="cm-vol-note" placeholder="e.g. leak at 2h, refilled 50mL"></div>
         <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
         <div class="frow" style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="cm-failure">
@@ -475,6 +482,9 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div id="chem-rows"></div>
         <button onclick="addChemRow()" style="margin-top:6px;font-size:11px;">+ Add chemical</button>
       </div>
+      <div class="frow" style="max-width:220px;">
+        <label>Solution volume (mL)</label><input type="number" id="ef-sol-vol" step="0.1" placeholder="e.g. 1000">
+      </div>
       <div class="fg2 frow">
         <div><label>Distribution</label>
           <select id="ef-sol-dist">
@@ -512,6 +522,30 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
     <div class="coll-body" id="cb-notes">
       <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes..."></textarea></div>
     </div>
+
+    <!-- CLOSEOUT FIELDS (shown when editing closed experiment) -->
+    <div id="ef-closeout-section" style="display:none;border-top:2px solid var(--ln2);margin-top:12px;padding-top:14px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;">Close-out details</div>
+      <div class="fg2 frow">
+        <div><label>Actual duration (hours)</label><input type="number" id="ef-actual-hours" min="0.1" step="0.5"></div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0;">
+            <input type="checkbox" id="ef-failure"> Flag as failure / concern
+          </label>
+        </div>
+      </div>
+      <div class="fg3 frow">
+        <div><label>Starting volume (mL)</label><input type="number" id="ef-start-vol" step="0.1"></div>
+        <div><label>Sample volume removed (mL)</label><input type="number" id="ef-sample-vol" step="0.1"></div>
+        <div><label>End measured volume (mL)</label><input type="number" id="ef-end-vol" step="0.1"></div>
+      </div>
+      <div class="frow"><label>Leakage</label><input type="text" id="ef-leakage" placeholder="auto or manual"></div>
+      <div class="frow"><label>Volume note</label><input type="text" id="ef-vol-note" placeholder="e.g. leak at 2h, refilled 50mL"></div>
+      <div class="frow"><label>Completion notes</label><textarea id="ef-completion-notes" style="min-height:64px;" placeholder="Results, anomalies..."></textarea></div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin:10px 0 8px;">File links</div>
+      <div id="ef-url-entries"></div>
+      <button onclick="addEfUrlEntry()" style="font-size:11px;margin-bottom:8px;">+ Add file link</button>
+    </div>
   </div>
   <div class="panel-footer">
     <button class="btn-gr" id="exp-save-btn" onclick="saveExpForm()">Create experiment</button>
@@ -537,7 +571,13 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         </select>
       </div>
       <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
-      <div><label>Serial number *</label><input type="text" id="reg-id" placeholder="e.g. ENGINE-001"></div>
+      <div><label>Serial number *</label>
+        <div style="display:flex;align-items:center;gap:0;">
+          <span style="padding:8px 10px;background:var(--bg3);border:1px solid var(--ln2);border-right:none;border-radius:var(--r) 0 0 var(--r);font-family:var(--mono);font-size:12px;color:var(--tx2);white-space:nowrap;">SAPA_EF_</span>
+          <input type="text" id="reg-id" placeholder="0001 or TBD or NA" maxlength="20" style="border-radius:0 var(--r) var(--r) 0;flex:1;">
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">TBD and NA allowed — component will be flagged until updated</div>
+      </div>
     </div>
     <div class="fg3 frow">
       <div><label>Fabrication date</label><input type="date" id="reg-mfg"></div>
@@ -787,8 +827,10 @@ function openExpPanel(editId) {
   document.getElementById('ef-editing-id').value = exp ? exp.id : '';
   if (exp) { populateExpFormFields(exp); formPanels = exp.panels ? JSON.parse(JSON.stringify(exp.panels)) : {}; }
   else resetExpForm();
+  // Show closeout fields if editing a non-active (closed/paused) experiment
+  if (exp && exp.status !== 'active') showCloseoutSection(exp);
+  else hideCloseoutSection();
   renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
-  document.getElementById('exp-overlay').classList.add('open');
   document.getElementById('exp-panel').classList.add('open');
 }
 function closeExpPanel() {
@@ -1015,7 +1057,7 @@ function populateExpFormFields(e) {
 }
 function resetExpForm() {
   ['ef-name','ef-operator','ef-pstat-id','ef-desc','ef-sol-dist','ef-flow','ef-pump','ef-carbon',
-   'ef-sensors','ef-pstat-note','ef-pstat-cycles','ef-notes','ef-run','ef-ref'].forEach(id=>{
+   'ef-sensors','ef-sol-vol','ef-pstat-note','ef-pstat-cycles','ef-notes','ef-run','ef-ref'].forEach(id=>{
     const el=document.getElementById(id); if(el){el.value='';delete el.dataset.userEdited;}
   });
   document.getElementById('ef-date').value = today();
@@ -1047,7 +1089,22 @@ function saveExpForm() {
     panels:JSON.parse(JSON.stringify(formPanels)),
     components:buildComponentsFromPanels(formPanels),
   };
-  if (editId) { Object.assign(ge(editId), data, {editedAt: Date.now()}); }
+  if (editId) {
+    const existing = ge(editId);
+    Object.assign(existing, data, {editedAt: Date.now(), editedBy: (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0]});
+    // Save closeout fields if the experiment is not active
+    if (existing.status !== 'active' && document.getElementById('ef-closeout-section')?.style.display !== 'none') {
+      existing.actualHours = parseFloat(document.getElementById('ef-actual-hours').value)||existing.actualHours;
+      existing.startVol = parseFloat(document.getElementById('ef-start-vol').value)||existing.startVol;
+      existing.sampleVol = parseFloat(document.getElementById('ef-sample-vol').value)||existing.sampleVol;
+      existing.endVol = parseFloat(document.getElementById('ef-end-vol').value)||existing.endVol;
+      existing.leakage = document.getElementById('ef-leakage').value||existing.leakage;
+      existing.volNote = document.getElementById('ef-vol-note').value.trim()||existing.volNote;
+      existing.completionNotes = document.getElementById('ef-completion-notes').value.trim();
+      existing.failure = document.getElementById('ef-failure').checked;
+      existing.fileLinks = JSON.parse(JSON.stringify(efUrlEntries));
+    }
+  }
   else {
     if (activeExpId) { if (!confirm('There is already an active experiment. Make this one active?')) return; ge(activeExpId).status='paused'; }
     const n = {id:uid(),status:'active',fileLinks:[],createdAt:Date.now(),...data};
@@ -1121,7 +1178,7 @@ function renderChannelTables() {
   const engines=Object.values(db.components).filter(c=>c.type==='engine');
   const papers=Object.values(db.components).filter(c=>c.type==='paper');
   const glasses=Object.values(db.components).filter(c=>c.type==='glass');
-  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}</option>`).join('');
+  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>{const suf=c.id.length>4?'...'+c.id.slice(-4):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
   wrap.innerHTML=Object.entries(formPanels).map(([pid,channels])=>{
     const panel=db.components[pid]||{name:pid};
     return `<div style="margin-bottom:18px;">
@@ -1301,6 +1358,17 @@ let urlEntries=[];
 function showCloseout() {
   const ae=db.experiments.find(e=>e.status==='active'); if(!ae) return;
   document.getElementById('cm-planned-lbl').textContent=ae.plannedHours||'—';
+  // Pre-fill solution volume from experiment plan
+  const planVol = ae.solVol||null;
+  const startEl = document.getElementById('cm-start-vol');
+  const startHint = document.getElementById('cm-start-hint');
+  if(planVol){startEl.value=planVol;if(startHint)startHint.textContent='Pre-filled from plan: '+planVol+' mL';}
+  // Pre-fill sample vol total from sample plan
+  const planSampleVol = ae.samplePoints?.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0)||0;
+  const sampleEl = document.getElementById('cm-sample-vol');
+  const sampleHint = document.getElementById('cm-sample-hint');
+  if(planSampleVol>0){sampleEl.value=planSampleVol.toFixed(1);if(sampleHint)sampleHint.textContent='Pre-filled from sample plan: '+planSampleVol.toFixed(1)+' mL';}
+  document.getElementById('cm-vol-note').value='';
   document.getElementById('cm-hours').value=ae.plannedHours||'';
   document.getElementById('cm-start-vol').value=ae.startVol||'';
   ['cm-sample-vol','cm-end-vol','cm-leakage','cm-notes'].forEach(id=>document.getElementById(id).value='');
@@ -1331,7 +1399,7 @@ function finalizeExp(){
   ae.startVol=parseFloat(document.getElementById('cm-start-vol').value)||null;
   ae.sampleVol=parseFloat(document.getElementById('cm-sample-vol').value)||null;
   ae.endVol=parseFloat(document.getElementById('cm-end-vol').value)||null;
-  ae.leakage=document.getElementById('cm-leakage').value;
+  ae.leakage=document.getElementById('cm-leakage').value; ae.volNote=document.getElementById('cm-vol-note').value.trim();
   ae.completionNotes=document.getElementById('cm-notes').value.trim();
   ae.failure=document.getElementById('cm-failure').checked;
   ae.fileLinks=JSON.parse(JSON.stringify(urlEntries));
@@ -1439,16 +1507,17 @@ function buildExpDetail(e) {
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="openExpPanel('${e.id}')" style="font-size:11px;padding:5px 10px;">Edit</button>
         <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
+        <button onclick="copyExpToNew('${e.id}')" style="font-size:11px;padding:5px 10px;">⧉ Copy to new</button>
       </div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;flex-wrap:wrap;gap:12px;">
-        <span>Created: ${e.createdAt?new Date(e.createdAt).toLocaleString():fdate(e.date)}</span>
-        ${e.closedAt?`<span>Closed: ${new Date(e.closedAt).toLocaleString()}</span>`:''}
-        ${e.editedAt?`<span>Last edited: ${new Date(e.editedAt).toLocaleString()}</span>`:''}
+        <span>Created: ${e.createdAt?new Date(e.createdAt).toLocaleString():fdate(e.date)}${e.createdBy?' by '+e.createdBy:''}</span>
+        ${e.closedAt?`<span>Closed: ${new Date(e.closedAt).toLocaleString()}${e.closedBy?' by '+e.closedBy:''}</span>`:''}
+        ${e.editedAt?`<span>Last edited: ${new Date(e.editedAt).toLocaleString()}${e.editedBy?' by '+e.editedBy:''}</span>`:''}
       </div>
     </div>`;
 }
 
-function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Delete ${ids.length} experiment(s)? They can be restored from the Admin panel.`))return;const user=msal$.getAllAccounts()[0]?.username||'unknown';ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=true;e.deletedAt=Date.now();e.deletedBy=user;}});saveAndSync();renderExpDb();}
+function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Delete ${ids.length} experiment(s)?`))return;const user=(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=true;e.deletedAt=Date.now();e.deletedBy=user;}});saveAndSync();renderExpDb();}
 function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=false;delete e.deletedAt;delete e.deletedBy;}});saveAndSync();renderExpDb();}
 function exportSelExps(){
   const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);
@@ -1480,15 +1549,21 @@ function onRegTypeChange() {
   if(t==='engine') renderLedGrid();
 }
 function registerComp(){
-  const id=document.getElementById('reg-id').value.trim();
+  const rawId=document.getElementById('reg-id').value.trim().toUpperCase();
+  if(!rawId){alert('Serial number required.');return;}
   const name=document.getElementById('reg-name').value.trim();
-  if(!id||!name){alert('ID and name required.');return;}
-  if(db.components[id]){alert(`ID "${id}" already exists.`);return;}
+  if(!name){alert('Name required.');return;}
+  const id = 'SAPA_EF_' + rawId;
+  // Allow TBD/NA duplicates, block real duplicates
+  const isTBD = rawId==='TBD'||rawId==='NA'||rawId==='N/A';
+  if(!isTBD && db.components[id]){alert(`Serial number "${id}" already exists.`);return;}
+  // For TBD/NA, make unique by appending timestamp suffix
+  const finalId = isTBD ? id+'_'+Date.now().toString(36) : id;
   const type=document.getElementById('reg-type').value;
   if(type==='panel'){const ch=parseInt(document.getElementById('reg-channels').value);if(!ch||ch<1){alert('Please enter number of channels.');return;}}
   const ledGen=type==='engine'?(document.getElementById('reg-led-gen')?.value||null):null;
   const ledActive=type==='engine'?getLedGrid():null;
-  db.components[id]={id,name,type,
+  db.components[finalId]={id:finalId,name,type,
     mfgDate:document.getElementById('reg-mfg').value||null,
     channels:type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
     ledGen:ledGen||null, ledActive,
@@ -1496,7 +1571,7 @@ function registerComp(){
     glassQC:type==='glass'?(document.getElementById('reg-glass-qc').value.trim()||null):null,
     glassUV:type==='glass'?(document.getElementById('reg-glass-uv').value||null):null,
     glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
-    notes:document.getElementById('reg-notes').value.trim(), registered:today(), createdAt:Date.now()
+    notes:document.getElementById('reg-notes').value.trim(), registered:today(), createdAt:Date.now(), createdBy:(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0], createdAt:Date.now()
   };
   saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
@@ -1538,7 +1613,7 @@ function renderCompList(){
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;" onclick="toggleCompDetail('${id}')">
         <input type="checkbox" class="comp-ck" data-id="${id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
         <div class="comp-info">
-          <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
+          <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}${id.includes('TBD')||id.includes('_NA_')?' <span title="Serial number not yet assigned" style="color:var(--am);font-size:13px;">⚠</span>':''}</div>
           <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}</div>
         ${c.notes?'<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+c.notes+'</div>':''}
         </div>
@@ -1670,7 +1745,7 @@ function saveEditComp(){
     c.glassSerial = document.getElementById('ec-glass-serial').value.trim()||null;
   }
   if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
-  db.components[id].editedAt = Date.now(); saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
+  db.components[id].editedAt = Date.now(); db.components[id].editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0]; saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
 
   // Refresh lookup if visible
   lookupComp(id);
@@ -1749,9 +1824,10 @@ function toggleCompDetail(id) {
       ${expLinks}
       <div style="border-top:1px solid var(--ln);margin-top:10px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <button class="btn-am" onclick="event.stopPropagation();openEditCompPanel('${id}')" style="font-size:11px;padding:5px 12px;">Edit component</button>
+        <button onclick="event.stopPropagation();copyCompToNew('${id}')" style="font-size:11px;padding:5px 12px;">⧉ Copy to new</button>
         <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;flex-wrap:wrap;gap:12px;">
-          ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}</span>`:''}
-          ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}</span>`:''}
+          ${c.createdAt?`<span>Registered: ${new Date(c.createdAt).toLocaleString()}${c.createdBy?' by '+c.createdBy:''}</span>`:''}
+          ${c.editedAt?`<span>Last edited: ${new Date(c.editedAt).toLocaleString()}${c.editedBy?' by '+c.editedBy:''}</span>`:''}
         </div>
       </div>
     </div>`;
@@ -1789,7 +1865,7 @@ function buildLedMapHTML(gen,ledActive){
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const on=ledActive[`c${c}r${r}`];html+=`<div class="led-cell ${on?'on':''}">${on?'●':'○'}</div>`;}
   return html+'</div>';
 }
-function flagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}if(!confirm(`Delete ${ids.length} component(s)? They can be restored from the Admin panel.`))return;const user=msal$.getAllAccounts()[0]?.username||'unknown';ids.forEach(id=>{if(db.components[id]){db.components[id].flaggedForDeletion=true;db.components[id].deletedAt=Date.now();db.components[id].deletedBy=user;}});saveAndSync();renderCompList();}
+function flagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}if(!confirm(`Delete ${ids.length} component(s)?`))return;const user=(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];ids.forEach(id=>{if(db.components[id]){db.components[id].flaggedForDeletion=true;db.components[id].deletedAt=Date.now();db.components[id].deletedBy=user;}});saveAndSync();renderCompList();}
 function unflagSelComps(){const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select components first.');return;}ids.forEach(id=>{if(db.components[id]){db.components[id].flaggedForDeletion=false;delete db.components[id].deletedAt;delete db.components[id].deletedBy;}});saveAndSync();renderCompList();}
 function exportSelComps(){
   const ids=[...document.querySelectorAll('.comp-ck:checked')].map(c=>c.dataset.id);
@@ -1891,6 +1967,76 @@ function restoreComp(id){if(db.components[id]){db.components[id].flaggedForDelet
 function restoreAllComps(){Object.values(db.components).forEach(c=>{if(c.deletedAt){c.flaggedForDeletion=false;delete c.deletedAt;delete c.deletedBy;}});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 function hardDeleteComp(id){if(!confirm('Permanently purge this component? Cannot be undone.'))return;delete db.components[id];saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 function hardDeleteAllComps(){const n=Object.values(db.components).filter(c=>c.deletedAt).length;if(!confirm(`Permanently purge ${n} components? Cannot be undone.`))return;Object.keys(db.components).forEach(id=>{if(db.components[id].deletedAt)delete db.components[id];});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
+/* ═══════════ COPY COMPONENT ═══════════ */
+function copyCompToNew(id) {
+  const c = db.components[id]; if (!c) return;
+  openCompPanel();
+  setTimeout(() => {
+    document.getElementById('reg-type').value = c.type;
+    onRegTypeChange();
+    document.getElementById('reg-name').value = c.name + ' (copy)';
+    document.getElementById('reg-id').value = '';
+    document.getElementById('reg-mfg').value = '';
+    document.getElementById('reg-notes').value = c.notes||'';
+    if (c.type==='panel') document.getElementById('reg-channels').value = c.channels||'';
+    if (c.type==='glass') {
+      document.getElementById('reg-glass-synth').value = '';
+      document.getElementById('reg-glass-qc').value = '';
+      document.getElementById('reg-glass-uv').value = c.glassUV||'';
+      document.getElementById('reg-glass-serial').value = '';
+    }
+    if (c.type==='engine' && c.ledGen) {
+      document.getElementById('reg-led-gen').value = c.ledGen;
+      ledState = c.ledActive ? JSON.parse(JSON.stringify(c.ledActive)) : {};
+      renderLedGrid();
+    }
+  }, 50);
+}
+
+/* ═══════════ COPY EXPERIMENT TO NEW ═══════════ */
+function copyExpToNew(id) {
+  const src = ge(id); if (!src) return;
+  openExpPanel(false);
+  setTimeout(() => {
+    populateExpFormFields({...src, runNumber: null, date: today(), operator: ''});
+    formPanels = src.panels ? JSON.parse(JSON.stringify(src.panels)) : {};
+    document.getElementById('ef-editing-id').value = '';
+    document.getElementById('ef-run').value = '';
+    delete document.getElementById('ef-run').dataset.userEdited;
+    document.getElementById('ef-name').value = src.name;
+    autoFillRunNumber();
+    document.getElementById('exp-save-btn').textContent = 'Create experiment';
+    document.getElementById('exp-panel-title').textContent = 'Copy — ' + src.name;
+    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+  }, 50);
+}
+
+/* ═══════════ CLOSEOUT EDIT IN PANEL ═══════════ */
+let efUrlEntries = [];
+function addEfUrlEntry() { efUrlEntries.push({title:'',url:''}); renderEfUrlEntries(); }
+function rmEfUrl(i) { efUrlEntries.splice(i,1); renderEfUrlEntries(); }
+function renderEfUrlEntries() {
+  const c = document.getElementById('ef-url-entries'); if (!c) return;
+  if (!efUrlEntries.length) { c.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);margin-bottom:8px;">No links</div>'; return; }
+  c.innerHTML = efUrlEntries.map((u,i)=>`<div class="url-row"><input type="text" placeholder="Title" value="${u.title}" oninput="efUrlEntries[${i}].title=this.value" style="flex:1;"><input type="url" placeholder="https://..." value="${u.url}" oninput="efUrlEntries[${i}].url=this.value" style="flex:2;"><button class="btn-rd" onclick="rmEfUrl(${i})" style="padding:5px 8px;">×</button></div>`).join('');
+}
+function showCloseoutSection(e) {
+  document.getElementById('ef-closeout-section').style.display = 'block';
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.value=v||''; };
+  set('ef-actual-hours', e.actualHours); set('ef-start-vol', e.startVol);
+  set('ef-sample-vol', e.sampleVol); set('ef-end-vol', e.endVol);
+  set('ef-leakage', e.leakage); set('ef-vol-note', e.volNote);
+  set('ef-completion-notes', e.completionNotes);
+  const fail = document.getElementById('ef-failure'); if(fail) fail.checked = !!e.failure;
+  efUrlEntries = e.fileLinks ? JSON.parse(JSON.stringify(e.fileLinks)) : [];
+  renderEfUrlEntries();
+}
+function hideCloseoutSection() {
+  const s = document.getElementById('ef-closeout-section');
+  if (s) s.style.display = 'none';
+  efUrlEntries = [];
+}
+
 function renderAll(){renderExpDb();renderCompStats();renderCompList();renderExpTagFilter();}
 
 /* ═══════════ INIT ═══════════ */
