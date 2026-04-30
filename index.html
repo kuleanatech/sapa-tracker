@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-050</title>
+<title>SAPA Lab Tracker — v2026-04-21-054</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-050</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-054</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -336,7 +336,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
         <button onclick="exportSelExps()">Export selected</button>
-        <button class="btn-gr" onclick="unflagSelExps()">Restore selected</button>
         <button class="btn-rd" onclick="flagSelExps()">Delete selected</button>
       </div>
 
@@ -377,7 +376,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearCompFilters()">Clear filters</button>
         <button onclick="exportSelComps()">Export selected</button>
-        <button class="btn-gr" onclick="unflagSelComps()">Restore selected</button>
         <button class="btn-rd" onclick="flagSelComps()">Delete selected</button>
       </div>
 
@@ -802,6 +800,9 @@ async function syncFromCloud() {
     }
     setSS('Synced '+new Date().toLocaleTimeString(),'ok');
     renderAll();
+    // Handle ?exp= URL param — auto-expand linked experiment
+    const expParam = new URLSearchParams(window.location.search).get('exp');
+    if (expParam) setTimeout(() => jumpToExp(expParam), 300);
   } catch(e) { console.error(e); setSS('Load error','err'); }
 }
 async function saveAndSync() { saveLocal(); await syncToCloud(); }
@@ -1492,7 +1493,14 @@ function buildExpDetail(e) {
       <div class="df"><div class="dk">Pump(s)</div><div class="dv">${fv(e.pump)}</div></div>
       <div class="df"><div class="dk">Activated carbon</div><div class="dv">${e.carbon?e.carbon+' g':'—'}</div></div>
     </div>
-    ${e.endVol||e.sampleVol?`<div class="dg"><div class="df"><div class="dk">End vol</div><div class="dv">${e.endVol?e.endVol+' mL':'—'}</div></div><div class="df"><div class="dk">Sample vol</div><div class="dv">${e.sampleVol?e.sampleVol+' mL':'—'}</div></div><div class="df"><div class="dk">Leakage</div><div class="dv" style="color:var(--am);">${fv(e.leakage)}</div></div></div>`:''}
+    ${(e.startVol||e.endVol||e.sampleVol||e.solVol)?`<div class="dg">
+      ${e.solVol?`<div class="df"><div class="dk">Solution volume</div><div class="dv">${e.solVol} mL</div></div>`:''}
+      ${e.startVol?`<div class="df"><div class="dk">Starting volume</div><div class="dv">${e.startVol} mL</div></div>`:''}
+      ${e.sampleVol?`<div class="df"><div class="dk">Sample vol removed</div><div class="dv">${e.sampleVol} mL</div></div>`:''}
+      ${e.endVol?`<div class="df"><div class="dk">End volume</div><div class="dv">${e.endVol} mL</div></div>`:''}
+      ${e.leakage?`<div class="df"><div class="dk">Leakage</div><div class="dv" style="color:var(--am);">${e.leakage}</div></div>`:''}
+      ${e.volNote?`<div class="df" style="grid-column:1/-1;"><div class="dk">Volume note</div><div class="dv">${e.volNote}</div></div>`:''}
+    </div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LIGHT &amp; ELECTRICAL</div>
     <div class="dg">
       <div class="df"><div class="dk">LEDs</div><div class="dv">${fv(e.leds)}</div></div>
@@ -1508,11 +1516,13 @@ function buildExpDetail(e) {
     ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
     ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${e.completionNotes}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
+    ${e.status==='complete'?buildResultsSection(e):''}
     <div style="border-top:1px solid var(--ln);margin-top:14px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="openExpPanel('${e.id}')" style="font-size:11px;padding:5px 10px;">Edit</button>
         <button class="btn-am" onclick="repeatExp('${e.id}')" style="font-size:11px;padding:5px 10px;">↺ Repeat run</button>
         <button onclick="copyExpToNew('${e.id}')" style="font-size:11px;padding:5px 10px;">⧉ Copy to new</button>
+        <button onclick="shareExp('${e.id}')" style="font-size:11px;padding:5px 10px;">🔗 Share link</button>
       </div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;flex-wrap:wrap;gap:12px;">
         <span>Created: ${e.createdAt?new Date(e.createdAt).toLocaleString():fdate(e.date)}${e.createdBy?' by '+e.createdBy:''}</span>
@@ -1692,6 +1702,14 @@ function openEditCompPanel(id) {
     </div>
     <div style="flex:1;overflow-y:auto;padding:20px;">
       <input type="hidden" id="edit-comp-id" value="${id}">
+      <div style="margin-bottom:12px;">
+        <label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Serial number</label>
+        <div style="display:flex;align-items:center;gap:0;">
+          <span style="padding:8px 10px;background:#f0f1f3;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#666;white-space:nowrap;">SAPA_EF_</span>
+          <input type="text" id="ec-serial" value="${id.replace('SAPA_EF_','')}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
+        </div>
+        <div style="font-family:monospace;font-size:10px;color:#999;margin-top:3px;">TBD and NA are allowed</div>
+      </div>
       <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Name / label</label>
         <input type="text" id="ec-name" value="${c.name||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
       ${channelsField}
@@ -1740,20 +1758,42 @@ function closeEditCompPanel(){
 function saveEditComp(){
   const id = document.getElementById('edit-comp-id').value; if(!id) return;
   const c = db.components[id]; if(!c) return;
-  c.name = document.getElementById('ec-name').value.trim() || c.name;
-  c.notes = document.getElementById('ec-notes').value.trim();
-  if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
-  if(c.type==='glass'){
-    c.glassSynthDate = document.getElementById('ec-glass-synth').value||null;
-    c.glassQC = document.getElementById('ec-glass-qc').value.trim()||null;
-    c.glassUV = document.getElementById('ec-glass-uv').value||null;
-    c.glassSerial = document.getElementById('ec-glass-serial').value.trim()||null;
-  }
-  if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
-  db.components[id].editedAt = Date.now(); db.components[id].editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0]; saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
 
-  // Refresh lookup if visible
-  lookupComp(id);
+  // Handle serial number change
+  const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
+  const newId = rawSerial ? 'SAPA_EF_' + rawSerial : id;
+  const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
+  if (newId !== id) {
+    if (!isTBD && db.components[newId]) { alert(`Serial number "${newId}" already exists.`); return; }
+    const finalNewId = isTBD ? newId+'_'+Date.now().toString(36) : newId;
+    // Rename key
+    db.components[finalNewId] = {...c, id: finalNewId};
+    delete db.components[id];
+    // Update all experiments that reference old ID
+    db.experiments.forEach(e => {
+      if(e.components) e.components = e.components.map(cid => cid===id ? finalNewId : cid);
+      if(e.panels) Object.values(e.panels).forEach(chs => chs.forEach(ch => {
+        if(ch.engine===id) ch.engine=finalNewId;
+        if(ch.paper===id) ch.paper=finalNewId;
+        if(ch.glass===id) ch.glass=finalNewId;
+      }));
+    });
+    const nc = db.components[finalNewId];
+    nc.name = document.getElementById('ec-name').value.trim() || nc.name;
+    nc.notes = document.getElementById('ec-notes').value.trim();
+    if(nc.type==='panel') nc.channels = parseInt(document.getElementById('ec-channels').value)||nc.channels;
+    if(nc.type==='glass'){nc.glassSynthDate=document.getElementById('ec-glass-synth').value||null;nc.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;nc.glassUV=document.getElementById('ec-glass-uv').value||null;nc.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
+    if(nc.type==='engine') nc.ledActive = JSON.parse(JSON.stringify(editCompLedState));
+    nc.editedAt = Date.now(); nc.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
+  } else {
+    c.name = document.getElementById('ec-name').value.trim() || c.name;
+    c.notes = document.getElementById('ec-notes').value.trim();
+    if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
+    if(c.type==='glass'){c.glassSynthDate=document.getElementById('ec-glass-synth').value||null;c.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;c.glassUV=document.getElementById('ec-glass-uv').value||null;c.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
+    if(c.type==='engine') c.ledActive = JSON.parse(JSON.stringify(editCompLedState));
+    c.editedAt = Date.now(); c.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
+  }
+  saveAndSync(); closeEditCompPanel(); renderCompList(); renderCompStats();
 }
 
 /* ═══════════ CLEAR FILTERS ═══════════ */
@@ -1972,7 +2012,130 @@ function restoreComp(id){if(db.components[id]){db.components[id].flaggedForDelet
 function restoreAllComps(){Object.values(db.components).forEach(c=>{if(c.deletedAt){c.flaggedForDeletion=false;delete c.deletedAt;delete c.deletedBy;}});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 function hardDeleteComp(id){if(!confirm('Permanently purge this component? Cannot be undone.'))return;delete db.components[id];saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
 function hardDeleteAllComps(){const n=Object.values(db.components).filter(c=>c.deletedAt).length;if(!confirm(`Permanently purge ${n} components? Cannot be undone.`))return;Object.keys(db.components).forEach(id=>{if(db.components[id].deletedAt)delete db.components[id];});saveAndSync();renderAdminPage();renderCompList();renderCompStats();}
-/* ═══════════ COPY COMPONENT ═══════════ */
+/* ═══════════ RESULTS ═══════════ */
+const ANALYTES = [
+  {key:'sodium', label:'Sodium Na⁺', unit:'mM/L'},
+  {key:'chloride', label:'Chloride Cl⁻', unit:'mM/L'},
+  {key:'bun', label:'BUN', unit:'mg/dL'},
+  {key:'urea', label:'Urea concentration', unit:'mM'},
+];
+
+function buildResultsSection(e) {
+  const results = e.results || {samples:[], analysis:''};
+  const isOpen = results.samples.length || results.analysis;
+
+  // Deduplicate sample points by timepoint (take first unique)
+  const seen = new Set();
+  const uniqueSamples = (e.samplePoints||[]).filter(sp => {
+    const key = (sp.timepoint||'').trim();
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+
+  // Merge with any stored results samples
+  const merged = uniqueSamples.map(sp => {
+    const stored = results.samples.find(rs => rs.timepoint === sp.timepoint && rs.source === sp.source) || {};
+    return {timepoint: sp.timepoint||'', source: sp.source||'', ...stored};
+  });
+  // Also include any manually added samples not in samplePoints
+  results.samples.forEach(rs => {
+    if (!merged.find(m => m.timepoint === rs.timepoint && m.source === rs.source)) merged.push(rs);
+  });
+
+  const sampleRows = merged.map((s, i) => `
+    <div style="background:var(--bg1);border:1px solid var(--ln);border-radius:var(--r);padding:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="font-size:12px;font-weight:500;">Sample: <input type="text" value="${s.timepoint||''}" oninput="updateResultSample('${e.id}',${i},'timepoint',this.value)" style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;font-weight:500;width:80px;padding:2px 4px;"></div>
+        <div style="font-size:12px;color:var(--tx2);">Location: <input type="text" value="${s.source||''}" oninput="updateResultSample('${e.id}',${i},'source',this.value)" style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;width:80px;padding:2px 4px;"></div>
+        <button class="btn-rd" onclick="removeResultSample('${e.id}',${i})" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
+        ${ANALYTES.map(a => `
+          <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">${a.label} (${a.unit})</label>
+          <input type="number" step="0.01" placeholder="—" value="${s[a.key]||''}" oninput="updateResultSample('${e.id}',${i},'${a.key}',this.value)"
+            style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;font-family:var(--mono);background:var(--bg2);"></div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  return `
+    <div style="border-top:2px solid var(--ln2);margin-top:14px;padding-top:2px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;cursor:pointer;user-select:none;" onclick="toggleResultsSection('${e.id}')">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;font-weight:500;">Results${results.samples.length?' ('+results.samples.length+' samples)':''}</div>
+        <span id="results-arrow-${e.id}" style="font-family:var(--mono);font-size:12px;color:var(--tx3);transition:transform .2s;${isOpen?'transform:rotate(180deg)':''}">▾</span>
+      </div>
+      <div id="results-body-${e.id}" style="${isOpen?'':'display:none;'}padding-bottom:10px;">
+        <div id="results-samples-${e.id}">${sampleRows}</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button onclick="addResultSample('${e.id}')" style="font-size:11px;padding:5px 12px;">+ Add sample</button>
+          <button class="btn-gr" onclick="saveResults('${e.id}')" style="font-size:11px;padding:5px 12px;">Save results</button>
+        </div>
+        <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</label>
+          <textarea id="results-analysis-${e.id}" style="width:100%;min-height:100px;padding:10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;resize:vertical;background:var(--bg2);" placeholder="Overall analysis and interpretation of results...">${results.analysis||''}</textarea>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn-gr" onclick="saveResults('${e.id}')" style="font-size:11px;padding:5px 12px;">Save results</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleResultsSection(eid) {
+  const body = document.getElementById('results-body-'+eid);
+  const arrow = document.getElementById('results-arrow-'+eid);
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function getResultsFromDOM(eid) {
+  // Collect sample data from DOM inputs
+  const sampleContainer = document.getElementById('results-samples-'+eid);
+  const samples = [];
+  if (sampleContainer) {
+    sampleContainer.querySelectorAll('[oninput*="updateResultSample"]').forEach(inp => {
+      // Already handled via updateResultSample
+    });
+  }
+  const e = ge(eid); if (!e) return;
+  return e.results || {samples:[], analysis:''};
+}
+
+function updateResultSample(eid, idx, field, val) {
+  const e = ge(eid); if (!e) return;
+  if (!e.results) e.results = {samples:[], analysis:''};
+  if (!e.results.samples[idx]) e.results.samples[idx] = {};
+  e.results.samples[idx][field] = field === 'timepoint' || field === 'source' ? val : (parseFloat(val)||null);
+}
+
+function addResultSample(eid) {
+  const e = ge(eid); if (!e) return;
+  if (!e.results) e.results = {samples:[], analysis:''};
+  e.results.samples.push({timepoint:'', source:''});
+  saveResults(eid);
+}
+
+function removeResultSample(eid, idx) {
+  const e = ge(eid); if (!e||!e.results) return;
+  e.results.samples.splice(idx, 1);
+  saveResults(eid);
+}
+
+function saveResults(eid) {
+  const e = ge(eid); if (!e) return;
+  if (!e.results) e.results = {samples:[], analysis:''};
+  const analysis = document.getElementById('results-analysis-'+eid);
+  if (analysis) e.results.analysis = analysis.value;
+  e.editedAt = Date.now(); e.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
+  saveAndSync();
+  // Re-render just this experiment's detail
+  const det = document.getElementById('ed-'+eid);
+  if (det && det.classList.contains('open')) {
+    det.innerHTML = buildExpDetail(e);
+    det.classList.add('open');
+  }
+}
+
 function copyCompToNew(id) {
   const c = db.components[id]; if (!c) return;
   openCompPanel();
@@ -1996,6 +2159,20 @@ function copyCompToNew(id) {
       renderLedGrid();
     }
   }, 50);
+}
+
+function shareExp(id) {
+  const url = `${window.location.origin}${window.location.pathname}?exp=${id}`;
+  navigator.clipboard.writeText(url).then(() => {
+    // Show brief confirmation
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.color = 'var(--gr)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  }).catch(() => {
+    prompt('Copy this link:', url);
+  });
 }
 
 /* ═══════════ COPY EXPERIMENT TO NEW ═══════════ */
