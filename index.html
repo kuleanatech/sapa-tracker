@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-057</title>
+<title>SAPA Lab Tracker — v2026-04-21-059</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-057</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-059</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -2059,7 +2059,7 @@ function buildResultsSection(e) {
     <div style="border-top:2px solid var(--bl);margin-top:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bld);cursor:pointer;border-radius:0 0 ${isOpen?'0 0':'var(--r) var(--r)'};" onclick="toggleResultsSection('${e.id}')">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-family:var(--mono);font-size:11px;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;font-weight:500;">📊 Results</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;font-weight:500;">Results</span>
           ${hasData?`<span style="font-family:var(--mono);font-size:10px;color:var(--bl);opacity:.7;">${state.samples.filter(s=>ANALYTES.some(a=>s[a.key]!=null&&s[a.key]!=='')).length} sample${state.samples.length!==1?'s':''} entered</span>`:'<span style="font-family:var(--mono);font-size:10px;color:var(--bl);opacity:.5;">click to add results</span>'}
         </div>
         <span style="font-family:var(--mono);font-size:14px;color:var(--bl);transition:transform .2s;display:inline-block;${isOpen?'transform:rotate(180deg)':''}">▾</span>
@@ -2072,86 +2072,71 @@ function buildResultsSection(e) {
 }
 
 function buildResultsReadView(e, state) {
-  if (!state.samples.length && !state.analysis) {
-    return `<div style="text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--tx3);">No results entered yet</div>
-      <div style="text-align:center;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:6px 14px;">+ Add results</button></div>`;
+  const thS = 'font-family:var(--mono);font-size:9px;color:var(--tx3);padding:5px 6px;border-bottom:1px solid var(--ln);white-space:nowrap;text-align:right;';
+  const tdS = 'padding:5px 6px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;text-align:right;';
+  let tableHtml = '';
+  if (state.samples.length) {
+    tableHtml = `<div style="overflow-x:auto;margin-bottom:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr>
+          <th style="${thS}text-align:left;">Sample</th>
+          <th style="${thS}text-align:left;">Location</th>
+          ${ANALYTES.map(a=>`<th style="${thS}">${a.label}<br><span style="opacity:.6;">${a.unit}</span></th>`).join('')}
+          <th style="${thS}text-align:left;">Notes</th>
+        </tr></thead>
+        <tbody>${state.samples.map(s=>`<tr>
+          <td style="${tdS}text-align:left;">${s.timepoint||'—'}</td>
+          <td style="${tdS}text-align:left;">${s.source||'—'}</td>
+          ${ANALYTES.map(a=>`<td style="${tdS}color:${s[a.key]!=null&&s[a.key]!==''?'var(--am)':'var(--tx3)'};">${s[a.key]!=null&&s[a.key]!==''?s[a.key]:'—'}</td>`).join('')}
+          <td style="${tdS}text-align:left;font-style:italic;color:var(--tx2);">${s.sampleNotes||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
   }
-  let html = '';
-  state.samples.forEach(s => {
-    const hasAny = ANALYTES.some(a => s[a.key]!=null && s[a.key]!=='');
-    if (!hasAny && !s.timepoint) return;
-    html += `<div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;">
-      <div style="font-size:12px;font-weight:500;margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap;">
-        <span>Sample: <strong>${s.timepoint||'—'}</strong></span>
-        <span style="color:var(--tx2);">Location: <strong>${s.source||'—'}</strong></span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px;">
-        ${ANALYTES.map(a => `<div style="background:var(--bg1);border-radius:var(--r);padding:6px 10px;">
-          <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:2px;">${a.label}</div>
-          <div style="font-family:var(--mono);font-size:14px;color:${s[a.key]!=null&&s[a.key]!==''?'var(--am)':'var(--tx3)'};">${s[a.key]!=null&&s[a.key]!==''?s[a.key]+' <span style="font-size:10px;color:var(--tx3);">'+a.unit+'</span>':'—'}</div>
-        </div>`).join('')}
-      </div>
-      ${s.sampleNotes?`<div style="margin-top:6px;font-size:12px;color:var(--tx2);font-style:italic;">${s.sampleNotes}</div>`:''}
-    </div>`;
-  });
-  if (state.analysis) {
-    html += `<div style="margin-top:10px;"><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</div>
-      <div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:10px 14px;font-size:13px;white-space:pre-wrap;">${state.analysis}</div></div>`;
-  }
-  html += `<div style="margin-top:12px;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:5px 12px;">Edit results</button></div>`;
-  return html;
+  const editBtn = `<div style="margin-bottom:10px;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:5px 12px;">${state.samples.length?'Edit results':'+ Add results'}</button></div>`;
+  const analysis = `<div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:4px;">ANALYSIS</div>
+    <div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:8px 12px;font-size:13px;white-space:pre-wrap;min-height:36px;">${state.analysis||'<span style="color:var(--tx3);font-style:italic;">—</span>'}</div></div>`;
+  return tableHtml + editBtn + analysis;
 }
 
 function buildResultsEditView(e, state) {
-  const sampleRows = state.samples.map((s, i) => `
-    <div style="background:var(--bg2);border:1px solid var(--ln2);border-radius:var(--r);padding:12px;margin-bottom:8px;" id="rs-row-${e.id}-${i}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-        <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;">
-          Sample:
-          <input type="text" value="${s.timepoint||''}" placeholder="e.g. 0h"
-            style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;font-weight:500;width:70px;padding:2px 4px;"
-            onchange="rsUpdateField('${e.id}',${i},'timepoint',this.value)">
-        </div>
-        <div style="font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:6px;">
-          Location:
-          <input type="text" value="${s.source||''}" placeholder="e.g. Pt."
-            style="border:none;border-bottom:1px solid var(--ln2);background:transparent;font-size:12px;width:70px;padding:2px 4px;"
-            onchange="rsUpdateField('${e.id}',${i},'source',this.value)">
-        </div>
-        <button class="btn-rd" onclick="rsRemoveSample('${e.id}',${i})" style="font-size:10px;padding:3px 8px;margin-left:auto;">Remove</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
-        ${ANALYTES.map(a => `
-          <div><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">${a.label} <span style="opacity:.6;">(${a.unit})</span></label>
-            <input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}"
-              style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;font-family:var(--mono);"
-              onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)">
-          </div>`).join('')}
-        <div style="grid-column:1/-1;"><label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:3px;">Sample notes</label>
-          <input type="text" placeholder="Any notes for this sample..." value="${s.sampleNotes||''}"
-            style="width:100%;padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;"
-            onchange="rsUpdateField('${e.id}',${i},'sampleNotes',this.value)">
-        </div>
-      </div>
-    </div>`).join('');
+  const thS = 'font-family:var(--mono);font-size:9px;color:var(--tx3);padding:4px 5px;border-bottom:1px solid var(--ln);white-space:nowrap;text-align:right;';
+  const tdS = 'padding:3px 4px;border-bottom:1px solid var(--ln);vertical-align:middle;';
+  const inS = 'padding:4px 5px;border:1px solid var(--ln2);border-radius:3px;font-size:12px;font-family:var(--mono);box-sizing:border-box;';
 
-  return `
-    <div id="rs-edit-${e.id}">
-      ${sampleRows}
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <button onclick="rsAddSample('${e.id}')" style="font-size:11px;padding:5px 12px;">+ Add sample</button>
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-family:var(--mono);font-size:10px;color:var(--tx3);display:block;margin-bottom:6px;letter-spacing:.08em;">RESULTS ANALYSIS</label>
-        <textarea id="rs-analysis-${e.id}" style="width:100%;min-height:100px;padding:10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;resize:vertical;"
-          placeholder="Overall analysis and interpretation of results..."
-          onchange="resultsEditState['${e.id}'].analysis=this.value">${state.analysis||''}</textarea>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-gr" onclick="rsSave('${e.id}')" style="font-size:11px;padding:6px 14px;">Save results</button>
-        <button onclick="rsCancelEdit('${e.id}')" style="font-size:11px;padding:6px 14px;">Cancel</button>
-      </div>
-    </div>`;
+  const sampleRows = state.samples.map((s,i) => `<tr>
+    <td style="${tdS}"><input type="text" value="${s.timepoint||''}" placeholder="0h" style="${inS}width:52px;" onchange="rsUpdateField('${e.id}',${i},'timepoint',this.value)"></td>
+    <td style="${tdS}"><input type="text" value="${s.source||''}" placeholder="Pt." style="${inS}width:52px;" onchange="rsUpdateField('${e.id}',${i},'source',this.value)"></td>
+    ${ANALYTES.map(a=>`<td style="${tdS}text-align:right;"><input type="number" step="0.01" placeholder="—" value="${s[a.key]!=null?s[a.key]:''}" style="${inS}width:58px;text-align:right;" onchange="rsUpdateField('${e.id}',${i},'${a.key}',this.value)"></td>`).join('')}
+    <td style="${tdS}"><input type="text" value="${s.sampleNotes||''}" placeholder="Notes..." style="${inS}width:100%;min-width:70px;" onchange="rsUpdateField('${e.id}',${i},'sampleNotes',this.value)"></td>
+    <td style="${tdS}"><button class="btn-rd" onclick="rsRemoveSample('${e.id}',${i})" style="font-size:10px;padding:2px 6px;">×</button></td>
+  </tr>`).join('');
+
+  return `<div id="rs-edit-${e.id}">
+    <div style="overflow-x:auto;margin-bottom:8px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${thS}text-align:left;">Sample</th>
+          <th style="${thS}text-align:left;">Location</th>
+          ${ANALYTES.map(a=>`<th style="${thS}">${a.label}<br><span style="opacity:.6;">${a.unit}</span></th>`).join('')}
+          <th style="${thS}text-align:left;">Notes</th>
+          <th style="${thS}"></th>
+        </tr></thead>
+        <tbody>${sampleRows}</tbody>
+      </table>
+    </div>
+    <div style="margin-bottom:8px;">
+      <button onclick="rsAddSample('${e.id}')" style="font-size:11px;padding:4px 10px;">+ Add sample</button>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:4px;">ANALYSIS</div>
+      <textarea id="rs-analysis-${e.id}" style="width:100%;min-height:70px;padding:8px 10px;border:1px solid var(--ln2);border-radius:var(--r);font-size:13px;resize:vertical;"
+        placeholder="Overall analysis and interpretation..." onchange="resultsEditState['${e.id}'].analysis=this.value">${state.analysis||''}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-gr" onclick="rsSave('${e.id}')" style="font-size:11px;padding:5px 12px;">Save results</button>
+      <button onclick="rsCancelEdit('${e.id}')" style="font-size:11px;padding:5px 12px;">Cancel</button>
+    </div>
+  </div>`;
 }
 
 function toggleResultsSection(eid) {
