@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-048</title>
+<title>SAPA Lab Tracker — v2026-04-21-050</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -224,7 +224,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-048</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-050</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -278,18 +278,21 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         </div>
         <div class="fg3 frow">
           <div><label>Starting volume (mL)</label>
-          <input type="number" id="cm-start-vol" step="0.1" placeholder="mL" oninput="calcLeakage()">
+          <input type="number" id="cm-start-vol" step="0.1" placeholder="mL">
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-start-hint"></div>
         </div>
           <div><label>Total sample volume removed (mL)</label>
-          <input type="number" id="cm-sample-vol" step="0.1" placeholder="mL (auto from sample plan)" oninput="calcLeakage()">
+          <input type="number" id="cm-sample-vol" step="0.1" placeholder="mL (auto from sample plan)">
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-sample-hint"></div>
         </div>
-          <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL" oninput="calcLeakage()"></div>
+          <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL"></div>
         </div>
         <div class="frow">
           <label>Leakage / sweat (start − samples − end)</label>
-          <input type="text" id="cm-leakage" readonly placeholder="auto-calculated">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="text" id="cm-leakage" placeholder="mL — type manually or auto-calculate" style="flex:1;">
+            <button onclick="autoCalcLeakage()" style="white-space:nowrap;font-size:11px;padding:8px 12px;">Auto-calculate</button>
+          </div>
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL, end 950 mL = 38 mL leakage</div>
         </div>
         <div class="frow"><label>Volume note <span style="color:var(--tx3);font-weight:300;">(optional — if values differ from plan)</span></label><input type="text" id="cm-vol-note" placeholder="e.g. leak at 2h, refilled 50mL"></div>
@@ -1178,7 +1181,7 @@ function renderChannelTables() {
   const engines=Object.values(db.components).filter(c=>c.type==='engine');
   const papers=Object.values(db.components).filter(c=>c.type==='paper');
   const glasses=Object.values(db.components).filter(c=>c.type==='glass');
-  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>{const suf=c.id.length>4?'...'+c.id.slice(-4):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
+  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>{const suf=c.id.length>6?'…'+c.id.slice(-6):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
   wrap.innerHTML=Object.entries(formPanels).map(([pid,channels])=>{
     const panel=db.components[pid]||{name:pid};
     return `<div style="margin-bottom:18px;">
@@ -1378,11 +1381,13 @@ function showCloseout() {
   document.getElementById('closeout-panel').scrollIntoView({behavior:'smooth'});
 }
 function usePlanned(){const ae=db.experiments.find(e=>e.status==='active');if(ae?.plannedHours)document.getElementById('cm-hours').value=ae.plannedHours;}
-function calcLeakage(){
+function autoCalcLeakage(){
   const s=parseFloat(document.getElementById('cm-start-vol').value);
   const sp=parseFloat(document.getElementById('cm-sample-vol').value);
   const e=parseFloat(document.getElementById('cm-end-vol').value);
-  document.getElementById('cm-leakage').value=(!isNaN(s)&&!isNaN(sp)&&!isNaN(e))?(s-sp-e).toFixed(1)+' mL':'';
+  const el=document.getElementById('cm-leakage');
+  if(!isNaN(s)&&!isNaN(sp)&&!isNaN(e)) el.value=(s-sp-e).toFixed(1)+' mL';
+  else alert('Please fill in start, sample, and end volumes first.');
 }
 function addUrlEntry(){urlEntries.push({title:'',url:''});renderUrlEntries();}
 function rmUrl(i){urlEntries.splice(i,1);renderUrlEntries();}
