@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-060</title>
+<title>SAPA Lab Tracker — v2026-04-21-064</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -99,6 +99,8 @@ button:disabled{opacity:.4;cursor:not-allowed;}
 .b-active{background:rgba(61,255,122,.18);color:var(--gr);}
 .b-complete{background:var(--grd);color:var(--gr);}
 .b-flagged{background:var(--rdd);color:var(--rd);}
+.b-analysed{background:var(--pud);color:var(--pu);}
+.b-pending{background:var(--amd);color:var(--am);}
 
 /* ── SLIDE-IN PANEL ── */
 .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s;}
@@ -224,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-060</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-064</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -279,11 +281,11 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div class="fg3 frow">
           <div><label>Starting volume (mL)</label>
           <input type="number" id="cm-start-vol" step="0.1" placeholder="mL">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-start-hint"></div>
+          <button id="cm-start-copy-btn" onclick="cmCopyStartVol()" style="margin-top:4px;font-size:10px;padding:3px 8px;width:100%;">Copy from plan</button>
         </div>
           <div><label>Total sample volume removed (mL)</label>
-          <input type="number" id="cm-sample-vol" step="0.1" placeholder="mL (auto from sample plan)">
-          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;" id="cm-sample-hint"></div>
+          <input type="number" id="cm-sample-vol" step="0.1" placeholder="mL">
+          <button id="cm-sample-copy-btn" onclick="cmCopySampleVol()" style="margin-top:4px;font-size:10px;padding:3px 8px;width:100%;">Copy from sample plan</button>
         </div>
           <div><label>End measured volume (mL)</label><input type="number" id="cm-end-vol" step="0.1" placeholder="mL"></div>
         </div>
@@ -296,7 +298,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">e.g. start 1000 mL, remove 12 mL, end 950 mL = 38 mL leakage</div>
         </div>
         <div class="frow"><label>Volume note <span style="color:var(--tx3);font-weight:300;">(optional — if values differ from plan)</span></label><input type="text" id="cm-vol-note" placeholder="e.g. leak at 2h, refilled 50mL"></div>
-        <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies..."></textarea></div>
+        <div class="frow"><label>Completion notes / observations</label><textarea id="cm-notes" placeholder="Results, anomalies... Use - at start of line for bullets"></textarea><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">Tip: start a line with <code>-</code> for a bullet point</div></div>
         <div class="frow" style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="cm-failure">
           <label for="cm-failure" style="margin:0;cursor:pointer;">Flag as failure / concern</label>
@@ -328,6 +330,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="active">Active</option>
           <option value="complete">Complete</option>
           <option value="failure">Failures</option>
+          <option value="analysed">Analysed</option>
+          <option value="pending">Pending analysis</option>
 
         </select>
         <select id="el-tag" onchange="addFilterTag(this.value);this.value='';" style="min-width:140px;"><option value="">Filter by tag...</option></select>
@@ -425,7 +429,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
     <div class="frow" style="max-width:220px;">
       <label>Planned duration (h)</label><input type="number" id="ef-dur" min="0.1" step="0.5" placeholder="e.g. 4">
     </div>
-    <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing?"></textarea></div>
+    <div class="frow"><label>Description / objective</label><textarea id="ef-desc" placeholder="What are you testing? Use - at start of line for bullets"></textarea><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">Tip: start a line with <code>-</code> to create a bullet point</div></div>
     <div class="frow">
       <label>Tags</label>
       <div id="tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
@@ -521,7 +525,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <span class="coll-arrow" id="arr-notes">▾</span>
     </div>
     <div class="coll-body" id="cb-notes">
-      <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes..."></textarea></div>
+      <div class="frow"><textarea id="ef-notes" placeholder="Any additional notes... Use - at start of line for bullets"></textarea><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">Tip: start a line with <code>-</code> for a bullet point</div></div>
     </div>
 
     <!-- CLOSEOUT FIELDS (shown when editing closed experiment) -->
@@ -651,7 +655,14 @@ function fdate(iso) { if (!iso) return '—'; return new Date(iso + 'T00:00:00')
 function tn(t) { return {panel:'Panel',paper:'Paper frame',glass:'Glass frame',engine:'Light engine'}[t] || t; }
 function tb(t) { return `<span class="badge b-${t}">${tn(t)}</span>`; }
 function ge(id) { return db.experiments.find(e => e.id === id); }
-function fv(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
+function fmt(text) {
+  if (!text) return '—';
+  return text.split('\n').map(l => l.trim()).filter(l => l).map(l =>
+    /^[-•*]/.test(l)
+      ? `<span style="display:block;padding-left:14px;position:relative;"><span style="position:absolute;left:0;">•</span>${l.replace(/^[-•*]\s*/,'')}</span>`
+      : `<span style="display:block;">${l}</span>`
+  ).join('');
+}
 function totalHours(cid) {
   return db.experiments.filter(e => (e.components||[]).includes(cid) && e.actualHours).reduce((s,e) => s + e.actualHours, 0);
 }
@@ -1362,25 +1373,28 @@ let urlEntries=[];
 function showCloseout() {
   const ae=db.experiments.find(e=>e.status==='active'); if(!ae) return;
   document.getElementById('cm-planned-lbl').textContent=ae.plannedHours||'—';
-  // Pre-fill solution volume from experiment plan
-  const planVol = ae.solVol||null;
-  const startEl = document.getElementById('cm-start-vol');
-  const startHint = document.getElementById('cm-start-hint');
-  if(planVol){startEl.value=planVol;if(startHint)startHint.textContent='Pre-filled from plan: '+planVol+' mL';}
-  // Pre-fill sample vol total from sample plan
-  const planSampleVol = ae.samplePoints?.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0)||0;
-  const sampleEl = document.getElementById('cm-sample-vol');
-  const sampleHint = document.getElementById('cm-sample-hint');
-  if(planSampleVol>0){sampleEl.value=planSampleVol.toFixed(1);if(sampleHint)sampleHint.textContent='Pre-filled from sample plan: '+planSampleVol.toFixed(1)+' mL';}
-  document.getElementById('cm-vol-note').value='';
+  // Clear all fields first
   document.getElementById('cm-hours').value=ae.plannedHours||'';
-  document.getElementById('cm-start-vol').value=ae.startVol||'';
-  ['cm-sample-vol','cm-end-vol','cm-leakage','cm-notes'].forEach(id=>document.getElementById(id).value='');
+  ['cm-start-vol','cm-sample-vol','cm-end-vol','cm-leakage','cm-notes','cm-vol-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cm-failure').checked=false;
   urlEntries=[]; renderUrlEntries();
+  // Set copy button labels with plan values
+  const planVol = ae.solVol||null;
+  const planSampleVol = ae.samplePoints?.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0)||0;
+  const startBtn = document.getElementById('cm-start-copy-btn');
+  const sampleBtn = document.getElementById('cm-sample-copy-btn');
+  if(startBtn) startBtn.textContent = planVol ? 'Copy from plan: '+planVol+' mL' : 'No plan value';
+  if(startBtn) startBtn.disabled = !planVol;
+  if(sampleBtn) sampleBtn.textContent = planSampleVol>0 ? 'Copy from plan: '+planSampleVol.toFixed(1)+' mL' : 'No sample plan';
+  if(sampleBtn) sampleBtn.disabled = !planSampleVol;
+  // Store plan values for copy buttons
+  showCloseout._planVol = planVol;
+  showCloseout._planSampleVol = planSampleVol>0 ? planSampleVol.toFixed(1) : null;
   document.getElementById('closeout-panel').style.display='block';
   document.getElementById('closeout-panel').scrollIntoView({behavior:'smooth'});
 }
+function cmCopyStartVol(){if(showCloseout._planVol)document.getElementById('cm-start-vol').value=showCloseout._planVol;}
+function cmCopySampleVol(){if(showCloseout._planSampleVol)document.getElementById('cm-sample-vol').value=showCloseout._planSampleVol;}
 function usePlanned(){const ae=db.experiments.find(e=>e.status==='active');if(ae?.plannedHours)document.getElementById('cm-hours').value=ae.plannedHours;}
 function autoCalcLeakage(){
   const s=parseFloat(document.getElementById('cm-start-vol').value);
@@ -1433,6 +1447,8 @@ function renderExpDb() {
   if(df) exps=exps.filter(e=>e.date>=df);
   if(dt) exps=exps.filter(e=>e.date<=dt);
   if(sf==='failure') exps=exps.filter(e=>e.failure);
+  else if(sf==='analysed') exps=exps.filter(e=>e.results&&(e.results.analysis||(e.results.samples||[]).some(s=>s&&(s.sodium!=null||s.chloride!=null||s.bun!=null||s.urea!=null||s.ureaRemoval!=null))));
+  else if(sf==='pending') exps=exps.filter(e=>!e.deletedAt&&e.status==='complete'&&!e.failure&&!(e.results&&(e.results.analysis||(e.results.samples||[]).some(s=>s&&(s.sodium!=null||s.chloride!=null||s.bun!=null||s.urea!=null||s.ureaRemoval!=null)))));
   // flagged filter removed - deleted items hidden from normal view
   else if(sf) exps=exps.filter(e=>e.status===sf);
   const tagSel = document.getElementById('el-tag');
@@ -1443,14 +1459,17 @@ function renderExpDb() {
   if(!exps.length){list.innerHTML='<div class="empty">No experiments yet — click "+ New experiment" to create one</div>';return;}
   list.innerHTML=exps.map(e=>{
     const isActive=e.status==='active';
+    const isAnalysed=!isActive&&e.results&&(e.results.analysis||(e.results.samples||[]).some(s=>s&&(s.sodium!=null||s.chloride!=null||s.bun!=null||s.urea!=null||s.ureaRemoval!=null)));
+    const isPending=!isActive&&!isAnalysed&&e.status==='complete'&&!e.failure;
     const sb=isActive?'<span class="badge b-active">active</span>':e.failure?'<span class="badge b-flagged">failure</span>':'<span class="badge b-complete">complete</span>';
+    const ab=isAnalysed?'<span class="badge b-analysed">analysed</span>':isPending?'<span class="badge b-pending">pending analysis</span>':'';
     const cc=(e.components||[]).length;
     return `<div class="exp-row ${e.flaggedForDeletion?'flagged-row':''}">
       <div class="exp-summary" onclick="toggleExpDetail('${e.id}')">
         <input type="checkbox" class="exp-ck" data-id="${e.id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
         <div class="exp-title">${e.name}${e.runNumber?' <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Run '+e.runNumber+'</span>':''}${e.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}</div>
         <div class="exp-meta">${fdate(e.date)} · ${e.actualHours?e.actualHours.toFixed(1)+' h':e.plannedHours?e.plannedHours+' h planned':'—'} · ${cc} comp</div>
-        ${sb}
+        ${sb} ${ab}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
       </div>
       <div class="exp-detail" id="ed-${e.id}">${buildExpDetail(e)}</div>
@@ -1484,7 +1503,7 @@ function buildExpDetail(e) {
       <div class="df"><div class="dk">Potentiostat</div><div class="dv">${fv(e.pstatId)}</div></div>
     </div>
     ${e.tags?.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${e.tags.map(t=>`<span style="background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:12px;padding:3px 10px;font-size:11px;font-family:var(--mono);">${t}</span>`).join('')}</div>`:''}
-    ${e.description?`<div class="df frow"><div class="dk">Description</div><div class="dv">${e.description}</div></div>`:''}
+    ${e.description?`<div class="df frow"><div class="dk">Description</div><div class="dv">${fmt(e.description)}</div></div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SOLUTION</div>
     ${e.chemicals?.length?`<div style="overflow-x:auto;margin-bottom:10px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>${['Chemical','Amount','Concentration'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}</tr></thead><tbody>${e.chemicals.map(c=>`<tr><td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${c.name||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.amount?c.amount+' '+c.unit:'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${c.conc?c.conc+' '+c.concUnit:'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">No chemicals recorded</div>'}
     <div class="dg">
@@ -1511,10 +1530,10 @@ function buildExpDetail(e) {
     ${e.ledConfig&&Object.keys(e.ledConfig).length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIG</div><div style="display:flex;flex-wrap:wrap;gap:10px;">${Object.entries(e.ledConfig).map(([key,cfg])=>{const parts=key.split('-');const pid=parts.slice(0,-1).join('-');const chIdx=parseInt(parts[parts.length-1]);const ch=(e.panels[pid]||[])[chIdx];const eng=ch?db.components[ch.engine]:null;if(!eng)return'';const active=Object.values(cfg.state||{}).filter(Boolean).length;const total=Object.keys(cfg.state||{}).length;return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;"><div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch?.ch||'?'}</span></div>${buildLedMapHTML(cfg.gen,cfg.state||{})}<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}%</div></div>`;}).join('')}</div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">PANEL LAYOUT</div>
     <div style="overflow-x:auto;">${channelHTML}</div>
-    ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${e.sensors}</div></div>`:''}
+    ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${fmt(e.sensors)}</div></div>`:''}
     ${e.samplePoints?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">SAMPLING</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>${['Time point','Source','Vol/sample','# samples','Row total'].map(h=>`<th style="font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:left;padding:5px 8px;border-bottom:1px solid var(--ln);">${h}</th>`).join('')}</tr></thead><tbody>${e.samplePoints.map(r=>{const t=(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0);return`<tr><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.timepoint||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);">${r.source||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.volPerSample?r.volPerSample+' mL':'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;">${r.numSamples||'—'}</td><td style="padding:5px 8px;border-bottom:1px solid var(--ln);font-family:var(--mono);font-size:11px;color:var(--am);">${t>0?t.toFixed(1)+' mL':'—'}</td></tr>`;}).join('')}<tr><td colspan="4" style="padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--tx3);">Total</td><td style="padding:5px 8px;font-family:var(--mono);font-size:12px;color:var(--am);font-weight:500;">${e.samplePoints.reduce((s,r)=>s+(parseFloat(r.volPerSample)||0)*(parseFloat(r.numSamples)||0),0).toFixed(1)} mL</td></tr></tbody></table></div>`:''}
-    ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${e.notes}</div></div>`:''}
-    ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv" style="white-space:pre-wrap;">${e.completionNotes.split('\n').map(l=>l.trim()).filter(l=>l).map(l=>/^[-•*]/.test(l)?'<span style="display:block;padding-left:14px;position:relative;"><span style="position:absolute;left:0;">•</span>'+l.replace(/^[-•*]\s*/,'')+'</span>':'<span style="display:block;">'+l+'</span>').join('')}</div></div>`:''}
+    ${e.notes?`<div class="df frow"><div class="dk">Setup notes</div><div class="dv">${fmt(e.notes)}</div></div>`:''}
+    ${e.completionNotes?`<div class="df frow" style="margin-top:6px;">${e.failure?'<span class="pill-rd" style="font-size:9px;display:block;margin-bottom:4px;">FAILURE</span>':''}<div class="dk">Completion notes</div><div class="dv">${fmt(e.completionNotes)}</div></div>`:''}
     ${e.fileLinks?.length?`<div class="df frow" style="margin-top:6px;"><div class="dk">File links</div><div class="dv">${links}</div></div>`:''}
     ${e.status==='complete'?buildResultsSection(e):''}
     <div style="border-top:1px solid var(--ln);margin-top:14px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -2094,7 +2113,7 @@ function buildResultsReadView(e, state) {
   }
   const editBtn = `<div style="margin-bottom:10px;"><button class="btn-am" onclick="enterResultsEdit('${e.id}')" style="font-size:11px;padding:5px 12px;">${state.samples.length?'Edit results':'+ Add results'}</button></div>`;
   const analysis = `<div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:4px;">ANALYSIS</div>
-    <div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:8px 12px;font-size:13px;white-space:pre-wrap;min-height:36px;">${state.analysis||'<span style="color:var(--tx3);font-style:italic;">—</span>'}</div></div>`;
+    <div style="background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);padding:8px 12px;font-size:13px;white-space:pre-wrap;min-height:36px;">${state.analysis?fmt(state.analysis):'<span style="color:var(--tx3);font-style:italic;">—</span>'}</div></div>`;
   return tableHtml + editBtn + analysis;
 }
 
@@ -2226,11 +2245,12 @@ function rsSave(eid) {
   e.editedAt = Date.now(); e.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
   state.editing = false;
   saveAndSync();
-  // Re-render detail
-  const det = document.getElementById('ed-'+eid);
-  if (det && det.classList.contains('open')) {
-    det.innerHTML = buildExpDetail(e);
-  }
+  renderExpDb();
+  // Re-expand the detail after re-render
+  setTimeout(() => {
+    const det2 = document.getElementById('ed-'+eid);
+    if (det2) det2.classList.add('open');
+  }, 50);
 }
 
 // Legacy stubs (no longer used but kept to avoid errors if called)
