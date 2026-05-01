@@ -655,6 +655,7 @@ function fdate(iso) { if (!iso) return '—'; return new Date(iso + 'T00:00:00')
 function tn(t) { return {panel:'Panel',paper:'Paper frame',glass:'Glass frame',engine:'Light engine'}[t] || t; }
 function tb(t) { return `<span class="badge b-${t}">${tn(t)}</span>`; }
 function ge(id) { return db.experiments.find(e => e.id === id); }
+function fv(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
 function fmt(text) {
   if (!text) return '—';
   return text.split('\n').map(l => l.trim()).filter(l => l).map(l =>
