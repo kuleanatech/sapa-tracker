@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-064</title>
+<title>SAPA Lab Tracker — v2026-04-21-069</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-064</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-069</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -580,12 +580,14 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
         <div style="display:flex;align-items:center;gap:0;">
           <span style="padding:8px 10px;background:var(--bg3);border:1px solid var(--ln2);border-right:none;border-radius:var(--r) 0 0 var(--r);font-family:var(--mono);font-size:12px;color:var(--tx2);white-space:nowrap;">SAPA_EF_</span>
           <input type="text" id="reg-id" placeholder="0001 or TBD or NA" maxlength="20" style="border-radius:0 var(--r) var(--r) 0;flex:1;">
+          <button class="btn-cam" onclick="openCam('serial-cam')" title="Scan serial number" style="font-size:15px;flex-shrink:0;margin-left:6px;border-radius:var(--r);">&#128247;</button>
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">TBD and NA allowed — component will be flagged until updated</div>
       </div>
     </div>
     <div class="fg3 frow">
       <div><label>Fabrication date</label><input type="date" id="reg-mfg"></div>
+      <div><label>Fabricator</label><input type="text" id="reg-fabricator" placeholder="Name of person fabricating"></div>
       <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
       <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
         <select id="reg-led-gen" onchange="renderLedGrid()">
@@ -598,11 +600,33 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch..."></div>
     </div>
     <!-- Glass fields -->
-    <div id="reg-glass-wrap" style="display:none;" class="fg2 frow">
-      <div><label>Synthesis date</label><input type="date" id="reg-glass-synth"></div>
-      <div><label>QC photocurrent</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4 µA"></div>
-      <div><label>UV absorption (%)</label><input type="number" id="reg-glass-uv" min="0" max="100" step="0.1" placeholder="e.g. 85.2"></div>
-      <div><label>Serial number</label><div style="display:flex;gap:6px;"><input type="text" id="reg-glass-serial" placeholder="e.g. SN-2024-001" style="flex:1;"><button class="btn-cam" onclick="openCam('serial-cam')" title="Scan" style="font-size:15px;flex-shrink:0;">&#128247;</button></div></div>
+    <div id="reg-glass-wrap" style="display:none;">
+      <div class="frow">
+        <label>Raw TiO₂ glass slide</label>
+        <select id="reg-glass-slide" onchange="onGlassSlideSelect(this.value)" style="width:100%;">
+          <option value="">— select slide or enter values manually —</option>
+        </select>
+        <div id="reg-glass-slide-info" style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;"></div>
+      </div>
+      <div class="frow">
+        <label>Glass serial number <span style="font-weight:400;color:var(--tx3);">(handwritten on slide)</span></label>
+        <input type="text" id="reg-glass-serial" placeholder="e.g. 1028-10" style="width:100%;">
+      </div>
+      <div class="fg3 frow">
+        <div>
+          <label>Synthesis date</label>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="text" id="reg-glass-synth-month" placeholder="MM" maxlength="2" style="width:44px;text-align:center;">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--tx3);">/</span>
+            <input type="text" id="reg-glass-synth-day" placeholder="DD" maxlength="2" style="width:44px;text-align:center;">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--tx3);">/</span>
+            <input type="number" id="reg-glass-synth-year" placeholder="YYYY" min="2000" max="2099" style="width:64px;text-align:center;">
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">Month/day auto-filled · year optional</div>
+        </div>
+        <div><label>QC photocurrent (µA)</label><input type="text" id="reg-glass-qc" placeholder="e.g. 12.4"></div>
+        <div><label>UV absorption (%)</label><input type="number" id="reg-glass-uv" min="0" max="100" step="0.1" placeholder="e.g. 85.2"></div>
+      </div>
     </div>
     <!-- LED grid -->
     <div id="reg-led-grid-wrap" style="display:none;margin-bottom:12px;">
@@ -638,6 +662,9 @@ const SCOPES = ['Files.ReadWrite', 'Sites.ReadWrite.All'];
 
 /* ═══════════ LOCAL DB ═══════════ */
 const LKEY = 'sapa_v3';
+// Raw TiO2 glass slide database
+const GLASS_SLIDES_DB = [{"id":"1030-10","photocurrent":53.3,"uvAbsorption":95.7,"used":false},{"id":"1028-10","photocurrent":47.0,"uvAbsorption":92.7,"used":false},{"id":"1021-9","photocurrent":46.9,"uvAbsorption":94.9,"used":false},{"id":"1028-09","photocurrent":46.7,"uvAbsorption":93.7,"used":false},{"id":"1028-12","photocurrent":46.5,"uvAbsorption":92.7,"used":false},{"id":"1030-12","photocurrent":46.2,"uvAbsorption":95.5,"used":false},{"id":"1028-11","photocurrent":46.1,"uvAbsorption":92.9,"used":false},{"id":"1009-15","photocurrent":45.9,"uvAbsorption":94.4,"used":false},{"id":"1104-09","photocurrent":45.5,"uvAbsorption":96.7,"used":false},{"id":"0919-29","photocurrent":45.2,"uvAbsorption":96.1,"used":false},{"id":"1028-05","photocurrent":44.8,"uvAbsorption":94.1,"used":false},{"id":"0925-10","photocurrent":44.7,"uvAbsorption":94.4,"used":false},{"id":"0717-8","photocurrent":44.1,"uvAbsorption":95.6,"used":false},{"id":"1003-11","photocurrent":44.1,"uvAbsorption":94.4,"used":false},{"id":"0319-10","photocurrent":43.9,"uvAbsorption":96.9,"used":false},{"id":"1009-14","photocurrent":43.7,"uvAbsorption":94.6,"used":false},{"id":"1028-06","photocurrent":43.2,"uvAbsorption":93.8,"used":false},{"id":"1003-07","photocurrent":43.1,"uvAbsorption":90.7,"used":false},{"id":"1003-08","photocurrent":42.8,"uvAbsorption":90.8,"used":false},{"id":"0930-15","photocurrent":42.7,"uvAbsorption":91.9,"used":false},{"id":"1009-16","photocurrent":42.6,"uvAbsorption":94.5,"used":false},{"id":"0925-09","photocurrent":42.2,"uvAbsorption":94.6,"used":false},{"id":"0717-7","photocurrent":42.1,"uvAbsorption":95.7,"used":false},{"id":"1009-11","photocurrent":42.1,"uvAbsorption":94.7,"used":false},{"id":"1021-7","photocurrent":42.1,"uvAbsorption":92.6,"used":false},{"id":"0930-13","photocurrent":42.1,"uvAbsorption":92.7,"used":false},{"id":"1104-10","photocurrent":42.1,"uvAbsorption":96.6,"used":false},{"id":"1003-12","photocurrent":42.1,"uvAbsorption":94.4,"used":false},{"id":"1003-10","photocurrent":42.0,"uvAbsorption":94.5,"used":false},{"id":"0930-16","photocurrent":41.9,"uvAbsorption":92.0,"used":false},{"id":"1104-1","photocurrent":41.9,"uvAbsorption":95.9,"used":false},{"id":"1021-08","photocurrent":41.8,"uvAbsorption":92.6,"used":false},{"id":"1021-11","photocurrent":41.7,"uvAbsorption":94.8,"used":false},{"id":"1003-09","photocurrent":41.7,"uvAbsorption":94.5,"used":false},{"id":"1014-08","photocurrent":41.6,"uvAbsorption":93.5,"used":false},{"id":"1021-12","photocurrent":41.5,"uvAbsorption":94.7,"used":false},{"id":"0717-10","photocurrent":41.0,"uvAbsorption":96.6,"used":false},{"id":"0915-10","photocurrent":41.0,"uvAbsorption":94.7,"used":false},{"id":"0925-04","photocurrent":40.7,"uvAbsorption":94.4,"used":false},{"id":"0925-02","photocurrent":40.3,"uvAbsorption":94.5,"used":false},{"id":"0717-11","photocurrent":40.2,"uvAbsorption":96.7,"used":false},{"id":"1028-08","photocurrent":40.2,"uvAbsorption":94.0,"used":false},{"id":"0717-05","photocurrent":40.1,"uvAbsorption":95.5,"used":false},{"id":"0319-09","photocurrent":40.0,"uvAbsorption":97.0,"used":false},{"id":"1106-10","photocurrent":39.7,"uvAbsorption":96.5,"used":false},{"id":"1021-10","photocurrent":39.6,"uvAbsorption":94.8,"used":false},{"id":"0925-11","photocurrent":39.6,"uvAbsorption":94.4,"used":false},{"id":"1104-11","photocurrent":39.6,"uvAbsorption":96.7,"used":false},{"id":"1104-03","photocurrent":39.4,"uvAbsorption":96.1,"used":false},{"id":"0919-30","photocurrent":38.9,"uvAbsorption":96.1,"used":false},{"id":"1104-4","photocurrent":38.8,"uvAbsorption":96.2,"used":false},{"id":"0925-12","photocurrent":38.8,"uvAbsorption":94.4,"used":false},{"id":"0717-6","photocurrent":38.7,"uvAbsorption":95.4,"used":false},{"id":"1014-06","photocurrent":38.7,"uvAbsorption":null,"used":false},{"id":"0919-32","photocurrent":38.3,"uvAbsorption":96.0,"used":false},{"id":"0915-06","photocurrent":38.3,"uvAbsorption":95.0,"used":false},{"id":"0925-03","photocurrent":38.1,"uvAbsorption":94.5,"used":false},{"id":"1104-12","photocurrent":37.9,"uvAbsorption":96.7,"used":false},{"id":"1009-13","photocurrent":37.8,"uvAbsorption":94.6,"used":false},{"id":"1106-11","photocurrent":37.6,"uvAbsorption":96.5,"used":false},{"id":"0915-12","photocurrent":37.0,"uvAbsorption":null,"used":false},{"id":"0724-11","photocurrent":36.5,"uvAbsorption":97.8,"used":false},{"id":"0919-31","photocurrent":36.3,"uvAbsorption":96.0,"used":false},{"id":"0724-10","photocurrent":36.0,"uvAbsorption":97.9,"used":false},{"id":"0915-09","photocurrent":36.0,"uvAbsorption":94.7,"used":false},{"id":"0917-29","photocurrent":35.8,"uvAbsorption":93.4,"used":false},{"id":"1014-05","photocurrent":35.7,"uvAbsorption":93.6,"used":false},{"id":"1003-03","photocurrent":35.5,"uvAbsorption":null,"used":false},{"id":"1104-02","photocurrent":35.1,"uvAbsorption":95.8,"used":false},{"id":"0808-5","photocurrent":34.9,"uvAbsorption":96.6,"used":false},{"id":"1106-12","photocurrent":34.9,"uvAbsorption":96.5,"used":false},{"id":"1021-6","photocurrent":34.8,"uvAbsorption":92.6,"used":false},{"id":"0808-9","photocurrent":34.5,"uvAbsorption":96.6,"used":false},{"id":"0717-9","photocurrent":34.3,"uvAbsorption":96.7,"used":false},{"id":"0821-10","photocurrent":34.0,"uvAbsorption":95.6,"used":false},{"id":"0919-25","photocurrent":34.0,"uvAbsorption":null,"used":false},{"id":"0919-27","photocurrent":0.3,"uvAbsorption":null,"used":false},{"id":"1014-11","photocurrent":33.8,"uvAbsorption":95.3,"used":false},{"id":"0908-10","photocurrent":33.7,"uvAbsorption":95.0,"used":false},{"id":"1003-02","photocurrent":33.6,"uvAbsorption":95.5,"used":false},{"id":"1104-07","photocurrent":33.3,"uvAbsorption":97.0,"used":false},{"id":"0821-11","photocurrent":33.2,"uvAbsorption":95.7,"used":false},{"id":"0915-05","photocurrent":33.2,"uvAbsorption":95.0,"used":false},{"id":"0808-10","photocurrent":33.1,"uvAbsorption":96.7,"used":false},{"id":"0925-01","photocurrent":33.1,"uvAbsorption":94.7,"used":false},{"id":"0808-8","photocurrent":33.0,"uvAbsorption":96.1,"used":false},{"id":"1106-09","photocurrent":33.0,"uvAbsorption":96.6,"used":false},{"id":"1003-01","photocurrent":32.9,"uvAbsorption":95.5,"used":false},{"id":"0919-28","photocurrent":32.7,"uvAbsorption":96.9,"used":false},{"id":"0724-12","photocurrent":32.6,"uvAbsorption":97.9,"used":false},{"id":"0808-12","photocurrent":32.6,"uvAbsorption":96.6,"used":false},{"id":"1030-6","photocurrent":32.5,"uvAbsorption":95.7,"used":false},{"id":"1014-10","photocurrent":32.2,"uvAbsorption":95.4,"used":false},{"id":"0917-32","photocurrent":32.1,"uvAbsorption":93.5,"used":false},{"id":"0915-08","photocurrent":32.1,"uvAbsorption":95.0,"used":false},{"id":"1009-12","photocurrent":31.8,"uvAbsorption":94.8,"used":false},{"id":"1003-04","photocurrent":31.8,"uvAbsorption":95.5,"used":false},{"id":"0908-09","photocurrent":31.7,"uvAbsorption":95.0,"used":false},{"id":"0808-7","photocurrent":31.1,"uvAbsorption":96.3,"used":false},{"id":"0908-11","photocurrent":31.1,"uvAbsorption":95.1,"used":false},{"id":"0808-6","photocurrent":31.0,"uvAbsorption":96.2,"used":false},{"id":"0724-04","photocurrent":30.4,"uvAbsorption":97.2,"used":false},{"id":"0821-07","photocurrent":30.0,"uvAbsorption":95.7,"used":false}];
+
 let db = { components: {}, experiments: [] };
 let activeExpId = null;
 let accessToken = null;
@@ -646,6 +673,7 @@ let driveId = null;
 function loadLocal() {
   try { const r = localStorage.getItem(LKEY); if (r) db = JSON.parse(r); } catch(e) {}
   if (!db.tags) db.tags = [];
+  if (!db.usedSlides) db.usedSlides = [];
   activeExpId = (db.experiments.find(e => e.status === 'active') || {}).id || null;
 }
 function saveLocal() { localStorage.setItem(LKEY, JSON.stringify(db)); }
@@ -856,10 +884,13 @@ function closeExpPanel() {
 function openCompPanel() {
   document.getElementById('reg-id').value=''; document.getElementById('reg-name').value='';
   document.getElementById('reg-notes').value=''; document.getElementById('reg-mfg').value='';
-  document.getElementById('reg-channels').value=''; document.getElementById('reg-glass-synth').value='';
+  document.getElementById('reg-channels').value='';
+  const fabEl=document.getElementById('reg-fabricator');if(fabEl)fabEl.value=''; ['reg-glass-synth-month','reg-glass-synth-day','reg-glass-synth-year','reg-glass-serial','reg-glass-qc','reg-glass-uv'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('reg-glass-qc').value='';
   document.getElementById('reg-type').value = 'panel';
-  onRegTypeChange(); renderLedGrid();
+  document.getElementById('reg-mfg').value = today();
+  onRegTypeChange();
+  renderGlassSlideDropdown(); renderLedGrid();
   document.getElementById('comp-overlay').classList.add('open');
   document.getElementById('comp-panel').classList.add('open');
 }
@@ -1009,6 +1040,7 @@ function addNewTag() {
   const inp = document.getElementById('tag-new'); if (!inp||!inp.value.trim()) return;
   const tag = inp.value.trim();
   if (!db.tags) db.tags = [];
+  if (!db.usedSlides) db.usedSlides = [];
   if (!db.tags.includes(tag)) db.tags.push(tag);
   if (!formTags.includes(tag)) { formTags.push(tag); renderTagChips(); }
   renderTagSelect(); renderExpTagFilter();
@@ -1575,13 +1607,61 @@ function goToComp(id){
 }
 
 /* ═══════════ COMPONENT DB ═══════════ */
+
+/* ═══════════ GLASS SLIDE DATABASE ═══════════ */
+function renderGlassSlideDropdown() {
+  const sel = document.getElementById('reg-glass-slide'); if (!sel) return;
+  const usedIds = db.usedSlides || [];
+  const available = GLASS_SLIDES_DB.filter(s => !usedIds.includes(s.id));
+  sel.innerHTML = '<option value="">— select slide or enter manually —</option>' +
+    available.map(s => `<option value="${s.id}">${s.id} — ${s.photocurrent}µA, UV ${s.uvAbsorption}%</option>`).join('');
+}
+
+function onGlassSlideSelect(slideId) {
+  const info = document.getElementById('reg-glass-slide-info');
+  if (!slideId) { if (info) info.textContent = ''; return; }
+  const slide = GLASS_SLIDES_DB.find(s => s.id === slideId);
+  if (!slide) return;
+  // Auto-populate serial number
+  const serialEl = document.getElementById('reg-glass-serial');
+  if (serialEl) serialEl.value = slide.id;
+  // Auto-populate QC fields
+  const qcEl = document.getElementById('reg-glass-qc');
+  const uvEl = document.getElementById('reg-glass-uv');
+  if (qcEl) qcEl.value = slide.photocurrent || '';
+  if (uvEl) uvEl.value = slide.uvAbsorption || '';
+  // Parse date from slide ID format MMDD-N (e.g. "1028-10" → month 10, day 28)
+  const parts = slide.id.split('-');
+  if (parts[0] && parts[0].length === 4) {
+    const mm = parts[0].slice(0, 2);
+    const dd = parts[0].slice(2, 4);
+    const mEl = document.getElementById('reg-glass-synth-month');
+    const dEl = document.getElementById('reg-glass-synth-day');
+    if (mEl) mEl.value = mm;
+    if (dEl) dEl.value = dd;
+  }
+  if (info) info.textContent = `${slide.photocurrent}µA photocurrent · ${slide.uvAbsorption!=null?slide.uvAbsorption+'% UV':'UV n/a'}`;
+}
+
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
   document.getElementById('reg-ch-wrap').style.display=t==='panel'?'block':'none';
   document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-led-grid-wrap').style.display=t==='engine'?'block':'none';
-  document.getElementById('reg-glass-wrap').style.display=t==='glass'?'grid':'none';
+  document.getElementById('reg-glass-wrap').style.display=t==='glass'?'block':'none';
   if(t==='engine') renderLedGrid();
+  if(t==='glass') { renderGlassSlideDropdown(); autoNameComp('glass'); }
+  if(t==='paper') autoNameComp('paper');
+}
+
+function autoNameComp(type) {
+  const nameEl = document.getElementById('reg-name');
+  if (!nameEl || nameEl.value) return;
+  const prefix = type === 'glass' ? 'SAPA glass #' : 'SAPA paper #';
+  const existing = Object.values(db.components).filter(c => c.type === type && c.name);
+  const nums = existing.map(c => { const m = c.name.match(/#(\d+)/); return m ? parseInt(m[1]) : 0; });
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  nameEl.value = prefix + next;
 }
 function registerComp(){
   const rawId=document.getElementById('reg-id').value.trim().toUpperCase();
@@ -1598,15 +1678,23 @@ function registerComp(){
   if(type==='panel'){const ch=parseInt(document.getElementById('reg-channels').value);if(!ch||ch<1){alert('Please enter number of channels.');return;}}
   const ledGen=type==='engine'?(document.getElementById('reg-led-gen')?.value||null):null;
   const ledActive=type==='engine'?getLedGrid():null;
+  const rawSlideId = type==='glass' ? (document.getElementById('reg-glass-slide')?.value||null) : null;
   db.components[finalId]={id:finalId,name,type,
     mfgDate:document.getElementById('reg-mfg').value||null,
     channels:type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
     ledGen:ledGen||null, ledActive,
-    glassSynthDate:type==='glass'?(document.getElementById('reg-glass-synth').value||null):null,
+    glassSynthDate:type==='glass'?(()=>{
+      const m=document.getElementById('reg-glass-synth-month')?.value||'';
+      const d=document.getElementById('reg-glass-synth-day')?.value||'';
+      const y=document.getElementById('reg-glass-synth-year')?.value||'';
+      if(!m&&!d) return null;
+      return y ? `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` : `${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    })():null,
+    rawSlideId:rawSlideId||null,
     glassQC:type==='glass'?(document.getElementById('reg-glass-qc').value.trim()||null):null,
     glassUV:type==='glass'?(document.getElementById('reg-glass-uv').value||null):null,
     glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
-    notes:document.getElementById('reg-notes').value.trim(), registered:today(), createdAt:Date.now(), createdBy:(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0], createdAt:Date.now()
+    notes:document.getElementById('reg-notes').value.trim(), fabricator:document.getElementById('reg-fabricator')?.value.trim()||null, registered:today(), createdAt:Date.now(), createdBy:(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0], createdAt:Date.now()
   };
   saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
@@ -1735,6 +1823,8 @@ function openEditCompPanel(id) {
       ${channelsField}
       ${glassFields}
       ${ledGridHTML}
+      <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Fabricator</label>
+        <input type="text" id="ec-fabricator" value="${c.fabricator||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
       <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Notes</label>
         <textarea id="ec-notes" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;min-height:80px;resize:vertical;">${c.notes||''}</textarea></div>
     </div>
@@ -1800,6 +1890,7 @@ function saveEditComp(){
     });
     const nc = db.components[finalNewId];
     nc.name = document.getElementById('ec-name').value.trim() || nc.name;
+    nc.fabricator = document.getElementById('ec-fabricator')?.value.trim()||nc.fabricator;
     nc.notes = document.getElementById('ec-notes').value.trim();
     if(nc.type==='panel') nc.channels = parseInt(document.getElementById('ec-channels').value)||nc.channels;
     if(nc.type==='glass'){nc.glassSynthDate=document.getElementById('ec-glass-synth').value||null;nc.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;nc.glassUV=document.getElementById('ec-glass-uv').value||null;nc.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
@@ -1807,6 +1898,7 @@ function saveEditComp(){
     nc.editedAt = Date.now(); nc.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
   } else {
     c.name = document.getElementById('ec-name').value.trim() || c.name;
+    c.fabricator = document.getElementById('ec-fabricator')?.value.trim()||c.fabricator;
     c.notes = document.getElementById('ec-notes').value.trim();
     if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
     if(c.type==='glass'){c.glassSynthDate=document.getElementById('ec-glass-synth').value||null;c.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;c.glassUV=document.getElementById('ec-glass-uv').value||null;c.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
@@ -1861,10 +1953,14 @@ function toggleCompDetail(id) {
       <div class="dg" style="margin-bottom:10px;">
         <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
         <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
+      ${c.fabricator?`<div class="df"><div class="dk">Fabricator</div><div class="dv">${c.fabricator}</div></div>`:''}
+        ${c.fabricator?`<div class="df"><div class="dk">Fabricator</div><div class="dv">${c.fabricator}</div></div>`:''}
         <div class="df"><div class="dk">Total hours</div><div class="dv" style="font-family:var(--mono);font-size:18px;color:var(--am);">${h.toFixed(1)}<span style="font-size:11px;color:var(--tx3);"> h</span></div></div>
         <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
         ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
         ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3x5)',gen2:'Gen 2 (1x3)',gen3:'Gen 3 (8x3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
+        ${c.rawSlideId?`<div class="df"><div class="dk">Raw slide ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.rawSlideId}</div></div>`:''}
+      ${c.rawSlideId?`<div class="df"><div class="dk">Raw slide ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.rawSlideId}</div></div>`:''}
         ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
         ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
         ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
