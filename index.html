@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-069</title>
+<title>SAPA Lab Tracker — v2026-04-21-071</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-069</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-071</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -531,6 +531,14 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
     <!-- CLOSEOUT FIELDS (shown when editing closed experiment) -->
     <div id="ef-closeout-section" style="display:none;border-top:2px solid var(--ln2);margin-top:12px;padding-top:14px;">
       <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;">Close-out details</div>
+      <div class="frow" style="max-width:300px;">
+        <label>Status</label>
+        <select id="ef-status">
+          <option value="active">Active (re-open)</option>
+          <option value="paused">Paused</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
       <div class="fg2 frow">
         <div><label>Actual duration (hours)</label><input type="number" id="ef-actual-hours" min="0.1" step="0.5"></div>
         <div style="display:flex;flex-direction:column;justify-content:flex-end;">
@@ -1143,6 +1151,12 @@ function saveExpForm() {
     // Save closeout fields if the experiment is not active
     if (existing.status !== 'active' && document.getElementById('ef-closeout-section')?.style.display !== 'none') {
       existing.actualHours = parseFloat(document.getElementById('ef-actual-hours').value)||existing.actualHours;
+      const newStatus = document.getElementById('ef-status')?.value;
+      if (newStatus) {
+        existing.status = newStatus;
+        if (newStatus === 'active') { activeExpId = existing.id; existing.closedAt = null; existing.closedBy = null; }
+        else if (newStatus === 'complete' && !existing.closedAt) { existing.closedAt = Date.now(); existing.closedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0]; }
+      }
       existing.startVol = parseFloat(document.getElementById('ef-start-vol').value)||existing.startVol;
       existing.sampleVol = parseFloat(document.getElementById('ef-sample-vol').value)||existing.sampleVol;
       existing.endVol = parseFloat(document.getElementById('ef-end-vol').value)||existing.endVol;
@@ -1492,8 +1506,8 @@ function renderExpDb() {
   if(!exps.length){list.innerHTML='<div class="empty">No experiments yet — click "+ New experiment" to create one</div>';return;}
   list.innerHTML=exps.map(e=>{
     const isActive=e.status==='active';
-    const isAnalysed=!isActive&&e.results&&(e.results.analysis||(e.results.samples||[]).some(s=>s&&(s.sodium!=null||s.chloride!=null||s.bun!=null||s.urea!=null||s.ureaRemoval!=null)));
-    const isPending=!isActive&&!isAnalysed&&e.status==='complete'&&!e.failure;
+    const isAnalysed=(e.status==='complete'||e.status==='paused')&&e.results&&(e.results.analysis||(e.results.samples||[]).some(s=>s&&(s.sodium!=null||s.chloride!=null||s.bun!=null||s.urea!=null||s.ureaRemoval!=null)));
+    const isPending=!isActive&&!isAnalysed&&(e.status==='complete'||e.status==='paused')&&!e.failure;
     const sb=isActive?'<span class="badge b-active">active</span>':e.failure?'<span class="badge b-flagged">failure</span>':'<span class="badge b-complete">complete</span>';
     const ab=isAnalysed?'<span class="badge b-analysed">analysed</span>':isPending?'<span class="badge b-pending">pending analysis</span>':'';
     const cc=(e.components||[]).length;
@@ -2430,6 +2444,8 @@ function showCloseoutSection(e) {
   set('ef-sample-vol', e.sampleVol); set('ef-end-vol', e.endVol);
   set('ef-leakage', e.leakage); set('ef-vol-note', e.volNote);
   set('ef-completion-notes', e.completionNotes);
+  const statusEl = document.getElementById('ef-status');
+  if (statusEl) statusEl.value = e.status || 'complete';
   const fail = document.getElementById('ef-failure'); if(fail) fail.checked = !!e.failure;
   efUrlEntries = e.fileLinks ? JSON.parse(JSON.stringify(e.fileLinks)) : [];
   renderEfUrlEntries();
