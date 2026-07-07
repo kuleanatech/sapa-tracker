@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-04-21-071</title>
+<title>SAPA Lab Tracker — v2026-07-07-083</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-04-21-071</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-083</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -365,7 +365,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div class="search-bar">
         <div style="display:flex;gap:6px;align-items:center;flex:2;min-width:200px;">
           <input type="text" id="cl-search" placeholder="Search serial number, name, notes..." oninput="handleCompSearch(this.value)" style="flex:1;">
-          <button class="btn-cam" onclick="openCam('lookup-cam')" title="Scan QR to look up" style="font-size:15px;flex-shrink:0;">&#128247;</button>
+          
         </div>
         <select id="cl-type" onchange="renderCompList()">
           <option value="">All types</option>
@@ -373,6 +373,8 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="paper">Paper frames</option>
           <option value="glass">Glass frames</option>
           <option value="engine">Light engines</option>
+          <option value="minipot">Mini Potentiostats</option>
+          <option value="labpot">Lab Potentiostats</option>
         </select>
         <input type="date" id="cl-from" oninput="renderCompList()" title="Fab date from">
         <input type="date" id="cl-to" oninput="renderCompList()" title="Fab date to">
@@ -446,7 +448,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--am);text-transform:uppercase;margin-bottom:10px;">Panel &amp; Channel Configuration</div>
       <div class="panel-sel-row">
         <select id="panel-sel"><option value="">— select a panel —</option></select>
-        <button class="btn-cam" onclick="openCam('panel-sel-cam')" title="Scan panel" style="font-size:15px;">&#128247;</button>
+        
         <button onclick="addPanelToForm()">Add panel</button>
       </div>
       <div id="channel-tables"></div>
@@ -459,7 +461,12 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
     </div>
     <div class="coll-body" id="cb-light">
       <div class="fg2 frow">
-        <div><label>Potentiostat(s) used</label><input type="text" id="ef-pstat-id" placeholder="e.g. Main unit"></div>
+        <div><label>Potentiostat(s) used</label>
+          <div id="ef-pstat-select-wrap" style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;padding:6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);">
+            <!-- populated by renderPstatSelectors() -->
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">Select from registered potentiostats</div>
+        </div>
         <div><label>Program note</label><input type="text" id="ef-pstat-note" placeholder="e.g. Standard CV"></div>
       </div>
       <div class="frow">
@@ -581,22 +588,25 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
           <option value="paper">Paper frame</option>
           <option value="glass">Glass frame</option>
           <option value="engine">Light engine</option>
+          <option value="minipot">Mini Potentiostat</option>
+          <option value="labpot">Lab Potentiostat</option>
         </select>
       </div>
       <div><label>Name / label *</label><input type="text" id="reg-name" placeholder="e.g. Engine 04"></div>
       <div><label>Serial number *</label>
         <div style="display:flex;align-items:center;gap:0;">
-          <span style="padding:8px 10px;background:var(--bg3);border:1px solid var(--ln2);border-right:none;border-radius:var(--r) 0 0 var(--r);font-family:var(--mono);font-size:12px;color:var(--tx2);white-space:nowrap;">SAPA_EF_</span>
+          <span id="reg-id-prefix" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--ln2);border-right:none;border-radius:var(--r) 0 0 var(--r);font-family:var(--mono);font-size:12px;color:var(--tx2);white-space:nowrap;">SAPA_EF_</span>
           <input type="text" id="reg-id" placeholder="0001 or TBD or NA" maxlength="20" style="border-radius:0 var(--r) var(--r) 0;flex:1;">
-          <button class="btn-cam" onclick="openCam('serial-cam')" title="Scan serial number" style="font-size:15px;flex-shrink:0;margin-left:6px;border-radius:var(--r);">&#128247;</button>
+          
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:3px;">TBD and NA allowed — component will be flagged until updated</div>
+        <div id="reg-id-pcb-note" style="display:none;font-family:var(--mono);font-size:10px;color:var(--bl);margin-top:2px;">This suffix is pre-printed on the PCB</div>
       </div>
     </div>
     <div class="fg3 frow">
       <div><label>Fabrication date</label><input type="date" id="reg-mfg"></div>
       <div><label>Fabricator</label><input type="text" id="reg-fabricator" placeholder="Name of person fabricating"></div>
-      <div id="reg-ch-wrap" style="display:none;"><label>Number of channels *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
+      <div id="reg-ch-wrap" style="display:none;"><label id="reg-ch-label">Number of positions *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
       <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
         <select id="reg-led-gen" onchange="renderLedGrid()">
           <option value="">— select —</option>
@@ -882,7 +892,7 @@ function openExpPanel(editId) {
   // Show closeout fields if editing a non-active (closed/paused) experiment
   if (exp && exp.status !== 'active') showCloseoutSection(exp);
   else hideCloseoutSection();
-  renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+  renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderPstatSelectors(); renderChemRows(); renderSampleRows();
   document.getElementById('exp-panel').classList.add('open');
 }
 function closeExpPanel() {
@@ -917,7 +927,41 @@ function toggleSection(key) {
 }
 
 /* ═══════════ PSTAT STEPS ═══════════ */
-let pstatSteps = [];
+function renderPstatSelectors() {
+  const wrap = document.getElementById('ef-pstat-select-wrap'); if (!wrap) return;
+  const pstats = Object.values(db.components).filter(c => (c.type==='minipot'||c.type==='labpot') && !c.deletedAt);
+  const gen3engines = Object.values(db.components).filter(c => c.type==='engine' && c.ledGen==='gen3' && !c.deletedAt);
+  const all = [...pstats, ...gen3engines];
+  if (!all.length) { wrap.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--tx3);">No potentiostats or Gen 3 engines registered</div>'; return; }
+  const selected = wrap._selected || [];
+  wrap.innerHTML = [
+    pstats.length ? `<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:4px;">POTENTIOSTATS</div>` : '',
+    ...pstats.map(p => `
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+        <input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}
+          onchange="efPstatToggle('${p.id}',this.checked)">
+        ${p.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${tn(p.type)}</span>
+      </label>`),
+    gen3engines.length ? `<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin:6px 0 4px;">GEN 3 ENGINES (integrated pstat)</div>` : '',
+    ...gen3engines.map(e => `
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+        <input type="checkbox" value="${e.id}" ${selected.includes(e.id)?'checked':''}
+          onchange="efPstatToggle('${e.id}',this.checked)">
+        ${e.name} <span style="font-family:var(--mono);font-size:10px;color:var(--gr);">Gen 3 integrated</span>
+      </label>`)
+  ].join('');
+  wrap._selected = selected;
+}
+function efPstatToggle(id, checked) {
+  const wrap = document.getElementById('ef-pstat-select-wrap'); if (!wrap) return;
+  if (!wrap._selected) wrap._selected = [];
+  if (checked && !wrap._selected.includes(id)) wrap._selected.push(id);
+  if (!checked) wrap._selected = wrap._selected.filter(x => x !== id);
+}
+function getEfPstatIds() {
+  const wrap = document.getElementById('ef-pstat-select-wrap');
+  return wrap?._selected || [];
+}
 function addPstatStep() { pstatSteps.push({voltage:'',duration:''}); renderPstatSteps(); }
 function rmPstatStep(i) { pstatSteps.splice(i,1); renderPstatSteps(); }
 function renderPstatSteps() {
@@ -978,22 +1022,38 @@ function defaultLedState(gen) {
 let expLedStates = {};
 function renderExpLedGrids() {
   const wrap = document.getElementById('exp-led-grids'); if (!wrap) return;
+  // Deduplicate: one LED grid per unique engine ID per panel
+  const seen = new Set();
   const engines = [];
   for (const [pid,channels] of Object.entries(formPanels)) {
-    channels.forEach((ch,i) => { if (!ch.dummy&&ch.engine) { const eng=db.components[ch.engine]; if(eng) engines.push({pid,chIdx:i,ch:ch.ch,panelName:db.components[pid]?.name||pid,eng}); } });
+    channels.forEach((ch,i) => {
+      if (!ch.dummy && ch.engine) {
+        const key = `${pid}-${ch.engine}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          const eng = db.components[ch.engine];
+          if (eng) engines.push({pid, chIdx:i, ch:ch.ch, panelName:db.components[pid]?.name||pid, eng, engineId:ch.engine});
+        }
+      }
+    });
   }
-  if (!engines.length) { wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to channels above first</div>'; return; }
-  engines.forEach(({pid,chIdx,eng}) => { const key=`${pid}-${chIdx}`; if (!expLedStates[key]) expLedStates[key]={gen:eng.ledGen||'gen1',state:defaultLedState(eng.ledGen||'gen1'),power:60}; });
-  wrap.innerHTML = engines.map(({pid,chIdx,ch,panelName,eng}) => {
-    const key=`${pid}-${chIdx}`, s=expLedStates[key];
+  if (!engines.length) { wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);">Assign engines to positions above first</div>'; return; }
+  // Use engineId-based key for state (not position-based)
+  engines.forEach(({pid,engineId,eng}) => {
+    const key=`${pid}-${engineId}`;
+    if (!expLedStates[key]) expLedStates[key]={gen:eng.ledGen||'gen1',state:defaultLedState(eng.ledGen||'gen1'),power:60};
+  });
+  wrap.innerHTML = engines.map(({pid,chIdx,ch,panelName,eng,engineId}) => {
+    const key=`${pid}-${engineId}`, s=expLedStates[key];
     const {cols,rows}=LED_LAYOUTS[s.gen]||{cols:1,rows:3};
     const activeCount=Object.values(s.state).filter(Boolean).length, total=cols*rows;
     let g=`<div class="led-grid" style="grid-template-columns:repeat(${cols},22px);display:inline-grid;">`;
     for(let c=0;c<cols;c++) g+=`<div class="led-col-label">${c+1}</div>`;
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) { const lk=`c${c}r${r}`,on=s.state[lk]; g+=`<div class="led-cell ${on?'on':''}" onclick="toggleExpLed('${key}','${lk}')">${on?'●':'○'}</div>`; }
     g+='</div>';
+    const posCount = formPanels[pid]?.filter(p=>!p.dummy&&p.engine===engineId).length||1;
     return `<div class="exp-eng-block">
-      <div class="exp-eng-header"><span style="font-size:12px;font-weight:500;">${eng.name}</span>${tb('engine')}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch} · ${panelName}</span>
+      <div class="exp-eng-header"><span style="font-size:12px;font-weight:500;">${eng.name}</span>${tb('engine')}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${panelName} · ${posCount} position${posCount!==1?'s':''}</span>
         <button onclick="setExpLeds('${key}',true)" style="font-size:10px;padding:3px 8px;margin-left:auto;">All on</button>
         <button onclick="setExpLeds('${key}',false)" class="btn-rd" style="font-size:10px;padding:3px 8px;">All off</button>
       </div>
@@ -1103,6 +1163,11 @@ function populateExpFormFields(e) {
   set('ef-sol-dist',e.solDist); set('ef-flow',e.flowRate); set('ef-pump',e.pump);
   set('ef-carbon',e.carbon); set('ef-sensors',e.sensors);
   set('ef-pstat-note',e.pstatNote); set('ef-pstat-cycles',e.pstatCycles);
+  // Populate pstat selectors
+  setTimeout(() => {
+    const wrap = document.getElementById('ef-pstat-select-wrap');
+    if (wrap) { wrap._selected = e.pstatIds ? [...e.pstatIds] : (e.pstatId ? [e.pstatId] : []); renderPstatSelectors(); }
+  }, 50);
   set('ef-notes',e.notes);
   formTags = e.tags ? [...e.tags] : [];
   renderTagChips(); renderTagSelect();
@@ -1121,6 +1186,7 @@ function resetExpForm() {
   document.getElementById('ef-editing-id').value = '';
   formTags=[]; renderTagChips(); renderTagSelect();
   pstatSteps=[]; chemRows=[]; sampleRows=[]; expLedStates={}; formPanels={};
+  const psw=document.getElementById('ef-pstat-select-wrap'); if(psw) psw._selected=[];
 }
 function saveExpForm() {
   const name = document.getElementById('ef-name').value.trim();
@@ -1132,7 +1198,7 @@ function saveExpForm() {
   const data = {
     name, runNumber:runNum, refNum:g('ef-ref').trim(),
     date:g('ef-date')||today(), plannedHours:parseFloat(g('ef-dur'))||null,
-    operator:g('ef-operator').trim(), pstatId:g('ef-pstat-id').trim(), description:g('ef-desc').trim(),
+    operator:g('ef-operator').trim(), pstatIds:getEfPstatIds(), description:g('ef-desc').trim(),
     tags:[...formTags],
     chemicals:JSON.parse(JSON.stringify(chemRows)), samplePoints:JSON.parse(JSON.stringify(sampleRows)),
     ledConfig:JSON.parse(JSON.stringify(expLedStates)), solDist:g('ef-sol-dist'),
@@ -1195,7 +1261,7 @@ function repeatExp(id) {
     document.getElementById('ef-editing-id').value = ''; // ensure new experiment
     document.getElementById('exp-save-btn').textContent = 'Create experiment';
     document.getElementById('exp-panel-title').textContent = 'Repeat experiment';
-    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderPstatSelectors(); renderChemRows(); renderSampleRows();
   }, 50);
 }
 function buildComponentsFromPanels(panels) {
@@ -1214,18 +1280,43 @@ function renderPanelSelectOpts() {
 function addPanelToForm() {
   const pid=document.getElementById('panel-sel').value; if(!pid) return;
   const panel=db.components[pid]; if(!panel) return;
-  formPanels[pid]=Array.from({length:parseInt(panel.channels)||1},(_,i)=>({ch:i+1,engine:'',paper:'',glass:'',dummy:false}));
+  const numPos = parseInt(panel.channels)||8;
+  formPanels[pid]=Array.from({length:numPos},(_,i)=>({ch:i+1,engine:'',paper:'',glass:'',dummy:false,pstat:'',pstatCh:'',panelPots:[]}));
   renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids();
+}
+function togglePanelPot(pid, checked, potId) {
+  if (!formPanels[pid]) return;
+  formPanels[pid].forEach(row => {
+    if (!row.panelPots) row.panelPots = [];
+    if (checked && !row.panelPots.includes(potId)) row.panelPots.push(potId);
+    if (!checked) {
+      row.panelPots = row.panelPots.filter(p => p !== potId);
+      // Clear pstat assignments for removed pot
+      if (row.pstat === potId) { row.pstat = ''; row.pstatCh = ''; }
+    }
+  });
+  renderChannelTables();
 }
 function removePanelFromForm(pid) {
   delete formPanels[pid];
-  Object.keys(expLedStates).forEach(k=>{if(k.startsWith(pid+'-'))delete expLedStates[k];});
+  Object.values(formPanels[pid]||[]).forEach(ch=>{
+    if(ch.engine) delete expLedStates[`${pid}-${ch.engine}`];
+  });
   renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids();
 }
 function updateFormChannel(pid,idx,field,val) {
   formPanels[pid][idx][field]=val;
   if(field==='dummy') renderChannelTables();
-  if(field==='engine'){delete expLedStates[`${pid}-${idx}`]; renderExpLedGrids();}
+  if(field==='engine'){
+    const prevEngine = formPanels[pid][idx].engine;
+    if(prevEngine) delete expLedStates[`${pid}-${prevEngine}`];
+    // If Gen3 engine selected, copy to all non-dummy positions
+    const eng = db.components[val];
+    if(eng?.ledGen==='gen3' && val) {
+      formPanels[pid].forEach((row,i) => { if(!row.dummy) { if(row.engine) delete expLedStates[`${pid}-${row.engine}`]; formPanels[pid][i].engine=val; } });
+    }
+    renderChannelTables(); renderExpLedGrids();
+  }
 }
 function copyFirstEngine(pid) {
   const chs=formPanels[pid]; if(!chs) return;
@@ -1237,32 +1328,142 @@ function copyFirstEngine(pid) {
 function renderChannelTables() {
   const wrap=document.getElementById('channel-tables'); if(!wrap) return;
   if(!Object.keys(formPanels).length){wrap.innerHTML='<div style="font-size:11px;color:var(--tx3);font-family:var(--mono);padding:8px 0;">No panels added yet</div>';return;}
-  const engines=Object.values(db.components).filter(c=>c.type==='engine');
-  const papers=Object.values(db.components).filter(c=>c.type==='paper');
-  const glasses=Object.values(db.components).filter(c=>c.type==='glass');
-  const mkOpt=(arr,val)=>'<option value="">—</option>'+arr.map(c=>{const suf=c.id.length>6?'…'+c.id.slice(-6):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
-  wrap.innerHTML=Object.entries(formPanels).map(([pid,channels])=>{
+
+  const engines  = Object.values(db.components).filter(c=>c.type==='engine'&&!c.deletedAt);
+  const papers   = Object.values(db.components).filter(c=>c.type==='paper'&&!c.deletedAt);
+  const glasses  = Object.values(db.components).filter(c=>c.type==='glass'&&!c.deletedAt);
+  const minipots = Object.values(db.components).filter(c=>(c.type==='minipot'||c.type==='labpot')&&!c.deletedAt);
+
+  const mkOpt=(arr,val,extra=[])=>'<option value="">—</option>'+extra.map(e=>`<option value="${e.v}" ${e.v===val?'selected':''}>${e.l}</option>`).join('')+arr.map(c=>{const suf=c.id.length>6?'…'+c.id.slice(-6):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
+
+  const selStyle = 'width:100%;font-size:11px;padding:3px 4px;border:1px solid var(--ln2);border-radius:3px;background:var(--bg2);';
+  const lblStyle = 'font-family:var(--mono);font-size:9px;color:var(--tx3);display:block;margin-bottom:2px;';
+
+  wrap.innerHTML=Object.entries(formPanels).map(([pid,positions])=>{
     const panel=db.components[pid]||{name:pid};
-    return `<div style="margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+    // Panel-level MiniPot assignments
+    const panelPots = positions[0]?.panelPots || [];
+
+    // Build MiniPot multi-select for panel level
+    const potCheckboxes = minipots.map(mp=>`
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" ${panelPots.includes(mp.id)?'checked':''} onchange="togglePanelPot('${pid}',this.checked,'${mp.id}')">
+        ${mp.name}
+      </label>`).join('');
+
+    // Positions are displayed 8→1 left to right
+    // positions array is 0-indexed internally (pos 1 = index 0, pos 8 = index 7)
+    const orderedIndices = [...Array(positions.length).keys()].reverse(); // [7,6,5,4,3,2,1,0] for 8 positions
+
+    // Track used MiniPot channels across positions for exclusivity
+    const usedMiniPotChs = {}; // {potId: Set of used ch nums}
+    positions.forEach(row => {
+      if (row.pstat && row.pstat !== 'lab' && row.pstatCh) {
+        if (!usedMiniPotChs[row.pstat]) usedMiniPotChs[row.pstat] = new Set();
+        usedMiniPotChs[row.pstat].add(row.pstatCh);
+      }
+    });
+
+    // Pstat options for each position
+    const pstatOpts = (row, idx) => {
+      let opts = '<option value="">—</option>';
+      panelPots.forEach(potId => {
+        const pot = db.components[potId];
+        if (!pot) return;
+        opts += `<option value="${potId}" ${row.pstat===potId?'selected':''}>${pot.name} <span style="opacity:.6;">(${tn(pot.type)})</span></option>`;
+      });
+      return opts;
+    };
+
+    // Ch options for a position — only show if MiniPot selected, hide for lab
+    const chOpts = (row, idx) => {
+      if (!row.pstat) return '<option value="">—</option>';
+      const pot = db.components[row.pstat];
+      if (!pot) return '<option value="">—</option>';
+      if (pot.type === 'labpot') return '<option value="shared" selected>Shared (all positions)</option>';
+      const numCh = pot.channels || 4;
+      return '<option value="">—</option>' + Array.from({length:numCh},(_,i)=>i+1).map(ch=>{
+        const usedElsewhere = (usedMiniPotChs[row.pstat]||new Set()).has(String(ch)) && String(ch) !== row.pstatCh;
+        return `<option value="${ch}" ${String(ch)===String(row.pstatCh)?'selected':''} ${usedElsewhere?'disabled':''}>Ch ${ch}${usedElsewhere?' (used)':''}</option>`;
+      }).join('');
+    };
+
+    const posCards = orderedIndices.map(i => {
+      const row = positions[i];
+      const posNum = i + 1; // position number (1-8)
+      const isDummy = !!row.dummy;
+      const selectedEngine = db.components[row.engine];
+      const isGen3 = selectedEngine?.ledGen === 'gen3'; // Gen 3 has integrated pstat
+      const cardStyle = `flex-shrink:0;width:110px;border:1px solid ${isDummy?'var(--ln)':'var(--ln2)'};border-radius:6px;padding:8px 6px;background:${isDummy?'var(--bg3)':'var(--bg1)'};display:flex;flex-direction:column;gap:6px;opacity:${isDummy?'0.5':'1'};`;
+
+      return `<div style="${cardStyle}">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:600;text-align:center;color:var(--tx2);padding-bottom:4px;border-bottom:1px solid var(--ln);">Pos ${posNum}</div>
+
+        <div>
+          <label style="${lblStyle}">Dummy</label>
+          <input type="checkbox" ${isDummy?'checked':''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)" style="margin:0 auto;display:block;width:16px;height:16px;cursor:pointer;">
+        </div>
+
+        <div>
+          <label style="${lblStyle}">Potentiostat</label>
+          ${isGen3 ? `<div style="font-family:var(--mono);font-size:10px;color:var(--gr);padding:4px 6px;background:var(--grd);border-radius:3px;">Integrated (Gen 3)</div>` :
+          `<select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'pstat',this.value);renderChannelTables();">
+            ${pstatOpts(row, i)}
+          </select>`}
+        </div>
+
+        ${(!isDummy && !isGen3 && row.pstat) ? `<div>
+          <label style="${lblStyle}">Pstat Ch</label>
+          <select style="${selStyle}" onchange="updateFormChannel('${pid}',${i},'pstatCh',this.value)">
+            ${chOpts(row, i)}
+          </select>
+        </div>` : ''}
+
+        <div>
+          <label style="${lblStyle}">Engine</label>
+          <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'engine',this.value)">
+            ${mkOpt(engines,row.engine)}
+          </select>
+        </div>
+
+        <div>
+          <label style="${lblStyle}">Glass</label>
+          <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'glass',this.value)">
+            ${mkOpt(glasses,row.glass)}
+          </select>
+        </div>
+
+        <div>
+          <label style="${lblStyle}">Paper</label>
+          <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'paper',this.value)">
+            ${mkOpt(papers,row.paper)}
+          </select>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
-        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Copy first engine</button>
+        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Copy engine to all</button>
         <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;">Remove</button>
       </div>
-      <div style="overflow-x:auto;">
-        <table class="ch-table" style="min-width:480px;">
-          <thead><tr><th style="width:32px;">Ch</th><th>Light engine</th><th>Paper frame</th><th>Glass frame</th><th style="width:50px;text-align:center;">Dummy</th></tr></thead>
-          <tbody>${channels.map((row,i)=>`
-            <tr style="${row.dummy?'opacity:.4;':''}">
-              <td style="font-family:var(--mono);font-size:11px;color:var(--tx3);">${row.ch}</td>
-              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'engine',this.value)" ${row.dummy?'disabled':''}>${mkOpt(engines,row.engine)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'engine')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
-              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'paper',this.value)" ${row.dummy?'disabled':''}>${mkOpt(papers,row.paper)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'paper')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
-              <td><div class="slot-row"><select onchange="updateFormChannel('${pid}',${i},'glass',this.value)" ${row.dummy?'disabled':''}>${mkOpt(glasses,row.glass)}</select>${row.dummy?'':`<button class="btn-cam" onclick="openCam('slot','${pid}',${i},'glass')" title="Scan" style="font-size:14px;">&#128247;</button>`}</div></td>
-              <td style="text-align:center;"><input type="checkbox" ${row.dummy?'checked':''} onchange="updateFormChannel('${pid}',${i},'dummy',this.checked)"></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
+
+      ${minipots.length ? `<div style="margin-bottom:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--ln);border-radius:5px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:6px;">POTENTIOSTATS ON THIS PANEL</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">${potCheckboxes}</div>
+      </div>` : ''}
+
+      <div style="overflow-x:auto;padding-bottom:4px;">
+        <div style="display:flex;gap:6px;min-width:max-content;">
+          ${posCards}
+        </div>
+        <div style="display:flex;gap:6px;min-width:max-content;margin-top:4px;">
+          <div style="width:110px;font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;">← solution exits</div>
+          ${orderedIndices.slice(1,-1).map(()=>`<div style="width:110px;"></div>`).join('')}
+          <div style="width:110px;font-family:var(--mono);font-size:9px;color:var(--tx3);text-align:center;">solution enters ←</div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1659,10 +1860,23 @@ function onGlassSlideSelect(slideId) {
 
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
-  document.getElementById('reg-ch-wrap').style.display=t==='panel'?'block':'none';
+  // Serial prefix per type
+  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixEl = document.getElementById('reg-id-prefix');
+  if (prefixEl) prefixEl.textContent = prefixes[t] || 'SAPA_EF_';
+  // Show/hide sections
+  document.getElementById('reg-ch-wrap').style.display=(t==='panel'||t==='minipot'||t==='labpot')?'block':'none';
   document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-led-grid-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-glass-wrap').style.display=t==='glass'?'block':'none';
+  // Channel label
+  const chLabel = document.getElementById('reg-ch-label');
+  if (chLabel) chLabel.textContent = t==='panel' ? 'Number of positions *' : 'Number of channels *';
+  // Auto-fill channels for minipot
+  if (t==='minipot') { const ch=document.getElementById('reg-channels'); if(ch) ch.value=4; }
+  const pcbNote = document.getElementById('reg-id-pcb-note');
+  if (pcbNote) pcbNote.style.display = (t==='glass'||t==='paper') ? 'block' : 'none';
+  if (t==='labpot') { const ch=document.getElementById('reg-channels'); if(ch){ch.value=1;ch.disabled=true;} } else { const ch=document.getElementById('reg-channels'); if(ch) ch.disabled=false; }
   if(t==='engine') renderLedGrid();
   if(t==='glass') { renderGlassSlideDropdown(); autoNameComp('glass'); }
   if(t==='paper') autoNameComp('paper');
@@ -1682,7 +1896,10 @@ function registerComp(){
   if(!rawId){alert('Serial number required.');return;}
   const name=document.getElementById('reg-name').value.trim();
   if(!name){alert('Name required.');return;}
-  const id = 'SAPA_EF_' + rawId;
+  const regType=document.getElementById('reg-type').value;
+  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefix = prefixes[regType] || 'SAPA_EF_';
+  const id = prefix + rawId;
   // Allow TBD/NA duplicates, block real duplicates
   const isTBD = rawId==='TBD'||rawId==='NA'||rawId==='N/A';
   if(!isTBD && db.components[id]){alert(`Serial number "${id}" already exists.`);return;}
@@ -1885,7 +2102,9 @@ function saveEditComp(){
 
   // Handle serial number change
   const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
-  const newId = rawSerial ? 'SAPA_EF_' + rawSerial : id;
+  const typePrefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const currentPrefix = typePrefixes[c.type] || 'SAPA_EF_';
+  const newId = rawSerial ? currentPrefix + rawSerial : id;
   const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
   if (newId !== id) {
     if (!isTBD && db.components[newId]) { alert(`Serial number "${newId}" already exists.`); return; }
@@ -2424,7 +2643,7 @@ function copyExpToNew(id) {
     autoFillRunNumber();
     document.getElementById('exp-save-btn').textContent = 'Create experiment';
     document.getElementById('exp-panel-title').textContent = 'Copy — ' + src.name;
-    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderChemRows(); renderSampleRows();
+    renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids(); renderPstatSteps(); renderPstatSelectors(); renderChemRows(); renderSampleRows();
   }, 50);
 }
 
