@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-07-083</title>
+<title>SAPA Lab Tracker — v2026-07-07-084</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-083</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-084</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1861,7 +1861,7 @@ function onGlassSlideSelect(slideId) {
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
   // Serial prefix per type
-  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefixEl = document.getElementById('reg-id-prefix');
   if (prefixEl) prefixEl.textContent = prefixes[t] || 'SAPA_EF_';
   // Show/hide sections
@@ -1897,7 +1897,7 @@ function registerComp(){
   const name=document.getElementById('reg-name').value.trim();
   if(!name){alert('Name required.');return;}
   const regType=document.getElementById('reg-type').value;
-  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefix = prefixes[regType] || 'SAPA_EF_';
   const id = prefix + rawId;
   // Allow TBD/NA duplicates, block real duplicates
@@ -2102,7 +2102,7 @@ function saveEditComp(){
 
   // Handle serial number change
   const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
-  const typePrefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_EF_', paper:'SAPA_EF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const typePrefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const currentPrefix = typePrefixes[c.type] || 'SAPA_EF_';
   const newId = rawSerial ? currentPrefix + rawSerial : id;
   const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
