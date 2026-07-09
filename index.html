@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-07-086</title>
+<title>SAPA Lab Tracker — v2026-07-07-087</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-086</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-087</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -699,7 +699,15 @@ function loadLocal() {
 function saveLocal() { localStorage.setItem(LKEY, JSON.stringify(db)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function today() { return new Date().toISOString().split('T')[0]; }
-function fdate(iso) { if (!iso) return '—'; return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
+function fdate(iso) {
+  if (!iso) return '—';
+  if (/^\d{2}-\d{2}$/.test(iso)) {
+    const [m,d] = iso.split('-');
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(d)} ${months[parseInt(m)-1]} (year not recorded)`;
+  }
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+}
 function tn(t) { return {panel:'Panel',paper:'Paper frame',glass:'Glass frame',engine:'Light engine'}[t] || t; }
 function tb(t) { return `<span class="badge b-${t}">${tn(t)}</span>`; }
 function ge(id) { return db.experiments.find(e => e.id === id); }
@@ -1961,6 +1969,7 @@ function registerComp(){
     glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
     notes:document.getElementById('reg-notes').value.trim(), fabricator:document.getElementById('reg-fabricator')?.value.trim()||null, registered:today(), createdAt:Date.now(), createdBy:(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0], createdAt:Date.now()
   };
+  if (rawSlideId) { if (!db.usedSlides) db.usedSlides=[]; if (!db.usedSlides.includes(rawSlideId)) db.usedSlides.push(rawSlideId); }
   saveAndSync(); closeCompPanel(); renderCompStats(); renderCompList();
   alert(`Registered: ${name} (${id})`);
 }
@@ -2220,14 +2229,12 @@ function toggleCompDetail(id) {
       <div class="dg" style="margin-bottom:10px;">
         <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
         <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
-      ${c.fabricator?`<div class="df"><div class="dk">Fabricator</div><div class="dv">${c.fabricator}</div></div>`:''}
         ${c.fabricator?`<div class="df"><div class="dk">Fabricator</div><div class="dv">${c.fabricator}</div></div>`:''}
         <div class="df"><div class="dk">Total hours</div><div class="dv" style="font-family:var(--mono);font-size:18px;color:var(--am);">${h.toFixed(1)}<span style="font-size:11px;color:var(--tx3);"> h</span></div></div>
         <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
         ${c.channels?`<div class="df"><div class="dk">Channels</div><div class="dv">${c.channels}</div></div>`:''}
         ${c.ledGen?`<div class="df"><div class="dk">LED generation</div><div class="dv">${{gen1:'Gen 1 (3x5)',gen2:'Gen 2 (1x3)',gen3:'Gen 3 (8x3)'}[c.ledGen]||c.ledGen}</div></div>`:''}
         ${c.rawSlideId?`<div class="df"><div class="dk">Raw slide ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.rawSlideId}</div></div>`:''}
-      ${c.rawSlideId?`<div class="df"><div class="dk">Raw slide ID</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.rawSlideId}</div></div>`:''}
         ${c.glassSynthDate?`<div class="df"><div class="dk">Synthesis date</div><div class="dv">${fdate(c.glassSynthDate)}</div></div>`:''}
         ${c.glassQC?`<div class="df"><div class="dk">QC photocurrent</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassQC}</div></div>`:''}
         ${c.glassUV!=null&&c.glassUV!==''?`<div class="df"><div class="dk">UV absorption</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${c.glassUV}%</div></div>`:''}
