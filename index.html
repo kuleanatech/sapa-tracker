@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-07-087</title>
+<title>SAPA Lab Tracker — v2026-07-14-088</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-07-087</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-088</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1317,6 +1317,14 @@ function removePanelFromForm(pid) {
 function updateFormChannel(pid,idx,field,val) {
   formPanels[pid][idx][field]=val;
   if(field==='dummy') renderChannelTables();
+  // Lab potentiostat: copy to all non-dummy positions
+  if(field==='pstat') {
+    const pot = db.components[val];
+    if(pot?.type==='labpot') {
+      formPanels[pid].forEach((row,i) => { if(!row.dummy) formPanels[pid][i].pstat=val; });
+    }
+    renderChannelTables(); return;
+  }
   if(field==='engine'){
     const prevEngine = formPanels[pid][idx].engine;
     if(prevEngine) delete expLedStates[`${pid}-${prevEngine}`];
@@ -1432,21 +1440,21 @@ function renderChannelTables() {
         <div>
           <label style="${lblStyle}">Engine</label>
           <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'engine',this.value)">
-            ${mkOpt(engines,row.engine)}
+            ${mkOpt(engines,row.engine,usedEngines)}
           </select>
         </div>
 
         <div>
           <label style="${lblStyle}">Glass</label>
           <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'glass',this.value)">
-            ${mkOpt(glasses,row.glass)}
+            ${mkOpt(glasses,row.glass,usedGlass)}
           </select>
         </div>
 
         <div>
           <label style="${lblStyle}">Paper</label>
           <select style="${selStyle}" ${isDummy?'disabled':''} onchange="updateFormChannel('${pid}',${i},'paper',this.value)">
-            ${mkOpt(papers,row.paper)}
+            ${mkOpt(papers,row.paper,usedPaper)}
           </select>
         </div>
       </div>`;
@@ -1747,8 +1755,23 @@ function buildExpDetail(e) {
   const channelHTML=e.panels&&Object.keys(e.panels).length?Object.entries(e.panels).map(([pid,chs])=>{
     const pname=db.components[pid]?.name||pid;
     return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:500;margin-bottom:4px;"><span class="comp-link" onclick="goToComp('${pid}')">${pname}</span> ${tb('panel')}</div>
-      <div style="overflow-x:auto;"><table class="ch-table" style="min-width:360px;"><thead><tr><th>Ch</th><th>Engine</th><th>Paper frame</th><th>Glass frame</th></tr></thead>
-      <tbody>${chs.map(ch=>ch.dummy?`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td colspan="3" style="font-size:11px;color:var(--tx3);">dummy</td></tr>`:`<tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${ch.ch}</td><td style="font-size:12px;">${ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td><td style="font-size:12px;">${ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td><td style="font-size:12px;">${ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
+      <div style="overflow-x:auto;">
+        <table class="ch-table" style="min-width:360px;">
+          <thead>
+            <tr><th style="font-family:var(--mono);font-size:9px;">Position</th>${[...chs].reverse().map(ch=>`<th style="font-family:var(--mono);font-size:10px;text-align:center;">${ch.ch}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Status</td>${[...chs].reverse().map(ch=>`<td style="text-align:center;font-size:11px;">${ch.dummy?'<span style="color:var(--tx3);">dummy</span>':''}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Engine</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Glass</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Paper</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Pstat</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.pstat?`${db.components[ch.pstat]?.name||ch.pstat}${ch.pstatCh?' Ch'+ch.pstatCh:''}`:ch.dummy?'':'—'}</td>`).join('')}</tr>
+          </tbody>
+        </table>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:4px;padding:0 4px;">
+          <span>← solution exits (pos ${chs.length})</span><span>solution enters (pos 1) →</span>
+        </div>
+      </div></div>`;
   }).join(''):'<div style="font-size:11px;color:var(--tx3);">No panel assignment</div>';
   const links=e.fileLinks?.length?e.fileLinks.map(l=>`<a href="${l.url}" target="_blank" style="color:var(--bl);font-size:12px;display:block;margin-bottom:3px;">${l.title||l.url}</a>`).join(''):'—';
   return `
@@ -1785,7 +1808,7 @@ function buildExpDetail(e) {
       <div class="df"><div class="dk">Total cycles</div><div class="dv">${e.pstatCycles||'—'}</div></div>
     </div>
     ${e.pstatSteps?.length?`<div class="df frow"><div class="dk">Potentiostat steps</div><div class="dv" style="font-family:var(--mono);font-size:11px;">${pstatStr}</div></div>`:''}
-    ${e.ledConfig&&Object.keys(e.ledConfig).length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIG</div><div style="display:flex;flex-wrap:wrap;gap:10px;">${Object.entries(e.ledConfig).map(([key,cfg])=>{const parts=key.split('-');const pid=parts.slice(0,-1).join('-');const chIdx=parseInt(parts[parts.length-1]);const ch=(e.panels[pid]||[])[chIdx];const eng=ch?db.components[ch.engine]:null;if(!eng)return'';const active=Object.values(cfg.state||{}).filter(Boolean).length;const total=Object.keys(cfg.state||{}).length;return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;"><div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Ch ${ch?.ch||'?'}</span></div>${buildLedMapHTML(cfg.gen,cfg.state||{})}<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}%</div></div>`;}).join('')}</div>`:''}
+    ${e.ledConfig&&Object.keys(e.ledConfig).length?`<div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">LED CONFIG</div><div style="display:flex;flex-wrap:wrap;gap:10px;">${(()=>{const seenEng=new Set();return Object.entries(e.ledConfig).map(([key,cfg])=>{const parts=key.split('-');const pid=parts.slice(0,-2).join('-');const engineId=parts.slice(-1)[0];if(seenEng.has(engineId))return'';seenEng.add(engineId);const eng=db.components[engineId];if(!eng)return'';const posCount=Object.values(e.panels||{}).flat().filter(ch=>ch&&ch.engine===engineId&&!ch.dummy).length||1;const active=Object.values(cfg.state||{}).filter(Boolean).length;const total=Object.keys(cfg.state||{}).length;return`<div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;"><div style="font-size:11px;font-weight:500;margin-bottom:4px;">${eng.name} <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${posCount} position${posCount!==1?'s':''}</span></div>${buildLedMapHTML(cfg.gen,cfg.state||{})}<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px;">${active}/${total} LEDs · ${cfg.power||60}%</div></div>`;}).join('');})()}</div>`:''}
     <div style="font-family:var(--mono);font-size:10px;color:var(--am);letter-spacing:.1em;margin:12px 0 8px;padding-top:10px;border-top:1px solid var(--ln);">PANEL LAYOUT</div>
     <div style="overflow-x:auto;">${channelHTML}</div>
     ${e.sensors?`<div class="df frow" style="margin-top:8px;"><div class="dk">Sensors</div><div class="dv">${fmt(e.sensors)}</div></div>`:''}
@@ -1926,12 +1949,16 @@ function onGlassSerialInput(val) {
 
 function autoNameComp(type) {
   const nameEl = document.getElementById('reg-name');
-  if (!nameEl || nameEl.value) return;
-  const prefix = type === 'glass' ? 'SAPA glass #' : 'SAPA paper #';
+  const idEl = document.getElementById('reg-id');
   const existing = Object.values(db.components).filter(c => c.type === type && c.name);
   const nums = existing.map(c => { const m = c.name.match(/#(\d+)/); return m ? parseInt(m[1]) : 0; });
-  const next = nums.length ? Math.max(...nums) + 1 : 1;
-  nameEl.value = prefix + next;
+  const next = (nums.length ? Math.max(...nums) + 1 : 1);
+  const nextStr = String(next).padStart(4, '0');
+  if (nameEl && !nameEl.value) {
+    const prefix = type === 'glass' ? 'SAPA glass #' : 'SAPA paper #';
+    nameEl.value = prefix + next;
+  }
+  if (idEl && !idEl.value) idEl.value = nextStr;
 }
 function registerComp(){
   const rawId=document.getElementById('reg-id').value.trim().toUpperCase();
