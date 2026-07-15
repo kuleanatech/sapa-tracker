@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-093</title>
+<title>SAPA Lab Tracker — v2026-07-15-094</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-093</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-094</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1393,12 +1393,7 @@ function renderChannelTables() {
       return`<option value="${c.id}" ${c.id===val?'selected':''} ${isUsed?'disabled':''}>${isUsed?'✓ ':''}${c.name}${suf?' ('+suf+')':''}${isUsed?' (in use)':''}</option>`;
     }).join('');
 
-    // Build MiniPot multi-select for panel level
-    const potCheckboxes = minipots.map(mp=>`
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;white-space:nowrap;">
-        <input type="checkbox" ${panelPots.includes(mp.id)?'checked':''} onchange="togglePanelPot('${pid}',this.checked,'${mp.id}')">
-        ${mp.name}
-      </label>`).join('');
+
 
     // Positions are displayed 8→1 left to right
     // positions array is 0-indexed internally (pos 1 = index 0, pos 8 = index 7)
@@ -1496,14 +1491,10 @@ function renderChannelTables() {
         <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
         <button onclick="applyPanelDefaults('${pid}')" style="font-size:10px;padding:3px 8px;background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:var(--r);cursor:pointer;">Apply defaults</button>
-        <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Copy engine to all</button>
         <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;">Remove</button>
       </div>
 
-      ${minipots.length ? `<div style="margin-bottom:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--ln);border-radius:5px;">
-        <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:6px;">POTENTIOSTATS ON THIS PANEL</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">${potCheckboxes}</div>
-      </div>` : ''}
+
 
       <div style="overflow-x:auto;padding-bottom:4px;">
         <div style="display:flex;gap:6px;min-width:max-content;">
@@ -1936,10 +1927,10 @@ function removeFabStep(i) { fabSteps.splice(i,1); renderFabSteps(); }
 function renderFabSteps() {
   const wrap = document.getElementById('reg-fab-steps'); if(!wrap) return;
   wrap.innerHTML = fabSteps.map((s,i)=>`
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
-      <input type="date" value="${s.date}" oninput="fabSteps[${i}].date=this.value" style="flex-shrink:0;font-size:12px;padding:4px 6px;border:1px solid var(--ln2);border-radius:var(--r);">
-      <input type="text" value="${s.desc}" placeholder="Step description" oninput="fabSteps[${i}].desc=this.value" style="flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--ln2);border-radius:var(--r);">
-      <button onclick="removeFabStep(${i})" style="font-size:10px;padding:2px 7px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;">×</button>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+      <input type="date" value="${s.date}" onchange="fabSteps[${i}].date=this.value" style="flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);">
+      <input type="text" value="${s.desc}" placeholder="Step description..." onchange="fabSteps[${i}].desc=this.value" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--ln2);border-radius:var(--r);">
+      <button type="button" onclick="removeFabStep(${i})" style="flex-shrink:0;font-size:12px;padding:4px 8px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;line-height:1;">×</button>
     </div>`).join('');
 }
 function getFabDate() {
@@ -2125,23 +2116,33 @@ function renderCompList(){
   if(dt) ids=ids.filter(id=>db.components[id].mfgDate&&db.components[id].mfgDate<=dt);
   const list=document.getElementById('comp-list'); if(!list) return;
   if(!ids.length){list.innerHTML='<div class="empty">No components yet — click "+ Add component" to register one</div>';return;}
-  list.innerHTML=ids.map(id=>{
+  // Group by type, chronological within group
+  const typeOrder = ['panel','engine','glass','paper','minipot','labpot'];
+  const grouped = {};
+  typeOrder.forEach(t=>grouped[t]=[]);
+  ids.forEach(id=>{const t=db.components[id]?.type||'other';if(!grouped[t])grouped[t]=[];grouped[t].push(id);});
+
+  const compRowHTML = id => {
     const c=db.components[id], h=totalHours(id);
     const ne=db.experiments.filter(e=>(e.components||[]).includes(id)&&e.actualHours).length;
-    return`<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}" style="flex-direction:column;align-items:stretch;padding:0;">
+    return `<div class="comp-row ${c.flaggedForDeletion?'flagged-row':''}" style="flex-direction:column;align-items:stretch;padding:0;">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;" onclick="toggleCompDetail('${id}')">
         <input type="checkbox" class="comp-ck" data-id="${id}" onclick="event.stopPropagation()" style="width:auto;flex-shrink:0;">
         <div class="comp-info">
           <div class="comp-name">${c.name} &nbsp;${tb(c.type)}${c.flaggedForDeletion?' <span class="pill-rd">flagged</span>':''}${id.includes('TBD')||id.includes('_NA_')?' <span title="Serial number not yet assigned" style="color:var(--am);font-size:13px;">⚠</span>':''}</div>
           <div class="comp-sub">${id}${c.mfgDate?' · fab '+fdate(c.mfgDate):''}${c.glassSynthDate?' · synth '+fdate(c.glassSynthDate):''}${c.glassQC?' · QC: '+c.glassQC:''}${c.glassUV!=null&&c.glassUV!==''?' · UV: '+c.glassUV+'%':''}${c.glassSerial?' · '+c.glassSerial:''}${c.channels?' · '+c.channels+' ch':''}</div>
-        ${c.notes?'<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+c.notes+'</div>':''}
+          ${c.notes?'<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+c.notes+'</div>':''}
         </div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--am);white-space:nowrap;margin-left:auto;">${h.toFixed(1)} h · ${ne} exp${ne!==1?'s':''}</div>
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">▾</span>
       </div>
       <div class="exp-detail" id="cd-${id}"></div>
     </div>`;
-  }).join('');
+  };
+
+  list.innerHTML = typeOrder.filter(t=>grouped[t]?.length).map(t=>`
+    <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--ln);margin-bottom:2px;margin-top:8px;">${tn(t)}s</div>
+    ${grouped[t].map(compRowHTML).join('')}`).join('');
 }
 function lookupComp(id){ goToComp(id); }
 
