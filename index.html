@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-097</title>
+<title>SAPA Lab Tracker — v2026-07-15-099</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-097</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-099</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1379,7 +1379,7 @@ function renderChannelTables() {
   wrap.innerHTML=Object.entries(formPanels).map(([pid,positions])=>{
     const panel=db.components[pid]||{name:pid};
     // Panel-level MiniPot assignments
-    const panelPots = positions[0]?.panelPots || [];
+    const panelPots = Object.keys(db.components).filter(id => (db.components[id].type==='minipot'||db.components[id].type==='labpot') && !db.components[id].deletedAt);
 
     // Track used components for exclusivity within this panel
     const usedGlass = new Set(); const usedPaper = new Set(); const usedEngines = new Set();
@@ -2057,8 +2057,9 @@ function onRegTypeChange() {
   document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-led-grid-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-glass-wrap').style.display=t==='glass'?'block':'none';
-  document.getElementById('reg-default-layout-wrap').style.display=t==='panel'?'block':'none';
-  if(t==='panel') renderRegDefaultLayout();
+  const dlWrap = document.getElementById('reg-default-layout-wrap');
+  if(dlWrap) dlWrap.style.display=t==='panel'?'block':'none';
+  if(t==='panel') { try{renderRegDefaultLayout();}catch(e){} }
   // Channel label
   const chLabel = document.getElementById('reg-ch-label');
   if (chLabel) chLabel.textContent = t==='panel' ? 'Number of positions *' : 'Number of channels *';
@@ -2295,8 +2296,8 @@ function openEditCompPanel(id) {
       <div style="margin-bottom:12px;">
         <label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Serial number</label>
         <div style="display:flex;align-items:center;gap:0;">
-          <span style="padding:8px 10px;background:#f0f1f3;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#666;white-space:nowrap;">${(()=>{const pfxMap={panel:'FL_PANEL_',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};return pfxMap[c.type]||'';})()}</span>
-          <input type="text" id="ec-serial" value="${(()=>{const pfxMap={panel:'FL_PANEL_',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};const pfx=pfxMap[c.type]||'SAPA_EF_';return id.startsWith(pfx)?id.slice(pfx.length):id;})()}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
+          <input type="text" id="ec-prefix" value="${(()=>{const pfxMap={panel:'FL_PANEL_',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};return pfxMap[c.type]||'';})()}" placeholder="prefix" style="width:90px;padding:8px 6px;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#555;background:#f0f1f3;">
+          <input type="text" id="ec-serial" value="${(()=>{const pfxMap={panel:'FL_PANEL_',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};const pfx=pfxMap[c.type]||'';return pfx&&id.startsWith(pfx)?id.slice(pfx.length):id;})()}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
         </div>
         <div style="font-family:monospace;font-size:10px;color:#999;margin-top:3px;">TBD and NA are allowed</div>
       </div>
@@ -2354,8 +2355,9 @@ function saveEditComp(){
 
   // Handle serial number change
   const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
+  const editPrefix = (document.getElementById('ec-prefix')?.value||'').trim();
   const typePrefixes = {panel:'FL_PANEL_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
-  const currentPrefix = typePrefixes[c.type] || 'SAPA_EF_';
+  const currentPrefix = editPrefix !== undefined ? editPrefix : (typePrefixes[c.type] || '');
   const newId = rawSerial ? currentPrefix + rawSerial : id;
   const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
   if (newId !== id) {
