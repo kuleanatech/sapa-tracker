@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-099</title>
+<title>SAPA Lab Tracker — v2026-07-15-100</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-099</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-100</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -607,8 +607,6 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div>
         <label>Fabrication date</label>
         <input type="date" id="reg-mfg">
-        <div id="reg-fab-steps" style="margin-top:6px;"></div>
-        <button type="button" onclick="addFabStep()" style="font-size:10px;padding:3px 8px;margin-top:4px;font-family:var(--mono);">+ Add fabrication step</button>
       </div>
       <div><label>Fabricator</label><input type="text" id="reg-fabricator" placeholder="Name of person fabricating"></div>
       <div id="reg-ch-wrap" style="display:none;"><label id="reg-ch-label">Number of positions *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
@@ -622,7 +620,10 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       </div>
       <div><label>Notes</label><input type="text" id="reg-notes" placeholder="Serial, batch..."></div>
     </div>
-    <!-- Glass fields -->
+    <div id="reg-fab-steps-wrap" style="margin-top:2px;">
+      <div id="reg-fab-steps"></div>
+      <button type="button" onclick="addFabStep()" style="font-size:10px;padding:3px 8px;margin-top:2px;font-family:var(--mono);">+ Add fabrication step</button>
+    </div>
     <div id="reg-glass-wrap" style="display:none;">
       <div class="frow">
         <label>Raw TiO₂ glass slide</label>
