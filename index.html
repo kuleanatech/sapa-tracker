@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-102</title>
+<title>SAPA Lab Tracker — v2026-07-15-104</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-102</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-104</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -339,6 +339,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       <div id="filter-tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:0;"></div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearExpFilters()">Clear filters</button>
+        <button onclick="selectAllExps()">Select all</button>
         <button onclick="exportSelExps()">Export selected</button>
         <button class="btn-rd" onclick="flagSelExps()">Delete selected</button>
       </div>
@@ -381,6 +382,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       </div>
       <div class="brow" style="margin-bottom:12px;">
         <button onclick="clearCompFilters()">Clear filters</button>
+        <button onclick="selectAllComps()">Select all</button>
         <button onclick="exportSelComps()">Export selected</button>
         <button class="btn-rd" onclick="flagSelComps()">Delete selected</button>
       </div>
@@ -1858,6 +1860,16 @@ function buildExpDetail(e) {
     </div>`;
 }
 
+function selectAllExps(){
+  const cks = document.querySelectorAll('.exp-ck');
+  const allChecked = [...cks].every(c=>c.checked);
+  cks.forEach(c=>c.checked=!allChecked);
+}
+function selectAllComps(){
+  const cks = document.querySelectorAll('.comp-ck');
+  const allChecked = [...cks].every(c=>c.checked);
+  cks.forEach(c=>c.checked=!allChecked);
+}
 function flagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}if(!confirm(`Delete ${ids.length} experiment(s)?`))return;const user=(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=true;e.deletedAt=Date.now();e.deletedBy=user;}});saveAndSync();renderExpDb();}
 function unflagSelExps(){const ids=[...document.querySelectorAll('.exp-ck:checked')].map(c=>c.dataset.id);if(!ids.length){alert('Select experiments first.');return;}ids.forEach(id=>{const e=ge(id);if(e){e.flaggedForDeletion=false;delete e.deletedAt;delete e.deletedBy;}});saveAndSync();renderExpDb();}
 function exportSelExps(){
@@ -2070,6 +2082,9 @@ function onRegTypeChange() {
   if (pcbNote) pcbNote.style.display = (t==='glass'||t==='paper') ? 'block' : 'none';
   if (t==='labpot') { const ch=document.getElementById('reg-channels'); if(ch){ch.value=1;ch.disabled=true;} } else { const ch=document.getElementById('reg-channels'); if(ch) ch.disabled=false; }
   if(t==='engine') renderLedGrid();
+  // Clear auto-filled name/id before re-populating
+  const nameEl=document.getElementById('reg-name'), idEl=document.getElementById('reg-id');
+  if(nameEl) nameEl.value=''; if(idEl) idEl.value='';
   if(t==='glass') { renderGlassSlideDropdown(); autoNameComp('glass'); }
   if(t==='paper') autoNameComp('paper');
   if(t==='panel') autoNameComp('panel');
