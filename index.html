@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-094</title>
+<title>SAPA Lab Tracker — v2026-07-15-096</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-094</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-096</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1926,12 +1926,28 @@ function addFabStep(step={date:today(),desc:''}) {
 function removeFabStep(i) { fabSteps.splice(i,1); renderFabSteps(); }
 function renderFabSteps() {
   const wrap = document.getElementById('reg-fab-steps'); if(!wrap) return;
+  if (!fabSteps.length) { wrap.innerHTML=''; return; }
   wrap.innerHTML = fabSteps.map((s,i)=>`
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-      <input type="date" value="${s.date}" onchange="fabSteps[${i}].date=this.value" style="flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);">
-      <input type="text" value="${s.desc}" placeholder="Step description..." onchange="fabSteps[${i}].desc=this.value" style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--ln2);border-radius:var(--r);">
-      <button type="button" onclick="removeFabStep(${i})" style="flex-shrink:0;font-size:12px;padding:4px 8px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;line-height:1;">×</button>
+      <input type="date" data-fi="${i}" data-ff="date" value="${s.date||''}"
+        style="flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);"
+        oninput="fabStepUpdate(this)">
+      <input type="text" data-fi="${i}" data-ff="desc" value="${(s.desc||'').replace(/"/g,'&quot;')}" placeholder="Step description..."
+        style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--ln2);border-radius:var(--r);"
+        oninput="fabStepUpdate(this)">
+      <button type="button" data-fi="${i}"
+        style="flex-shrink:0;font-size:13px;line-height:1;padding:3px 9px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;"
+        onclick="fabStepRemove(this)">×</button>
     </div>`).join('');
+}
+function fabStepUpdate(el) {
+  const i = parseInt(el.dataset.fi), f = el.dataset.ff;
+  if (fabSteps[i] !== undefined) fabSteps[i][f] = el.value;
+}
+function fabStepRemove(btn) {
+  const i = parseInt(btn.dataset.fi);
+  fabSteps.splice(i, 1);
+  renderFabSteps();
 }
 function getFabDate() {
   // Last fab step date takes precedence, else main date field
@@ -1941,46 +1957,95 @@ function getFabDate() {
 
 
 /* ═══ PANEL DEFAULT LAYOUT ═══ */
-function buildDefaultLayoutEditor(c) {
-  const numPos = parseInt(c.channels)||8;
-  const defaults = c.defaultLayout || Array.from({length:numPos},(_,i)=>({ch:i+1,engine:'',glass:'',paper:'',pstat:''}));
+// In-memory default layout state (works for both add and edit modes)
+let defaultLayoutState = []; // array of {ch,engine,glass,paper,pstat}
+
+function initDefaultLayout(numPos, existing) {
+  defaultLayoutState = existing && existing.length
+    ? JSON.parse(JSON.stringify(existing))
+    : Array.from({length:numPos},(_,i)=>({ch:i+1,engine:'',glass:'',paper:'',pstat:''}));
+}
+
+function renderDefaultLayoutEditor(containerId, numPos) {
+  const wrap = document.getElementById(containerId); if(!wrap) return;
   const engines = Object.values(db.components).filter(x=>x.type==='engine'&&!x.deletedAt);
   const glasses = Object.values(db.components).filter(x=>x.type==='glass'&&!x.deletedAt);
   const papers  = Object.values(db.components).filter(x=>x.type==='paper'&&!x.deletedAt);
   const pstats  = Object.values(db.components).filter(x=>(x.type==='minipot'||x.type==='labpot')&&!x.deletedAt);
-  const mkS = (arr,val,name,i) => `<select onchange="ecUpdateDefault(${i},'${name}',this.value)" style="width:100%;font-size:10px;padding:3px;border:1px solid #ccc;border-radius:3px;margin-bottom:2px;"><option value="">—</option>${arr.map(x=>`<option value="${x.id}" ${x.id===val?'selected':''}>${x.name}</option>`).join('')}</select>`;
-  // Show positions 8→1
-  const sorted = [...defaults].sort((a,b)=>b.ch-a.ch);
-  return `<div style="display:flex;gap:4px;min-width:max-content;">
-    ${sorted.map((pos,idx)=>{
-      const i = defaults.findIndex(d=>d.ch===pos.ch);
+
+  // Exclusivity sets
+  const usedGlass = new Set(defaultLayoutState.filter(r=>r.glass).map(r=>r.glass));
+  const usedPaper = new Set(defaultLayoutState.filter(r=>r.paper).map(r=>r.paper));
+  const usedEng   = new Set(defaultLayoutState.filter(r=>r.engine&&db.components[r.engine]?.ledGen!=='gen3').map(r=>r.engine));
+
+  const mkS = (arr, val, field, posIdx, usedSet) => {
+    const opts = arr.map(x=>{
+      const isUsed = usedSet&&usedSet.has(x.id)&&x.id!==val;
+      return `<option value="${x.id}" ${x.id===val?'selected':''} ${isUsed?'disabled':''}>${isUsed?'✓ ':''}${x.name}${isUsed?' (in use)':''}</option>`;
+    }).join('');
+    return `<select data-pi="${posIdx}" data-field="${field}" onchange="dlUpdate(this)" style="width:100%;font-size:10px;padding:3px;border:1px solid #ccc;border-radius:3px;margin-bottom:2px;"><option value="">—</option>${opts}</select>`;
+  };
+
+  const sorted = [...defaultLayoutState].sort((a,b)=>b.ch-a.ch);
+  wrap.innerHTML = `<div style="display:flex;gap:4px;min-width:max-content;">
+    ${sorted.map(pos=>{
+      const i = defaultLayoutState.findIndex(d=>d.ch===pos.ch);
+      const isGen3 = db.components[pos.engine]?.ledGen==='gen3';
       return `<div style="width:100px;border:1px solid #ddd;border-radius:4px;padding:6px;background:#f8f8f8;">
         <div style="font-family:monospace;font-size:10px;font-weight:600;text-align:center;margin-bottom:6px;color:#555;">Pos ${pos.ch}</div>
-        <div style="font-size:9px;color:#888;margin-bottom:2px;">Engine</div>${mkS(engines,pos.engine,'engine',i)}
-        <div style="font-size:9px;color:#888;margin-bottom:2px;">Glass</div>${mkS(glasses,pos.glass,'glass',i)}
-        <div style="font-size:9px;color:#888;margin-bottom:2px;">Paper</div>${mkS(papers,pos.paper,'paper',i)}
-        <div style="font-size:9px;color:#888;margin-bottom:2px;">Pstat</div>${mkS(pstats,pos.pstat,'pstat',i)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Engine</div>${mkS(engines,pos.engine,'engine',i,usedEng)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Glass</div>${mkS(glasses,pos.glass,'glass',i,usedGlass)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Paper</div>${mkS(papers,pos.paper,'paper',i,usedPaper)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Pstat</div>
+        ${isGen3?'<div style="font-size:9px;color:var(--gr);padding:3px;">Integrated</div>':mkS(pstats,pos.pstat,'pstat',i,null)}
       </div>`;
     }).join('')}
   </div>
-  <div style="font-family:monospace;font-size:9px;color:#888;margin-top:4px;display:flex;justify-content:space-between;padding:0 4px;">
-    <span>← exits (pos ${numPos})</span><span>enters (pos 1) →</span>
+  <div style="font-family:monospace;font-size:9px;color:#888;margin-top:4px;display:flex;justify-content:space-between;">
+    <span>← exits</span><span>enters →</span>
   </div>`;
 }
 
-// Temp state for default layout edits
-let ecDefaultLayoutState = null;
-function ecUpdateDefault(posIdx, field, val) {
-  const id = document.getElementById('edit-comp-id')?.value;
-  const c = db.components[id]; if(!c) return;
-  if(!c.defaultLayout) c.defaultLayout = Array.from({length:parseInt(c.channels)||8},(_,i)=>({ch:i+1,engine:'',glass:'',paper:'',pstat:''}));
-  c.defaultLayout[posIdx][field] = val;
+function dlUpdate(sel) {
+  const i = parseInt(sel.dataset.pi), field = sel.dataset.field, val = sel.value;
+  if(!defaultLayoutState[i]) return;
+  defaultLayoutState[i][field] = val;
+  // Gen3 engine: copy to all
+  if(field==='engine') {
+    const eng = db.components[val];
+    if(eng?.ledGen==='gen3' && val) defaultLayoutState.forEach((_,j)=>defaultLayoutState[j].engine=val);
+  }
+  // Lab pstat: copy to all
+  if(field==='pstat') {
+    const pot = db.components[val];
+    if(pot?.type==='labpot') defaultLayoutState.forEach((_,j)=>defaultLayoutState[j].pstat=val);
+  }
+  // Re-render whichever container is active
+  const ecWrap = document.getElementById('ec-default-layout');
+  const regWrap = document.getElementById('reg-default-layout');
+  if(ecWrap) renderDefaultLayoutEditor('ec-default-layout', defaultLayoutState.length);
+  if(regWrap) renderDefaultLayoutEditor('reg-default-layout', defaultLayoutState.length);
 }
+
+function renderRegDefaultLayout() {
+  const numPos = parseInt(document.getElementById('reg-channels')?.value)||8;
+  initDefaultLayout(numPos, null);
+  renderDefaultLayoutEditor('reg-default-layout', numPos);
+}
+
+function buildDefaultLayoutEditor(c) {
+  const numPos = parseInt(c.channels)||8;
+  initDefaultLayout(numPos, c.defaultLayout);
+  renderDefaultLayoutEditor('ec-default-layout', numPos);
+  return '<div id="ec-default-layout" style="overflow-x:auto;"></div>';
+}
+
+function ecUpdateDefault(posIdx, field, val) {} // legacy stub
 
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
   // Serial prefix per type
-  const prefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'FL_PANEL_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefixEl = document.getElementById('reg-id-prefix');
   if (prefixEl) { prefixEl.textContent = prefixes[t] || ''; prefixEl.style.display = (prefixes[t]||'') ? 'inline-block' : 'none'; }
   // Also adjust input border-radius when no prefix
@@ -1990,6 +2055,8 @@ function onRegTypeChange() {
   document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-led-grid-wrap').style.display=t==='engine'?'block':'none';
   document.getElementById('reg-glass-wrap').style.display=t==='glass'?'block':'none';
+  document.getElementById('reg-default-layout-wrap').style.display=t==='panel'?'block':'none';
+  if(t==='panel') renderRegDefaultLayout();
   // Channel label
   const chLabel = document.getElementById('reg-ch-label');
   if (chLabel) chLabel.textContent = t==='panel' ? 'Number of positions *' : 'Number of channels *';
@@ -2001,6 +2068,7 @@ function onRegTypeChange() {
   if(t==='engine') renderLedGrid();
   if(t==='glass') { renderGlassSlideDropdown(); autoNameComp('glass'); }
   if(t==='paper') autoNameComp('paper');
+  if(t==='panel') autoNameComp('panel');
 }
 
 function onGlassSerialInput(val) {
@@ -2037,6 +2105,15 @@ function autoNameComp(type) {
   const nameEl = document.getElementById('reg-name');
   const idEl = document.getElementById('reg-id');
   const existing = Object.values(db.components).filter(c => c.type === type && c.name);
+  if (type === 'panel') {
+    // Panel: auto-increment from existing FL_PANEL_ IDs
+    const panelNums = Object.keys(db.components).filter(k=>k.startsWith('FL_PANEL_')).map(k=>{const n=parseInt(k.replace('FL_PANEL_',''));return isNaN(n)?0:n;});
+    const next = panelNums.length ? Math.max(...panelNums) + 1 : 1;
+    const nextStr = String(next).padStart(2,'0');
+    if (nameEl && !nameEl.value) nameEl.value = 'Panel ' + nextStr;
+    if (idEl && !idEl.value) idEl.value = nextStr;
+    return;
+  }
   const nums = existing.map(c => { const m = c.name.match(/#(\d+)/); return m ? parseInt(m[1]) : 0; });
   const next = (nums.length ? Math.max(...nums) + 1 : 1);
   const nextStr = String(next).padStart(4, '0');
@@ -2052,7 +2129,7 @@ function registerComp(){
   const name=document.getElementById('reg-name').value.trim();
   if(!name){alert('Name required.');return;}
   const regType=document.getElementById('reg-type').value;
-  const prefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'FL_PANEL_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefix = prefixes[regType] || 'SAPA_EF_';
   const id = prefix ? prefix + rawId : rawId;
   // Allow TBD/NA duplicates, block real duplicates
@@ -2080,6 +2157,7 @@ function registerComp(){
     glassQC:type==='glass'?(document.getElementById('reg-glass-qc').value.trim()||null):null,
     glassUV:type==='glass'?(document.getElementById('reg-glass-uv').value||null):null,
     glassSerial:type==='glass'?(document.getElementById('reg-glass-serial').value.trim()||null):null,
+    defaultLayout:(document.getElementById('reg-default-layout-wrap')?.style.display!=='none'&&defaultLayoutState.length)?JSON.parse(JSON.stringify(defaultLayoutState)):undefined,
     notes:document.getElementById('reg-notes').value.trim(), fabricator:document.getElementById('reg-fabricator')?.value.trim()||null, registered:today(), createdAt:Date.now(), createdBy:(msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0], createdAt:Date.now()
   };
   if (rawSlideId) { if (!db.usedSlides) db.usedSlides=[]; if (!db.usedSlides.includes(rawSlideId)) db.usedSlides.push(rawSlideId); }
@@ -2172,7 +2250,7 @@ function openEditCompPanel(id) {
     <div style="margin-bottom:12px;">
       <div style="font-family:monospace;font-size:11px;color:#505666;margin-bottom:8px;font-weight:500;">Default position layout</div>
       <div style="font-family:monospace;font-size:10px;color:#888;margin-bottom:8px;">Set default components per position. Used to auto-fill new experiments.</div>
-      <div id="ec-default-layout" style="overflow-x:auto;">${buildDefaultLayoutEditor(c)}</div>
+      <div id="ec-default-layout-wrap" style="overflow-x:auto;">${buildDefaultLayoutEditor(c)}</div>
     </div>` : '';
 
   // Build LED grid for engines
@@ -2216,7 +2294,7 @@ function openEditCompPanel(id) {
         <label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Serial number</label>
         <div style="display:flex;align-items:center;gap:0;">
           <span style="padding:8px 10px;background:#f0f1f3;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#666;white-space:nowrap;">${(()=>{const pfxMap={panel:'(no prefix)',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};return pfxMap[c.type]||'SAPA_EF_';})()}</span>
-          <input type="text" id="ec-serial" value="${(()=>{const pfxMap={panel:'',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};const pfx=pfxMap[c.type]||'SAPA_EF_';return id.startsWith(pfx)?id.slice(pfx.length):id;})()}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
+          <input type="text" id="ec-serial" value="${(()=>{const pfxMap={panel:'FL_PANEL_',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};const pfx=pfxMap[c.type]||'SAPA_EF_';return id.startsWith(pfx)?id.slice(pfx.length):id;})()}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
         </div>
         <div style="font-family:monospace;font-size:10px;color:#999;margin-top:3px;">TBD and NA are allowed</div>
       </div>
@@ -2238,6 +2316,7 @@ function openEditCompPanel(id) {
   panel.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:600px;max-width:100vw;background:#fff;border-left:1px solid #ddd;z-index:99999;display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);';
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
+  if(c.type==='panel') setTimeout(()=>renderDefaultLayoutEditor('ec-default-layout',parseInt(c.channels)||8),50);
   requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
 }
 
@@ -2273,7 +2352,7 @@ function saveEditComp(){
 
   // Handle serial number change
   const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
-  const typePrefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const typePrefixes = {panel:'FL_PANEL_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const currentPrefix = typePrefixes[c.type] || 'SAPA_EF_';
   const newId = rawSerial ? currentPrefix + rawSerial : id;
   const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
@@ -2294,6 +2373,7 @@ function saveEditComp(){
     });
     const nc = db.components[finalNewId];
     nc.name = document.getElementById('ec-name').value.trim() || nc.name;
+    if(nc.type==='panel') nc.defaultLayout = JSON.parse(JSON.stringify(defaultLayoutState));
     nc.fabricator = document.getElementById('ec-fabricator')?.value.trim()||nc.fabricator;
     nc.notes = document.getElementById('ec-notes').value.trim();
     if(nc.type==='panel') nc.channels = parseInt(document.getElementById('ec-channels').value)||nc.channels;
@@ -2302,6 +2382,7 @@ function saveEditComp(){
     nc.editedAt = Date.now(); nc.editedBy = (msal$.getAllAccounts()[0]?.username||'unknown').split('@')[0];
   } else {
     c.name = document.getElementById('ec-name').value.trim() || c.name;
+    if(c.type==='panel') c.defaultLayout = JSON.parse(JSON.stringify(defaultLayoutState));
     c.fabricator = document.getElementById('ec-fabricator')?.value.trim()||c.fabricator;
     c.notes = document.getElementById('ec-notes').value.trim();
     if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
