@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-14-088</title>
+<title>SAPA Lab Tracker — v2026-07-14-089</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-088</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-089</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1352,8 +1352,6 @@ function renderChannelTables() {
   const glasses  = Object.values(db.components).filter(c=>c.type==='glass'&&!c.deletedAt);
   const minipots = Object.values(db.components).filter(c=>(c.type==='minipot'||c.type==='labpot')&&!c.deletedAt);
 
-  const mkOpt=(arr,val,extra=[])=>'<option value="">—</option>'+extra.map(e=>`<option value="${e.v}" ${e.v===val?'selected':''}>${e.l}</option>`).join('')+arr.map(c=>{const suf=c.id.length>6?'…'+c.id.slice(-6):'';return`<option value="${c.id}" ${c.id===val?'selected':''}>${c.name}${suf?' ('+suf+')':''}</option>`;}).join('');
-
   const selStyle = 'width:100%;font-size:11px;padding:3px 4px;border:1px solid var(--ln2);border-radius:3px;background:var(--bg2);';
   const lblStyle = 'font-family:var(--mono);font-size:9px;color:var(--tx3);display:block;margin-bottom:2px;';
 
@@ -1361,6 +1359,20 @@ function renderChannelTables() {
     const panel=db.components[pid]||{name:pid};
     // Panel-level MiniPot assignments
     const panelPots = positions[0]?.panelPots || [];
+
+    // Track used components for exclusivity within this panel
+    const usedGlass = new Set(); const usedPaper = new Set(); const usedEngines = new Set();
+    positions.forEach(row => {
+      if(row.glass) usedGlass.add(row.glass);
+      if(row.paper) usedPaper.add(row.paper);
+      if(row.engine && db.components[row.engine]?.ledGen !== 'gen3') usedEngines.add(row.engine);
+    });
+
+    const mkOpt=(arr,val,usedSet=null)=>'<option value="">—</option>'+arr.map(c=>{
+      const suf=c.id.length>6?'…'+c.id.slice(-6):'';
+      const isUsed=usedSet&&usedSet.has(c.id)&&c.id!==val;
+      return`<option value="${c.id}" ${c.id===val?'selected':''} ${isUsed?'disabled':''}>${isUsed?'✓ ':''}${c.name}${suf?' ('+suf+')':''}${isUsed?' (in use)':''}</option>`;
+    }).join('');
 
     // Build MiniPot multi-select for panel level
     const potCheckboxes = minipots.map(mp=>`
