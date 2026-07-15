@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-14-089</title>
+<title>SAPA Lab Tracker — v2026-07-14-091</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-089</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-091</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1770,14 +1770,14 @@ function buildExpDetail(e) {
       <div style="overflow-x:auto;">
         <table class="ch-table" style="min-width:360px;">
           <thead>
-            <tr><th style="font-family:var(--mono);font-size:9px;">Position</th>${[...chs].reverse().map(ch=>`<th style="font-family:var(--mono);font-size:10px;text-align:center;">${ch.ch}</th>`).join('')}</tr>
+            <tr><th style="font-family:var(--mono);font-size:9px;">Position</th>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<th style="font-family:var(--mono);font-size:10px;text-align:center;">${ch.ch}</th>`).join('')}</tr>
           </thead>
           <tbody>
-            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Status</td>${[...chs].reverse().map(ch=>`<td style="text-align:center;font-size:11px;">${ch.dummy?'<span style="color:var(--tx3);">dummy</span>':''}</td>`).join('')}</tr>
-            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Engine</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td>`).join('')}</tr>
-            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Glass</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td>`).join('')}</tr>
-            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Paper</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td>`).join('')}</tr>
-            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Pstat</td>${[...chs].reverse().map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.pstat?`${db.components[ch.pstat]?.name||ch.pstat}${ch.pstatCh?' Ch'+ch.pstatCh:''}`:ch.dummy?'':'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Status</td>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<td style="text-align:center;font-size:11px;">${ch.dummy?'<span style="color:var(--tx3);">dummy</span>':''}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Engine</td>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.engine?`<span class="comp-link" onclick="goToComp('${ch.engine}')">${db.components[ch.engine]?.name||ch.engine}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Glass</td>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.glass?`<span class="comp-link" onclick="goToComp('${ch.glass}')">${db.components[ch.glass]?.name||ch.glass}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Paper</td>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.paper?`<span class="comp-link" onclick="goToComp('${ch.paper}')">${db.components[ch.paper]?.name||ch.paper}</span>`:'—'}</td>`).join('')}</tr>
+            <tr><td style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Pstat</td>${[...chs].sort((a,b)=>b.ch-a.ch).map(ch=>`<td style="font-size:11px;text-align:center;">${!ch.dummy&&ch.pstat?`${db.components[ch.pstat]?.name||ch.pstat}${ch.pstatCh?' Ch'+ch.pstatCh:''}`:ch.dummy?'':'—'}</td>`).join('')}</tr>
           </tbody>
         </table>
         <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:4px;padding:0 4px;">
@@ -1908,9 +1908,11 @@ function onGlassSlideSelect(slideId) {
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
   // Serial prefix per type
-  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefixEl = document.getElementById('reg-id-prefix');
-  if (prefixEl) prefixEl.textContent = prefixes[t] || 'SAPA_EF_';
+  if (prefixEl) { prefixEl.textContent = prefixes[t] || ''; prefixEl.style.display = (prefixes[t]||'') ? 'inline-block' : 'none'; }
+  // Also adjust input border-radius when no prefix
+  const idInput = document.getElementById('reg-id'); if(idInput) idInput.style.borderRadius = (prefixes[t]||'') ? '0 var(--r) var(--r) 0' : 'var(--r)';
   // Show/hide sections
   document.getElementById('reg-ch-wrap').style.display=(t==='panel'||t==='minipot'||t==='labpot')?'block':'none';
   document.getElementById('reg-led-gen-wrap').style.display=t==='engine'?'block':'none';
@@ -1978,9 +1980,9 @@ function registerComp(){
   const name=document.getElementById('reg-name').value.trim();
   if(!name){alert('Name required.');return;}
   const regType=document.getElementById('reg-type').value;
-  const prefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const prefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const prefix = prefixes[regType] || 'SAPA_EF_';
-  const id = prefix + rawId;
+  const id = prefix ? prefix + rawId : rawId;
   // Allow TBD/NA duplicates, block real duplicates
   const isTBD = rawId==='TBD'||rawId==='NA'||rawId==='N/A';
   if(!isTBD && db.components[id]){alert(`Serial number "${id}" already exists.`);return;}
@@ -2184,7 +2186,7 @@ function saveEditComp(){
 
   // Handle serial number change
   const rawSerial = (document.getElementById('ec-serial')?.value||'').trim().toUpperCase();
-  const typePrefixes = {panel:'FL_Panel_', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
+  const typePrefixes = {panel:'', engine:'LE_', glass:'SAPA_AF_', paper:'SAPA_CF_', minipot:'MiniPot_', labpot:'LabPot_'};
   const currentPrefix = typePrefixes[c.type] || 'SAPA_EF_';
   const newId = rawSerial ? currentPrefix + rawSerial : id;
   const isTBD = rawSerial==='TBD'||rawSerial==='NA'||rawSerial==='N/A';
