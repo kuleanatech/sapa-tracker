@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-100</title>
+<title>SAPA Lab Tracker — v2026-07-15-101</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-100</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-101</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -1933,10 +1933,10 @@ function renderFabSteps() {
   wrap.innerHTML = fabSteps.map((s,i)=>`
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
       <input type="date" data-fi="${i}" data-ff="date" value="${s.date||''}"
-        style="flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);"
+        style="width:130px;flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--bg2);"
         oninput="fabStepUpdate(this)">
       <input type="text" data-fi="${i}" data-ff="desc" value="${(s.desc||'').replace(/"/g,'&quot;')}" placeholder="Step description..."
-        style="flex:1;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--ln2);border-radius:var(--r);"
+        style="flex:1;width:0;min-width:0;font-size:12px;padding:5px 8px;border:1px solid var(--ln2);border-radius:var(--r);"
         oninput="fabStepUpdate(this)">
       <button type="button" data-fi="${i}"
         style="flex-shrink:0;font-size:13px;line-height:1;padding:3px 9px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;"
