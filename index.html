@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-14-091</title>
+<title>SAPA Lab Tracker — v2026-07-15-093</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-14-091</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-093</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -604,7 +604,12 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
       </div>
     </div>
     <div class="fg3 frow">
-      <div><label>Fabrication date</label><input type="date" id="reg-mfg"></div>
+      <div>
+        <label>Fabrication date</label>
+        <input type="date" id="reg-mfg">
+        <div id="reg-fab-steps" style="margin-top:6px;"></div>
+        <button type="button" onclick="addFabStep()" style="font-size:10px;padding:3px 8px;margin-top:4px;font-family:var(--mono);">+ Add fabrication step</button>
+      </div>
       <div><label>Fabricator</label><input type="text" id="reg-fabricator" placeholder="Name of person fabricating"></div>
       <div id="reg-ch-wrap" style="display:none;"><label id="reg-ch-label">Number of positions *</label><input type="number" id="reg-channels" min="1" step="1" placeholder="e.g. 8"></div>
       <div id="reg-led-gen-wrap" style="display:none;"><label>LED generation</label>
@@ -916,7 +921,7 @@ function openCompPanel() {
   const fabEl=document.getElementById('reg-fabricator');if(fabEl)fabEl.value=''; ['reg-glass-synth-month','reg-glass-synth-day','reg-glass-synth-year','reg-glass-serial','reg-glass-qc','reg-glass-uv'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('reg-glass-qc').value='';
   document.getElementById('reg-type').value = 'panel';
-  document.getElementById('reg-mfg').value = today();
+  document.getElementById('reg-mfg').value = today(); fabSteps=[]; renderFabSteps();
   onRegTypeChange();
   renderGlassSlideDropdown(); renderLedGrid();
   document.getElementById('comp-overlay').classList.add('open');
@@ -1294,6 +1299,20 @@ function addPanelToForm() {
   formPanels[pid]=Array.from({length:numPos},(_,i)=>({ch:i+1,engine:'',paper:'',glass:'',dummy:false,pstat:'',pstatCh:'',panelPots:[]}));
   renderPanelSelectOpts(); renderChannelTables(); renderExpLedGrids();
 }
+
+function applyPanelDefaults(pid) {
+  const panel = db.components[pid]; if(!panel||!panel.defaultLayout) { alert('No defaults set for this panel. Edit the panel component to add a default layout.'); return; }
+  const hasData = formPanels[pid]?.some(row=>row.engine||row.glass||row.paper||row.pstat);
+  if(hasData && !confirm('This will overwrite current position assignments with panel defaults. Continue?')) return;
+  panel.defaultLayout.forEach((def,i) => {
+    if(!formPanels[pid][i]) return;
+    if(def.engine) formPanels[pid][i].engine = def.engine;
+    if(def.glass)  formPanels[pid][i].glass  = def.glass;
+    if(def.paper)  formPanels[pid][i].paper  = def.paper;
+    if(def.pstat)  formPanels[pid][i].pstat  = def.pstat;
+  });
+  renderChannelTables(); renderExpLedGrids();
+}
 function togglePanelPot(pid, checked, potId) {
   if (!formPanels[pid]) return;
   formPanels[pid].forEach(row => {
@@ -1476,6 +1495,7 @@ function renderChannelTables() {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:500;">${panel.name}</span>${tb('panel')}
         <span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${pid}</span>
+        <button onclick="applyPanelDefaults('${pid}')" style="font-size:10px;padding:3px 8px;background:var(--bld);color:var(--bl);border:1px solid rgba(21,101,192,.3);border-radius:var(--r);cursor:pointer;">Apply defaults</button>
         <button class="btn-am" onclick="copyFirstEngine('${pid}')" style="font-size:10px;padding:3px 8px;margin-left:auto;">Copy engine to all</button>
         <button class="btn-rd" onclick="removePanelFromForm('${pid}')" style="font-size:10px;padding:3px 8px;">Remove</button>
       </div>
@@ -1905,6 +1925,67 @@ function onGlassSlideSelect(slideId) {
   if (info) info.textContent = `${slide.photocurrent}µA photocurrent · ${slide.uvAbsorption!=null?slide.uvAbsorption+'% UV':'UV n/a'}`;
 }
 
+
+/* ═══ FABRICATION STEPS ═══ */
+let fabSteps = [];
+function addFabStep(step={date:today(),desc:''}) {
+  fabSteps.push({...step});
+  renderFabSteps();
+}
+function removeFabStep(i) { fabSteps.splice(i,1); renderFabSteps(); }
+function renderFabSteps() {
+  const wrap = document.getElementById('reg-fab-steps'); if(!wrap) return;
+  wrap.innerHTML = fabSteps.map((s,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
+      <input type="date" value="${s.date}" oninput="fabSteps[${i}].date=this.value" style="flex-shrink:0;font-size:12px;padding:4px 6px;border:1px solid var(--ln2);border-radius:var(--r);">
+      <input type="text" value="${s.desc}" placeholder="Step description" oninput="fabSteps[${i}].desc=this.value" style="flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--ln2);border-radius:var(--r);">
+      <button onclick="removeFabStep(${i})" style="font-size:10px;padding:2px 7px;background:var(--rdd);color:var(--rd);border:1px solid var(--rd);border-radius:var(--r);cursor:pointer;">×</button>
+    </div>`).join('');
+}
+function getFabDate() {
+  // Last fab step date takes precedence, else main date field
+  if (fabSteps.length) return fabSteps[fabSteps.length-1].date || document.getElementById('reg-mfg').value||null;
+  return document.getElementById('reg-mfg').value||null;
+}
+
+
+/* ═══ PANEL DEFAULT LAYOUT ═══ */
+function buildDefaultLayoutEditor(c) {
+  const numPos = parseInt(c.channels)||8;
+  const defaults = c.defaultLayout || Array.from({length:numPos},(_,i)=>({ch:i+1,engine:'',glass:'',paper:'',pstat:''}));
+  const engines = Object.values(db.components).filter(x=>x.type==='engine'&&!x.deletedAt);
+  const glasses = Object.values(db.components).filter(x=>x.type==='glass'&&!x.deletedAt);
+  const papers  = Object.values(db.components).filter(x=>x.type==='paper'&&!x.deletedAt);
+  const pstats  = Object.values(db.components).filter(x=>(x.type==='minipot'||x.type==='labpot')&&!x.deletedAt);
+  const mkS = (arr,val,name,i) => `<select onchange="ecUpdateDefault(${i},'${name}',this.value)" style="width:100%;font-size:10px;padding:3px;border:1px solid #ccc;border-radius:3px;margin-bottom:2px;"><option value="">—</option>${arr.map(x=>`<option value="${x.id}" ${x.id===val?'selected':''}>${x.name}</option>`).join('')}</select>`;
+  // Show positions 8→1
+  const sorted = [...defaults].sort((a,b)=>b.ch-a.ch);
+  return `<div style="display:flex;gap:4px;min-width:max-content;">
+    ${sorted.map((pos,idx)=>{
+      const i = defaults.findIndex(d=>d.ch===pos.ch);
+      return `<div style="width:100px;border:1px solid #ddd;border-radius:4px;padding:6px;background:#f8f8f8;">
+        <div style="font-family:monospace;font-size:10px;font-weight:600;text-align:center;margin-bottom:6px;color:#555;">Pos ${pos.ch}</div>
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Engine</div>${mkS(engines,pos.engine,'engine',i)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Glass</div>${mkS(glasses,pos.glass,'glass',i)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Paper</div>${mkS(papers,pos.paper,'paper',i)}
+        <div style="font-size:9px;color:#888;margin-bottom:2px;">Pstat</div>${mkS(pstats,pos.pstat,'pstat',i)}
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="font-family:monospace;font-size:9px;color:#888;margin-top:4px;display:flex;justify-content:space-between;padding:0 4px;">
+    <span>← exits (pos ${numPos})</span><span>enters (pos 1) →</span>
+  </div>`;
+}
+
+// Temp state for default layout edits
+let ecDefaultLayoutState = null;
+function ecUpdateDefault(posIdx, field, val) {
+  const id = document.getElementById('edit-comp-id')?.value;
+  const c = db.components[id]; if(!c) return;
+  if(!c.defaultLayout) c.defaultLayout = Array.from({length:parseInt(c.channels)||8},(_,i)=>({ch:i+1,engine:'',glass:'',paper:'',pstat:''}));
+  c.defaultLayout[posIdx][field] = val;
+}
+
 function onRegTypeChange() {
   const t=document.getElementById('reg-type')?.value;
   // Serial prefix per type
@@ -1994,7 +2075,7 @@ function registerComp(){
   const ledActive=type==='engine'?getLedGrid():null;
   const rawSlideId = type==='glass' ? (document.getElementById('reg-glass-slide')?.value||null) : null;
   db.components[finalId]={id:finalId,name,type,
-    mfgDate:document.getElementById('reg-mfg').value||null,
+    mfgDate:getFabDate(), fabSteps:fabSteps.length?JSON.parse(JSON.stringify(fabSteps)):undefined,
     channels:type==='panel'?(parseInt(document.getElementById('reg-channels').value)||null):null,
     ledGen:ledGen||null, ledActive,
     glassSynthDate:type==='glass'?(()=>{
@@ -2085,8 +2166,13 @@ function openEditCompPanel(id) {
     </div>` : '';
 
   const channelsField = c.type==='panel' ? `
-    <div style="margin-bottom:12px;"><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">Number of channels</label>
-    <input type="number" id="ec-channels" value="${c.channels||''}" min="1" step="1" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>` : '';
+    <div style="margin-bottom:12px;"><label style="font-family:var(--mono);font-size:11px;color:#505666;display:block;margin-bottom:4px;">Number of positions</label>
+    <input type="number" id="ec-channels" value="${c.channels||''}" min="1" step="1" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
+    <div style="margin-bottom:12px;">
+      <div style="font-family:monospace;font-size:11px;color:#505666;margin-bottom:8px;font-weight:500;">Default position layout</div>
+      <div style="font-family:monospace;font-size:10px;color:#888;margin-bottom:8px;">Set default components per position. Used to auto-fill new experiments.</div>
+      <div id="ec-default-layout" style="overflow-x:auto;">${buildDefaultLayoutEditor(c)}</div>
+    </div>` : '';
 
   // Build LED grid for engines
   let ledGridHTML = '';
@@ -2128,8 +2214,8 @@ function openEditCompPanel(id) {
       <div style="margin-bottom:12px;">
         <label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Serial number</label>
         <div style="display:flex;align-items:center;gap:0;">
-          <span style="padding:8px 10px;background:#f0f1f3;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#666;white-space:nowrap;">SAPA_EF_</span>
-          <input type="text" id="ec-serial" value="${id.replace('SAPA_EF_','')}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
+          <span style="padding:8px 10px;background:#f0f1f3;border:1px solid #ccc;border-right:none;border-radius:5px 0 0 5px;font-family:monospace;font-size:12px;color:#666;white-space:nowrap;">${(()=>{const pfxMap={panel:'(no prefix)',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};return pfxMap[c.type]||'SAPA_EF_';})()}</span>
+          <input type="text" id="ec-serial" value="${(()=>{const pfxMap={panel:'',engine:'LE_',glass:'SAPA_AF_',paper:'SAPA_CF_',minipot:'MiniPot_',labpot:'LabPot_'};const pfx=pfxMap[c.type]||'SAPA_EF_';return id.startsWith(pfx)?id.slice(pfx.length):id;})()}" style="border-radius:0 5px 5px 0;flex:1;padding:8px 11px;border:1px solid #ccc;font-size:13px;font-family:monospace;">
         </div>
         <div style="font-family:monospace;font-size:10px;color:#999;margin-top:3px;">TBD and NA are allowed</div>
       </div>
@@ -2269,7 +2355,7 @@ function toggleCompDetail(id) {
     el.innerHTML = `<div style="padding:12px 0 4px;">
       <div class="dg" style="margin-bottom:10px;">
         <div class="df"><div class="dk">Serial number</div><div class="dv" style="font-family:var(--mono);font-size:12px;">${id}</div></div>
-        <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}</div></div>
+        <div class="df"><div class="dk">Fabrication date</div><div class="dv">${fdate(c.mfgDate)}${c.fabSteps&&c.fabSteps.length?`<div style="margin-top:4px;font-size:11px;">${c.fabSteps.map((s,i)=>`<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">${fdate(s.date)} — ${s.desc||'—'}</div>`).join('')}</div>`:''}</div></div>
         ${c.fabricator?`<div class="df"><div class="dk">Fabricator</div><div class="dv">${c.fabricator}</div></div>`:''}
         <div class="df"><div class="dk">Total hours</div><div class="dv" style="font-family:var(--mono);font-size:18px;color:var(--am);">${h.toFixed(1)}<span style="font-size:11px;color:var(--tx3);"> h</span></div></div>
         <div class="df"><div class="dk">Experiments</div><div class="dv" style="font-family:var(--mono);font-size:18px;">${allExps.length}</div></div>
