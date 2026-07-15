@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>SAPA Lab Tracker — v2026-07-15-101</title>
+<title>SAPA Lab Tracker — v2026-07-15-102</title>
 <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
 <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
 <style>
@@ -226,7 +226,7 @@ hr{border:none;border-top:1px solid var(--ln);margin:14px 0;}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-101</span></div>
+  <div class="nav-brand"><span style="font-size:16px;">⬡</span> SAPA TRACKER <span style="font-size:9px;color:var(--tx3);letter-spacing:.05em;">v2026-07-15-102</span></div>
   <button class="nav-tab" id="tab-exp" onclick="showPage('exp',this)" style="display:none;">Experiments</button>
   <button class="nav-tab" id="tab-comp" onclick="showPage('comp',this)" style="display:none;">Components</button>
   <button class="nav-tab" id="tab-admin" onclick="showPage('admin',this)" style="display:none;color:var(--rd);">⚠ Admin</button>
@@ -2307,6 +2307,11 @@ function openEditCompPanel(id) {
       ${channelsField}
       ${glassFields}
       ${ledGridHTML}
+      <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Fabrication date</label>
+        <input type="date" id="ec-mfg" value="${c.mfgDate||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;">
+        <div style="margin-top:6px;" id="ec-fab-steps"></div>
+        <button type="button" onclick="ecAddFabStep()" style="font-size:10px;padding:3px 8px;margin-top:4px;font-family:monospace;">+ Add fabrication step</button>
+      </div>
       <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Fabricator</label>
         <input type="text" id="ec-fabricator" value="${c.fabricator||''}" style="width:100%;padding:8px 11px;border:1px solid #ccc;border-radius:5px;font-size:13px;"></div>
       <div style="margin-bottom:12px;"><label style="font-family:monospace;font-size:11px;color:#505666;display:block;margin-bottom:4px;">Notes</label>
@@ -2321,6 +2326,9 @@ function openEditCompPanel(id) {
   document.body.appendChild(overlay);
   document.body.appendChild(panel);
   if(c.type==='panel') setTimeout(()=>renderDefaultLayoutEditor('ec-default-layout',parseInt(c.channels)||8),50);
+  // Init fab steps for edit panel
+  ecFabSteps = c.fabSteps ? JSON.parse(JSON.stringify(c.fabSteps)) : [];
+  setTimeout(()=>renderEcFabSteps(), 50);
   requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
 }
 
@@ -2350,6 +2358,23 @@ function closeEditCompPanel(){
     if (panel) panel.remove();
   }, 300);
 }
+let ecFabSteps = [];
+function ecAddFabStep() { ecFabSteps.push({date:today(),desc:''}); renderEcFabSteps(); }
+function renderEcFabSteps() {
+  const wrap = document.getElementById('ec-fab-steps'); if(!wrap) return;
+  wrap.innerHTML = ecFabSteps.map((s,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+      <input type="date" value="${s.date||''}" data-fi="${i}" data-ff="date"
+        style="width:130px;flex-shrink:0;font-size:12px;padding:5px 6px;border:1px solid #ccc;border-radius:4px;"
+        oninput="ecFabSteps[this.dataset.fi].date=this.value">
+      <input type="text" value="${(s.desc||'').replace(/"/g,'&quot;')}" placeholder="Step description..." data-fi="${i}"
+        style="flex:1;width:0;min-width:0;font-size:12px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;"
+        oninput="ecFabSteps[this.dataset.fi].desc=this.value">
+      <button type="button" data-fi="${i}" onclick="ecFabSteps.splice(parseInt(this.dataset.fi),1);renderEcFabSteps();"
+        style="flex-shrink:0;font-size:13px;padding:3px 9px;background:#fdecea;color:#c0392b;border:1px solid #e8b4b0;border-radius:4px;cursor:pointer;">×</button>
+    </div>`).join('');
+}
+
 function saveEditComp(){
   const id = document.getElementById('edit-comp-id').value; if(!id) return;
   const c = db.components[id]; if(!c) return;
@@ -2380,6 +2405,8 @@ function saveEditComp(){
     nc.name = document.getElementById('ec-name').value.trim() || nc.name;
     if(nc.type==='panel') nc.defaultLayout = JSON.parse(JSON.stringify(defaultLayoutState));
     nc.fabricator = document.getElementById('ec-fabricator')?.value.trim()||nc.fabricator;
+    nc.mfgDate = document.getElementById('ec-mfg')?.value || nc.mfgDate;
+    nc.fabSteps = ecFabSteps.length ? JSON.parse(JSON.stringify(ecFabSteps)) : undefined;
     nc.notes = document.getElementById('ec-notes').value.trim();
     if(nc.type==='panel') nc.channels = parseInt(document.getElementById('ec-channels').value)||nc.channels;
     if(nc.type==='glass'){nc.glassSynthDate=document.getElementById('ec-glass-synth').value||null;nc.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;nc.glassUV=document.getElementById('ec-glass-uv').value||null;nc.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
@@ -2389,6 +2416,8 @@ function saveEditComp(){
     c.name = document.getElementById('ec-name').value.trim() || c.name;
     if(c.type==='panel') c.defaultLayout = JSON.parse(JSON.stringify(defaultLayoutState));
     c.fabricator = document.getElementById('ec-fabricator')?.value.trim()||c.fabricator;
+    c.mfgDate = document.getElementById('ec-mfg')?.value || c.mfgDate;
+    c.fabSteps = ecFabSteps.length ? JSON.parse(JSON.stringify(ecFabSteps)) : undefined;
     c.notes = document.getElementById('ec-notes').value.trim();
     if(c.type==='panel') c.channels = parseInt(document.getElementById('ec-channels').value)||c.channels;
     if(c.type==='glass'){c.glassSynthDate=document.getElementById('ec-glass-synth').value||null;c.glassQC=document.getElementById('ec-glass-qc').value.trim()||null;c.glassUV=document.getElementById('ec-glass-uv').value||null;c.glassSerial=document.getElementById('ec-glass-serial').value.trim()||null;}
